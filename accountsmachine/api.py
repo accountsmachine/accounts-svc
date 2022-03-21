@@ -3,50 +3,26 @@
 import json
 import time
 import asyncio
+
 from aiohttp import web
 import sys
 import logging
 
-from accountsmachine.store import Store
-from state import State
+logger = logging.getLogger("api")
+logger.setLevel(logging.DEBUG)
 
-from vat import Vat
-from render import Renderer
-from company import Company
-from auth import Auth
-from filing import Filing
-from books import Books
-from company_register import CompanyRegister
-from status import Status
-from corptax import Corptax
-from accounts import Accounts
-
-if len(sys.argv) != 2:
-    print("Usage:\n\tengine <config>")
-    sys.exit(1)
-
-try:
-    config = open(sys.argv[1]).read()
-    config = json.loads(config)
-except Exception as e:
-    print("Error loading config: ", e)
-    sys.exit(1)
-
-logging.basicConfig(level=logging.DEBUG)
-
-store = Store(config)
-
-auth = Auth(config, store)
-
-books = Books()
-company = Company()
-creg = CompanyRegister()
-filing = Filing()
-renderer = Renderer(config)
-accounts = Accounts()
-corptax = Corptax()
-vat = Vat(config, store)
-status = Status()
+from . store import Store
+from . state import State
+from . vat import Vat
+from . render import Renderer
+from . company import Company
+from . auth import Auth
+from . filing import Filing
+from . books import Books
+from . company_register import CompanyRegister
+from . status import Status
+from . corptax import Corptax
+from . accounts import Accounts
 
 class DataPass:
     @web.middleware
@@ -62,68 +38,110 @@ class DataPass:
         request["renderer"] = request.app["renderer"]
         return await handler(request)
 
-dp = DataPass()
+class Api:
+    def __init__(self, config_file):
 
-app = web.Application(middlewares=[auth.verify, dp.add_data])
+        self.config = json.loads(open(config_file).read())
+        self.port = self.config["port"]
 
-app["books"] = books
-app["store"] = store
-app["config"] = config
-app["renderer"] = renderer
+        self.store = Store(self.config)
+        self.auth = Auth(self.config, self.store)
+        self.books = Books()
+        self.company = Company()
+        self.creg = CompanyRegister()
+        self.filing = Filing()
+        self.renderer = Renderer(self.config)
+        self.accounts = Accounts()
+        self.corptax = Corptax()
+        self.vat = Vat(self.config, self.store)
+        self.status = Status()
 
-app.add_routes([web.post('/render-html/{id}', renderer.to_html)])
+        self.dp = DataPass()
 
-app.add_routes([web.get('/companies', company.get_all)])
-app.add_routes([web.get('/company/{id}', company.get)])
-app.add_routes([web.put('/company/{id}', company.put)])
-app.add_routes([web.delete('/company/{id}', company.delete)])
-app.add_routes([web.post('/company/{id}/logo', company.upload_logo)])
-app.add_routes([web.get('/company/{id}/logo', company.get_logo)])
+        self.app = web.Application(middlewares=[auth.verify, dp.add_data])
 
-app.add_routes([web.get('/filings', filing.get_filings)])
-app.add_routes([web.get('/filing/{id}', filing.get_filing)])
-app.add_routes([web.put('/filing/{id}', filing.put_filing)])
-app.add_routes([web.delete('/filing/{id}', filing.delete_filing)])
-app.add_routes([web.post('/filing/{id}/signature', filing.upload_signature)])
-app.add_routes([web.get('/filing/{id}/signature', filing.get_signature)])
-app.add_routes([web.get('/filing/{id}/report', filing.get_report)])
-app.add_routes([web.get('/filing/{id}/data', filing.get_data)])
-app.add_routes([web.get('/filing/{id}/status', filing.get_status)])
-app.add_routes([web.post('/filing/{id}/move-draft', filing.move_draft)])
+        self.app["books"] = books
+        self.app["store"] = store
+        self.app["config"] = config
+        self.app["renderer"] = renderer
 
-app.add_routes([web.post('/books/{id}/upload', books.upload)])
-app.add_routes([web.get('/books/{id}/info', books.get_info)])
-app.add_routes([web.get('/books/{id}/summary', books.get_summary)])
-app.add_routes([web.delete('/books/{id}', books.delete)])
-app.add_routes([web.get('/books', books.get_all)])
+        self.app.add_routes([web.post('/render-html/{id}', renderer.to_html)])
 
-app.add_routes([web.get('/vat/liabilities/{id}', vat.get_liabilities)])
-app.add_routes([web.get('/vat/obligations/{id}', vat.get_obligations)])
-app.add_routes([web.get('/vat/open-obligations/{id}',
-                        vat.get_open_obligations)])
-app.add_routes([web.get('/vat/payments/{id}', vat.get_payments)])
+        self.app.add_routes([web.get('/companies', self.company.get_all)])
+        self.app.add_routes([web.get('/company/{id}', self.company.get)])
+        self.app.add_routes([web.put('/company/{id}', self.company.put)])
+        self.app.add_routes([web.delete('/company/{id}', self.company.delete)])
+        self.app.add_routes([web.post('/company/{id}/logo',
+                                      self.company.upload_logo)])
+        self.app.add_routes([web.get('/company/{id}/logo',
+                                     self.company.get_logo)])
 
-app.add_routes([web.post('/vat/compute/{id}', vat.compute)])
-app.add_routes([web.post('/vat/submit/{id}', vat.submit)])
+        self.app.add_routes([web.get('/filings', self.filing.get_filings)])
+        self.app.add_routes([web.get('/filing/{id}', self.filing.get_filing)])
+        self.app.add_routes([web.put('/filing/{id}', self.filing.put_filing)])
+        self.app.add_routes([web.delete('/filing/{id}',
+                                        self.filing.delete_filing)])
+        self.app.add_routes([web.post('/filing/{id}/signature',
+                                      self.filing.upload_signature)])
+        self.app.add_routes([web.get('/filing/{id}/signature',
+                                     self.filing.get_signature)])
+        self.app.add_routes([web.get('/filing/{id}/report',
+                                     self.filing.get_report)])
+        self.app.add_routes([web.get('/filing/{id}/data',
+                                     self.filing.get_data)])
+        self.app.add_routes([web.get('/filing/{id}/status',
+                                     self.filing.get_status)])
+        self.app.add_routes([web.post('/filing/{id}/move-draft',
+                                      self.filing.move_draft)])
 
-app.add_routes([web.post('/accounts/submit/{id}', accounts.submit)])
+        self.app.add_routes([web.post('/books/{id}/upload', self.books.upload)])
+        self.app.add_routes([web.get('/books/{id}/info', self.books.get_info)])
+        self.app.add_routes([web.get('/books/{id}/summary',
+                                     self.books.get_summary)])
+        self.app.add_routes([web.delete('/books/{id}', self.books.delete)])
+        self.app.add_routes([web.get('/books', self.books.get_all)])
 
-app.add_routes([web.post('/corptax/submit/{id}', corptax.submit)])
+        self.app.add_routes([web.get('/vat/liabilities/{id}',
+                                     self.vat.get_liabilities)])
+        self.app.add_routes([web.get('/vat/obligations/{id}',
+                                     self.vat.get_obligations)])
+        self.app.add_routes([web.get('/vat/open-obligations/{id}',
+                                vat.get_open_obligations)])
+        self.app.add_routes([web.get('/vat/payments/{id}',
+                                     self.vat.get_payments)])
 
-app.add_routes([web.get('/vat/receive-token', vat.receive_token)])
-app.add_routes([web.get('/vat/authorize/{id}', vat.redirect_auth)])
-app.add_routes([web.post('/vat/deauthorize/{id}', vat.deauthorize)])
+        self.app.add_routes([web.post('/vat/compute/{id}', self.vat.compute)])
+        self.app.add_routes([web.post('/vat/submit/{id}', self.vat.submit)])
 
-app.add_routes([web.post('/corptax/authorize/{id}', corptax.authorize)])
-app.add_routes([web.post('/corptax/deauthorize/{id}', corptax.deauthorize)])
+        self.app.add_routes([web.post('/accounts/submit/{id}',
+                                      self.accounts.submit)])
 
-app.add_routes([web.post('/accounts/authorize/{id}', accounts.authorize)])
-app.add_routes([web.post('/accounts/deauthorize/{id}', accounts.deauthorize)])
+        self.app.add_routes([web.post('/corptax/submit/{id}',
+                                      self.corptax.submit)])
 
-app.add_routes([web.get('/status', status.get_all)])
-app.add_routes([web.get('/status/{id}', status.get)])
+        self.app.add_routes([web.get('/vat/receive-token',
+                                     self.vat.receive_token)])
+        self.app.add_routes([web.get('/vat/authorize/{id}',
+                                     self.vat.redirect_auth)])
+        self.app.add_routes([web.post('/vat/deauthorize/{id}',
+                                      self.vat.deauthorize)])
 
-app.add_routes([web.get('/company-reg/{id}', creg.get)])
+        self.app.add_routes([web.post('/corptax/authorize/{id}',
+                                      self.corptax.authorize)])
+        self.app.add_routes([web.post('/corptax/deauthorize/{id}',
+                                      self.corptax.deauthorize)])
 
-web.run_app(app, port=config["port"])
+        self.app.add_routes([web.post('/accounts/authorize/{id}',
+                                      self.accounts.authorize)])
+        self.app.add_routes([web.post('/accounts/deauthorize/{id}',
+                                      self.accounts.deauthorize)])
+
+        self.app.add_routes([web.get('/status', self.status.get_all)])
+        self.app.add_routes([web.get('/status/{id}', self.status.get)])
+
+        self.app.add_routes([web.get('/company-reg/{id}', self.creg.get)])
+
+    def run(self):
+
+        web.run_app(self.app, port=self.port)
 

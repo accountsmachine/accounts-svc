@@ -14,8 +14,8 @@ import requests
 import re
 import time
 
-from state import State
-from ixbrl_process import IxbrlProcess
+from . state import State
+from . ixbrl_process import IxbrlProcess
 
 import gnucash_uk_vat.hmrc as hmrc
 import gnucash_uk_vat.model as model

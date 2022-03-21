@@ -7,7 +7,7 @@ import datetime
 import json
 import logging
 
-from ixbrl_process import IxbrlProcess
+from . ixbrl_process import IxbrlProcess
 
 logger = logging.getLogger("corptax")
 logger.setLevel(logging.DEBUG)

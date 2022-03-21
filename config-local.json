@@ -1,0 +1,20 @@
+{
+
+    "port": 8081,
+
+    "project": "accounts-machine-dev",
+
+    "jwt-secret": "vRbei0O4MBzP2TfBOij/PvQ4SpAKGLjtBChTy2QIdAo=",
+
+    "render-base": "ixbrl-reporter-jsonnet",
+
+    "vat-auth-url": "http://localhost:8090",
+    "vat-api-url": "http://localhost:8090",
+    "vat-client-id": "id1",
+    "vat-client-secret": "secret1-5053-4e74-bbef-33b294b0e7d6",
+    "redirect-uri": "http://192.168.0.105:8080/api/vat/receive-token",
+
+    "jwt-secrets": [ ]
+
+}
+

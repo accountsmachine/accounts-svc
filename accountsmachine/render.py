@@ -15,7 +15,7 @@ from ixbrl_reporter.accounts import get_class
 from ixbrl_reporter.data_source import DataSource
 from ixbrl_reporter.taxonomy import Taxonomy
 
-from ixbrl_process import IxbrlProcess
+from . ixbrl_process import IxbrlProcess
 
 logger = logging.getLogger("render")
 logger.setLevel(logging.DEBUG)
