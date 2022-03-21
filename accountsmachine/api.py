@@ -7,9 +7,8 @@ import asyncio
 from aiohttp import web
 import sys
 import logging
-
-logger = logging.getLogger("api")
-logger.setLevel(logging.DEBUG)
+import firebase_admin
+from firebase_admin import credentials
 
 from . store import Store
 from . state import State
@@ -23,6 +22,10 @@ from . company_register import CompanyRegister
 from . status import Status
 from . corptax import Corptax
 from . accounts import Accounts
+from . firebase import Firebase
+
+logger = logging.getLogger("api")
+logger.setLevel(logging.DEBUG)
 
 class DataPass:
     @web.middleware
@@ -44,8 +47,10 @@ class Api:
         self.config = json.loads(open(config_file).read())
         self.port = self.config["port"]
 
-        self.store = Store(self.config)
-        self.auth = Auth(self.config, self.store)
+        self.firebase = Firebase(self.config)
+
+        self.store = Store(self.config, self.firebase)
+        self.auth = Auth(self.config, self.store, self.firebase)
         self.books = Books()
         self.company = Company()
         self.creg = CompanyRegister()
@@ -58,14 +63,16 @@ class Api:
 
         self.dp = DataPass()
 
-        self.app = web.Application(middlewares=[auth.verify, dp.add_data])
+        self.app = web.Application(middlewares=[self.auth.verify,
+                                                self.dp.add_data])
 
-        self.app["books"] = books
-        self.app["store"] = store
-        self.app["config"] = config
-        self.app["renderer"] = renderer
+        self.app["books"] = self.books
+        self.app["store"] = self.store
+        self.app["config"] = self.config
+        self.app["renderer"] = self.renderer
 
-        self.app.add_routes([web.post('/render-html/{id}', renderer.to_html)])
+        self.app.add_routes([web.post('/render-html/{id}',
+                                      self.renderer.to_html)])
 
         self.app.add_routes([web.get('/companies', self.company.get_all)])
         self.app.add_routes([web.get('/company/{id}', self.company.get)])
@@ -106,7 +113,7 @@ class Api:
         self.app.add_routes([web.get('/vat/obligations/{id}',
                                      self.vat.get_obligations)])
         self.app.add_routes([web.get('/vat/open-obligations/{id}',
-                                vat.get_open_obligations)])
+                                     self.vat.get_open_obligations)])
         self.app.add_routes([web.get('/vat/payments/{id}',
                                      self.vat.get_payments)])
 

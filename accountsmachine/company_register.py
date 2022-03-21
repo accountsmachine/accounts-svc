@@ -10,7 +10,8 @@ logger.setLevel(logging.DEBUG)
 class CompanyRegister():
 
     def __init__(self):
-        self.db = json.loads(open("companies.json").read())
+#        self.db = json.loads(open("companies.json").read())
+        self.db = {}
 
     async def get(self, request):
 

@@ -7,7 +7,8 @@ import base64
 import logging
 import asyncio
 
-from google.cloud import firestore
+#from google.cloud import firestore
+from firebase_admin import firestore
 
 logger = logging.getLogger("store")
 logger.setLevel(logging.DEBUG)
@@ -32,10 +33,11 @@ class Collection:
         }
 
 class Store:
-    def __init__(self, config):
-        self.project = config["project"]
-        self.db = firestore.Client(project=self.project)
-        logger.debug("Opening firestore on project %s", self.project)
+    def __init__(self, config, firebase):
+
+        logger.debug("Opening firestore...")
+        self.db = firestore.client()
+        logger.debug("Opened")
 
     def collection(self, coll):
         return Collection(self.db, coll)

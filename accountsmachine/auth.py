@@ -15,8 +15,6 @@ import firebase_admin.auth
 logger = logging.getLogger("auth")
 logger.setLevel(logging.DEBUG)
 
-default_app = firebase_admin.initialize_app()
-
 class RequestAuth:
     def __init__(self, user, scope, auth):
         self.auth = auth
@@ -38,10 +36,11 @@ class RequestAuth:
     
 class Auth:
 
-    def __init__(self, config, store):
+    def __init__(self, config, store, firebase):
 
         self.store = store
         self.authreqs = {}
+        self.firebase = firebase
 
         self.jwt_secrets = config["jwt-secrets"]
 

@@ -4,6 +4,8 @@
 
     "project": "accounts-machine-dev",
 
+    "svc-account-key": "private.json",
+
     "jwt-secret": "vRbei0O4MBzP2TfBOij/PvQ4SpAKGLjtBChTy2QIdAo=",
 
     "render-base": "ixbrl-reporter-jsonnet",
