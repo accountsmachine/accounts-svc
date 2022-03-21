@@ -1,0 +1,149 @@
+
+from aiohttp import web
+import secrets
+import jwt
+import time
+from urllib.parse import urlencode, quote_plus
+import json
+import hashlib
+import logging
+import asyncio
+
+import firebase_admin
+import firebase_admin.auth
+
+logger = logging.getLogger("auth")
+logger.setLevel(logging.DEBUG)
+
+default_app = firebase_admin.initialize_app()
+
+class RequestAuth:
+    def __init__(self, user, scope, auth):
+        self.auth = auth
+        self.user = user
+        self.scope = scope
+    def verify_scope(self, scope):
+#        raise self.scope_invalid()
+        if scope not in self.scope:
+            logger.debug("Scope forbidden: %s", scope)
+            raise this.scope_invalid()
+    def scope_invalid(self):
+        return web.HTTPForbidden(
+            text=json.dumps({
+                "error_message": "You do not have permission",
+                "code": "no-permission"
+            }),
+            content_type="application/json"
+        )
+    
+class Auth:
+
+    def __init__(self, config, store):
+
+        self.store = store
+        self.authreqs = {}
+
+        self.jwt_secrets = config["jwt-secrets"]
+
+    async def verify_auth(self, request):
+
+        if "Authorization" not in request.headers:
+            logger.debug("No auth header")
+            raise self.auth_header_failure()
+
+        toks = request.headers["Authorization"].split(" ")
+
+        if len(toks) != 2:
+            logger.debug("Bad auth header")
+            raise self.auth_header_failure()
+
+        if toks[0] != "Bearer":
+            logger.debug("Bad auth header")
+            raise self.auth_header_failure()
+
+        valid = False
+
+        for sec in self.jwt_secrets:
+            try:
+                auth = jwt.decode(toks[1], sec)
+                valid = True
+                break
+            except Exception as e:
+                pass
+
+        # FIXME: Permit none algorithm.  Insecure!!!
+        if not valid:
+            try:
+                auth = jwt.decode(toks[1], None, algorithms=["none"],
+                                  verify=False)
+                valid = True
+            except Exception as e:
+                pass
+
+        if not valid:
+            logger.debug("JWT not valid")
+            raise self.auth_header_failure()
+
+        if (auth["exp"] <= time.time()):
+            logger.debug("Token expired.")
+            raise self.auth_header_failure()
+
+#        if not auth["email_verified"]:
+#            raise self.email_not_verified()
+
+        if "scope" not in auth:
+            # set default scopes for user
+
+            scope = [
+                "vat", "filing-config", "books", "company",
+                "ch-lookup", "render", "status", "corptax",
+                "accounts"
+            ]
+
+            print(auth["sub"])
+
+            firebase_admin.auth.set_custom_user_claims(
+                auth["sub"], { "scope": scope }
+            )
+
+        else:
+
+            scope = auth["scope"]
+
+        logger.debug("OK %s %s", auth["sub"], scope)
+
+        a = RequestAuth(auth["sub"], scope, self)
+        a.email = auth["email"]
+
+        return a
+
+    def email_not_verified(self):
+        return web.HTTPUnauthorized(
+            text=json.dumps({
+                "error_message": "Email not verified",
+                "code": "email-not-verified"
+            }),
+            content_type="application/json"
+        )
+
+    def auth_header_failure(self):
+        return web.HTTPUnauthorized(
+            text=json.dumps({
+                "error_message": "Authorization not present",
+                "code": "auth-not-present"
+            }),
+            content_type="application/json"
+        )
+
+    @web.middleware
+    async def verify(self, request, handler):
+
+        if request.url.path.startswith("/oauth"):
+            return await handler(request)
+
+        if request.url.path.startswith("/vat/receive-token"):
+            return await handler(request)
+
+        request["auth"] = await self.verify_auth(request)
+
+        return await handler(request)
