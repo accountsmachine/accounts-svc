@@ -4,19 +4,28 @@
 
     "project": "accounts-machine-dev",
 
+    "audience": "accounts-machine-dev",
+
+    "algorithms": ["RS256"],
+
     "svc-account-key": "private.json",
 
-    "jwt-secret": "vRbei0O4MBzP2TfBOij/PvQ4SpAKGLjtBChTy2QIdAo=",
+    "jsonnet-base": "ixbrl-reporter-jsonnet/",
 
-    "render-base": "ixbrl-reporter-jsonnet",
+    "config-base": "base/",
 
-    "vat-auth-url": "http://localhost:8090",
-    "vat-api-url": "http://localhost:8090",
+    "vat-auth-url": "https://vat-test.dev.accountsmachine.io",
+    "vat-api-url": "https://vat-test.dev.accountsmachine.io",
     "vat-client-id": "id1",
     "vat-client-secret": "secret1-5053-4e74-bbef-33b294b0e7d6",
     "redirect-uri": "http://192.168.0.105:8080/api/vat/receive-token",
 
-    "jwt-secrets": [ ]
+    "companies-house-api-key": "638bedcb-eb9d-4c97-b16d-fd28fc5a5739",
+
+    "jwt-secrets": [
+	"-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnRLLRM6/8X2IlFWGGTFq\n0+/59EmpOxFtI+BRAJOHKNIp9aVJLWsgO9AOL/f0iqo/stEiBE49uYYgq99dgO4Q\nIof2VFBG9Sy71yFmOXDLU8+qxbRN4+Pm0JBdNbBgWDD4vYn2EbD+Wlk6/wnONBzY\n6rBgNyinWx3P5XSJfd4dz80NGxdrMpgOtYqM66xDxSVqviXNJ9mwCxmByVyPG/ja\nzsTr5vqiKAfDFzk7FICvWZOFV/CfmO0wntUDmr7Qd6x43fpWTBGHngR7URn//kEn\n4uV9j/h96oPi6XvQoeaBsGx5pXEAQEVPfztsxDEVR9z5becQ14TFTHLCvcmqGI6N\nswIDAQAB\n-----END PUBLIC KEY-----",
+	"-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmTLLglh+5at6/seIA84e\nePUP7LfhFi4asHPS7pTKmSqGnGOU/nPc6zl/NU4jH2/e4tz3jnOPRE1Rvb4BNelN\nz4j/1JyUovOykqXtVguBhtVxVzXJo2Ke+oW/EZro4HGhxyITVOMMX0TQp7mRxIbp\nq9zkbJHtRVZar9jIYlMYsEzrFJRS5WByYoyDmsTtspPleKG5ThT+k+xuzZQqh4ZO\nCaa3Y5WGTwEAeBfEHQJ2PkY84YCUf7J27lUQEhSZB2WvLjRg5QzpnYxbe2Sm4AS9\niGhonQWkkkxp7k+t0d8HKknhCjr7JEsAAxj/LkaKQbM0QHipYj6krocu0Xyhnccs\nUQIDAQAB\n-----END PUBLIC KEY-----"
+    ]
 
 }
 

@@ -28,8 +28,10 @@ logger = logging.getLogger("api")
 logger.setLevel(logging.DEBUG)
 
 class DataPass:
+
     @web.middleware
     async def add_data(self, request, handler):
+
         request["books"] = request.app["books"]
 
         if "auth" in request:
@@ -53,7 +55,7 @@ class Api:
         self.auth = Auth(self.config, self.store, self.firebase)
         self.books = Books()
         self.company = Company()
-        self.creg = CompanyRegister()
+        self.creg = CompanyRegister(self.config)
         self.filing = Filing()
         self.renderer = Renderer(self.config)
         self.accounts = Accounts()

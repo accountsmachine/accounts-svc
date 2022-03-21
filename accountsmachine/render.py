@@ -29,7 +29,8 @@ class Renderer:
             73, 68, 65, 84, 8, 153, 99, 248, 255, 255, 255, 127, 0, 9, 251, 3,
             253, 8, 209, 232, 30, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130
         ])
-        self.jsonnet_base = config["render-base"]
+        self.jsonnet_base = config["jsonnet-base"]
+        self.base = config["config-base"]
         self.config = ""
 
     def load(self, dir, filename):
@@ -66,7 +67,7 @@ class Renderer:
         if ".." in kind:
             raise RuntimeError("Bad kind")
             
-        svr = open("base-%s.jsonnet" % kind).read()
+        svr = open("%s/base-%s.jsonnet" % (self.base, kind)).read()
         res = j.evaluate_snippet("config", svr, import_callback=self.load)
         return json.loads(res)
 

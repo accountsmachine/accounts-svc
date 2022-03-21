@@ -43,6 +43,8 @@ class Auth:
         self.firebase = firebase
 
         self.jwt_secrets = config["jwt-secrets"]
+        self.audience = config["audience"]
+        self.algorithms = config["algorithms"]
 
     async def verify_auth(self, request):
 
@@ -64,20 +66,23 @@ class Auth:
 
         for sec in self.jwt_secrets:
             try:
-                auth = jwt.decode(toks[1], sec)
+                auth = jwt.decode(toks[1], sec,
+                                  algorithms=self.algorithms,
+                                  audience=self.audience)
                 valid = True
                 break
             except Exception as e:
+                print(e)
                 pass
 
         # FIXME: Permit none algorithm.  Insecure!!!
-        if not valid:
-            try:
-                auth = jwt.decode(toks[1], None, algorithms=["none"],
-                                  verify=False)
-                valid = True
-            except Exception as e:
-                pass
+#        if not valid:
+#            try:
+#                auth = jwt.decode(toks[1], None, algorithms=["none"],
+#                                  verify=False)
+#                valid = True
+#            except Exception as e:
+#                pass
 
         if not valid:
             logger.debug("JWT not valid")
@@ -101,12 +106,12 @@ class Auth:
 
             print(auth["sub"])
 
+            logger.debug("Setting scopes for user not seen before")
             firebase_admin.auth.set_custom_user_claims(
                 auth["sub"], { "scope": scope }
             )
 
         else:
-
             scope = auth["scope"]
 
         logger.debug("OK %s %s", auth["sub"], scope)

@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 
 import sys
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
 
 from accountsmachine.api import Api
 
 if len(sys.argv) != 2:
     print("Usage:\n\tengine <config>")
     sys.exit(1)
-
 
 api = Api(sys.argv[1])
 

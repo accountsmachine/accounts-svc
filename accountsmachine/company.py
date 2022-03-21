@@ -5,7 +5,7 @@ import aiohttp
 import glob
 import logging
 
-logger = logging.getLogger("store")
+logger = logging.getLogger("company")
 logger.setLevel(logging.DEBUG)
 
 class Company():
@@ -22,7 +22,7 @@ class Company():
             cs = await request["state"].company().list()
             return web.json_response(cs)
         except Exception as e:
-            logger.debug(e)
+            logger.debug("get_all: %s", e)
             return web.HTTPInternalServerError(
                 body=str(e), content_type="text/plain"
             )
