@@ -202,8 +202,10 @@ class Filing():
             id = request.match_info['id']
 
             data = await request["state"].filing_report().get(id)
+            
+            text = data.decode("utf-8")
 
-            return web.json_response(data)
+            return web.Response(body=text, content_type="text/html")
 
         except Exception as e:
             logger.debug("Exception: %s", e)

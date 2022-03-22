@@ -46,7 +46,7 @@ class Accounts():
                     "report": str(e)
                 })
 
-                await state.filing_report().put(id, "")
+                await state.filing_report().put(id, "".encode("utf-8"))
 
                 cfg = await state.filing_config().get(id)
                 cfg["state"] = "errored"
@@ -54,7 +54,7 @@ class Accounts():
 
                 return
 
-            await state.filing_report().put(id, html)
+            await state.filing_report().put(id, html.encode("utf-8"))
             await state.filing_data().put(id, vals)
             await state.filing_status().put(id, {
                 "report": """Submitting...

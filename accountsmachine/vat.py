@@ -240,8 +240,6 @@ class Vat():
         user = self.token_states[state]["user"]
         company = self.token_states[state]["company"]
 
-        print(user, company)
-
         try:
 
             async with ClientSession() as session:
@@ -255,16 +253,12 @@ class Vat():
                     "state": state,
                 })
 
-                print(self.vat_api_url)
-                print(req)
-
                 headers = {
                         'Content-Type': 'application/x-www-form-urlencoded',
                 }
 
                 async with session.post(self.vat_api_url + "/oauth/token",
                                         headers=headers, data=req) as resp:
-                    print(await resp.text())
                     token = await resp.json()
 
         except Exception as e:
@@ -368,7 +362,7 @@ class Vat():
                 i = IxbrlProcess()
                 vat = i.process(html)
 
-                await state.filing_report().put(id, html)
+                await state.filing_report().put(id, html.encode("utf-8"))
                 await state.filing_data().put(id, vat)
 
                 rtn = model.Return()
@@ -401,18 +395,19 @@ class Vat():
                 logger.debug("background_submit: Exception: %s", e)
                 thislog.error("background_submit: Exception: %s", e)
 
+                l = log_stream.getvalue()
+
                 await state.filing_status().put(id, {
-                    "report": log_stream.getvalue()
+                    "report": l
                 })
 
-                await state.filing_report().put(id, "")
+                await state.filing_report().put(id, "".encode("utf-8"))
 
                 cfg = await state.filing_config().get(id)
                 cfg["state"] = "errored"
                 await state.filing_config().put(id, cfg)
 
                 return
-
 
             cfg = await state.filing_config().get(id)
             cfg["state"] = "published"

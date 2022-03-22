@@ -1,9 +1,11 @@
 
+import base64
+
 class DocKind:
     def __init__(self, collection, state):
         self.collection = collection
         self.state = state
-        self.store = state.store
+        self.store = state.store.docstore
         self.user = state.user
     def id(self, id):
         return id + "@" + self.user
@@ -21,19 +23,19 @@ class BlobKind:
     def __init__(self, collection, state, blob=False):
         self.collection = collection
         self.state = state
-        self.store = state.store
+        self.store = state.store.blobstore
         self.user = state.user
     def id(self, id):
-        return id + "@" + self.user
+        return self.user + "/" + id
     async def list(self):
-        return await self.store.get_all(self.collection, "uid", self.user)
+        raise RuntimeError("Not implemented")
     async def get(self, id):
         obj = await self.store.get(self.collection, self.id(id))
-        return obj["blob"]
+        return base64.b64decode(obj["blob"])
     async def put(self, id, data):
         obj = {
             "uid": self.user,
-            "blob": data
+            "blob": base64.b64encode(data).decode("utf-8")
         }
         return await self.store.put(self.collection, self.id(id), obj)
     async def delete(self, id):

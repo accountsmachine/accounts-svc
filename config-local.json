@@ -4,6 +4,8 @@
 
     "project": "accounts-machine-dev",
 
+    "bucket": "accounts-machine-dev",
+
     "audience": "accounts-machine-dev",
 
     "algorithms": ["RS256"],

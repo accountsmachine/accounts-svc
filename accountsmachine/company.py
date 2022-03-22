@@ -44,7 +44,7 @@ class Company():
             return web.json_response(data)
 
         except Exception as e:
-            logger.debug(e)
+            logger.debug("get: %s", e)
             return web.HTTPInternalServerError(
                 body=str(e), content_type="text/plain"
             )
@@ -66,7 +66,7 @@ class Company():
             return web.Response()
 
         except Exception as e:
-            logger.debug(e)
+            logger.debug("put: %s", e)
 
             return web.HTTPInternalServerError(
                 body=str(e), content_type="text/plain"
@@ -127,7 +127,7 @@ class Company():
             return web.Response()
 
         except Exception as e:
-            logger.debug(e)
+            logger.debug("delete: %s", e)
 
             return web.HTTPInternalServerError(
                 body=str(e), content_type="text/plain"
@@ -180,7 +180,7 @@ class Company():
             return web.Response()
 
         except Exception as e:
-            logger.debug(e)
+            logger.debug("upload_logo: %s", e)
             return web.HTTPInternalServerError(
                 body=str(e), content_type="text/plain"
             )
@@ -205,7 +205,7 @@ class Company():
             return web.Response(body=data, content_type=ctype)
 
         except Exception as e:
-            logger.debug(e)
+            logger.debug("get_logo: %s", e)
             return web.HTTPInternalServerError(
                 body=str(e), content_type="text/plain"
             )
