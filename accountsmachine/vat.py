@@ -347,7 +347,7 @@ class Vat():
                 logger.debug("VRN is %s", cmp["vrn"])
                 thislog.info("VRN is %s", cmp["vrn"])
 
-                obs = h.get_open_obligations(cmp["vrn"])
+                obs = await h.get_open_obligations(cmp["vrn"])
 
                 logger.debug("Looking for obligation period due %s", cfg["due"])
                 thislog.info("Period due %s", cfg["due"])
@@ -389,7 +389,7 @@ class Vat():
                     thislog.info("  %s: %s", k, v)
 
                 thislog.info("Submitting VAT return...")
-                h.submit_vat_return(cmp["vrn"], rtn)
+                await h.submit_vat_return(cmp["vrn"], rtn)
                 thislog.info("Success.")
 
                 await state.filing_status().put(id, {
@@ -468,6 +468,7 @@ class Vat():
             "application.client-id": "ASD",
             "application.client-secret": "ASD",
             "identity.vrn": "DUNNO",
+            "identity.do-not-track": "0",
             "identity.device.user-agent": request.headers["User-Agent"],
             "identity.device.id": request.headers["X-Device-ID"],
             "identity.device.tz": request.headers["X-Device-TZ"],
@@ -506,7 +507,7 @@ class Vat():
             cli = await self.get_vat_client(user, id, state, request)
 
             # FIXME: This should be async
-            liabs = cli.get_vat_liabilities(cmp["vrn"], start, end)
+            liabs = await cli.get_vat_liabilities(cmp["vrn"], start, end)
 
             return web.json_response([v.to_dict() for v in liabs])            
 
@@ -539,7 +540,7 @@ class Vat():
             cli = await self.get_vat_client(user, id, state, request)
 
             # FIXME: This should be async
-            ret = cli.get_obligations(cmp["vrn"], start, end)
+            ret = await cli.get_obligations(cmp["vrn"], start, end)
 
             return web.json_response([v.to_dict() for v in ret])            
 
@@ -567,7 +568,7 @@ class Vat():
             cli = await self.get_vat_client(user, id, state, request)
 
             # FIXME: This should be async
-            ret = cli.get_open_obligations(cmp["vrn"])
+            ret = await cli.get_open_obligations(cmp["vrn"])
 
             return web.json_response([v.to_dict() for v in ret])            
 
@@ -600,7 +601,7 @@ class Vat():
             cli = await self.get_vat_client(user, id, state, request)
 
             # FIXME: This should be async
-            ret = cli.get_vat_payments(cmp["vrn"], start, end)
+            ret = await cli.get_vat_payments(cmp["vrn"], start, end)
 
             return web.json_response([v.to_dict() for v in ret])            
 
