@@ -1,0 +1,19 @@
+
+- Create cloud storage bucket
+- Create service accounts user
+- Give service account admin access on bucket
+- Give service account access to firestore using rules
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if request.auth.token.sub == 'accounts-svc@accounts-machine-dev.iam.gserviceaccount.com';
+    }
+  }
+}
+
+- Give service account access to Firebase Auth Admin in the console
+
+
+
