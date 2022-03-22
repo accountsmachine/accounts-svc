@@ -12,6 +12,8 @@ import asyncio
 import firebase_admin
 import firebase_admin.auth
 
+from . state import State
+
 logger = logging.getLogger("auth")
 logger.setLevel(logging.DEBUG)
 
@@ -92,10 +94,24 @@ class Auth:
             logger.debug("Token expired.")
             raise self.auth_header_failure()
 
-#        if not auth["email_verified"]:
-#            raise self.email_not_verified()
+        if not auth["email_verified"]:
+            raise self.email_not_verified()
 
         if "scope" not in auth:
+
+            # This is a new user.
+            profile = {
+                "version": "v1",
+                "creation": int(time.time()),
+                "email": auth["email"],
+            }
+
+            state = State(self.store, auth["sub"])
+
+            cs = await state.user_profile().put(
+                auth["sub"], profile
+            )
+
             # set default scopes for user
 
             scope = [
@@ -107,6 +123,7 @@ class Auth:
             print(auth["sub"])
 
             logger.debug("Setting scopes for user not seen before")
+
             firebase_admin.auth.set_custom_user_claims(
                 auth["sub"], { "scope": scope }
             )

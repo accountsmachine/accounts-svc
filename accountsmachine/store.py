@@ -26,10 +26,10 @@ class Collection:
         return doc.to_dict()
     def __delitem__(self, key):
         self.collection.document(key).delete()
-    def all(self):
+    def all(self, key, value):
         return {
-            doc.id: doc.to_dict()
-            for doc in self.collection.stream()
+            doc.id.split("@")[0]: doc.to_dict()
+            for doc in self.collection.where(key, '==', value).stream()
         }
 
 class Store:
@@ -41,9 +41,6 @@ class Store:
 
     def collection(self, coll):
         return Collection(self.db, coll)
-
-    def key(self, coll, id):
-        return "%s#%s" % (coll, id)
 
     async def get(self, coll, id):
         logger.debug("get %s %s" % (coll, id))
@@ -57,15 +54,23 @@ class Store:
         logger.debug("delete %s %s" % (coll, id))
         del self.collection(coll)[id]
 
-    async def get_blob(self, coll, id):
-        logger.debug("getblob %s %s" % (coll, id))
-        return self.collection(coll)[id]["blob"]
-
-    async def put_blob(self, coll, id, data):
-        logger.debug("putblob %s %s" % (coll, id))
-        self.collection(coll)[id] = { "blob": data }
-
-    async def get_all(self, coll):
+    async def get_all(self, coll, key, value):
         logger.debug("get_all %s" % coll)
-        return self.collection(coll).all()
+        return self.collection(coll).all(key, value)
+
+    # async def blob_get(self, coll, user, id):
+    #     logger.debug("getblob %s %s" % (coll, id))
+    #     return self.collection(coll)[id]["blob"]
+
+    # async def blob_put(self, coll, user, id, data):
+    #     logger.debug("putblob %s %s" % (coll, id))
+    #     self.collection(coll)[id] = { "blob": data }
+
+    # async def blob_delete(self, coll, user, id):
+    #     logger.debug("delete %s %s" % (coll, id))
+    #     del self.collection(coll)[id]
+
+    # async def blob_get_all(self, coll, user):
+    #     logger.debug("get_all %s" % coll)
+    #     return self.collection(coll).all()
 

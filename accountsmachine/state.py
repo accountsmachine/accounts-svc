@@ -1,73 +1,97 @@
 
-class StateKind:
-    def __init__(self, prefix, state, blob=False):
-        self.prefix = prefix
+class DocKind:
+    def __init__(self, collection, state):
+        self.collection = collection
         self.state = state
         self.store = state.store
         self.user = state.user
-        self.blob = blob
+    def id(self, id):
+        return id + "@" + self.user
     async def list(self):
-        return await self.store.get_all(self.prefix + self.user)
+        return await self.store.get_all(self.collection, "uid", self.user)
     async def get(self, id):
-        if self.blob:
-            return await self.store.get_blob(self.prefix + self.user, id)
-        else:
-            return await self.store.get(self.prefix + self.user, id)
+        return await self.store.get(self.collection, self.id(id))
     async def put(self, id, data):
-        if self.blob:
-            return await self.store.put_blob(self.prefix + self.user, id, data)
-        else:
-            return await self.store.put(self.prefix + self.user, id, data)
+        data["uid"] = self.user
+        return await self.store.put(self.collection, self.id(id), data)
     async def delete(self, id):
-        return await self.store.delete(self.prefix + self.user, id)
+        return await self.store.delete(self.collection, self.id(id))
+
+class BlobKind:
+    def __init__(self, collection, state, blob=False):
+        self.collection = collection
+        self.state = state
+        self.store = state.store
+        self.user = state.user
+    def id(self, id):
+        return id + "@" + self.user
+    async def list(self):
+        return await self.store.get_all(self.collection, "uid", self.user)
+    async def get(self, id):
+        obj = await self.store.get(self.collection, self.id(id))
+        return obj["blob"]
+    async def put(self, id, data):
+        obj = {
+            "uid": self.user,
+            "blob": data
+        }
+        return await self.store.put(self.collection, self.id(id), obj)
+    async def delete(self, id):
+        return await self.store.delete(self.collection, self.id(id))
 
 class State:
     def __init__(self, store, user):
         self.store = store
         self.user = user
 
-    def kind(self, prefix, blob=False):
-        return StateKind(prefix, self, blob)
+    def doc(self, collection):
+        return DocKind(collection, self)
+
+    def blob(self, collection):
+        return BlobKind(collection, self)
 
     def company(self):
-        return self.kind("company-")
+        return self.doc("company")
 
     def filing_config(self):
-        return self.kind("filing-")
+        return self.doc("filing")
 
     def books(self):
-        return self.kind("books-", blob=True)
+        return self.blob("books")
 
     def booksinfo(self):
-        return self.kind("booksinfo-")
+        return self.doc("booksinfo")
 
     def logo(self):
-        return self.kind("logo-", blob=True)
+        return self.blob("logo")
 
     def signature(self):
-        return self.kind("signature-", blob=True)
+        return self.blob("signature")
 
     def signatureinfo(self):
-        return self.kind("signatureinfo-")
+        return self.doc("signatureinfo")
 
     def logoinfo(self):
-        return self.kind("logoinfo-")
+        return self.doc("logoinfo")
 
     def vat_auth(self):
-        return self.kind("vat-auth-")
+        return self.doc("vat-auth")
 
     def corptax_auth(self):
-        return self.kind("corptax-auth-")
+        return self.doc("corptax-auth")
 
     def accounts_auth(self):
-        return self.kind("accounts-auth-")
+        return self.doc("accounts-auth")
 
     def filing_report(self):
-        return self.kind("filing-report-", blob=True)
+        return self.blob("filing-report")
 
     def filing_data(self):
-        return self.kind("filing-data-")
+        return self.doc("filing-data")
 
     def filing_status(self):
-        return self.kind("filing-status-")
+        return self.doc("filing-status")
+
+    def user_profile(self):
+        return self.doc("user-profile")
 
