@@ -97,7 +97,7 @@ class Renderer:
         try:
             try:
                 img = await state.signature().get(id)
-                info = await state.signatureinfo().get(id)
+                info = await state.signature_info().get(id)
                 ct = info["content-type"]
             except:
                 img = self.white_pixel_png

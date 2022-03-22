@@ -70,8 +70,8 @@ class State:
     def signature(self):
         return self.blob("signature")
 
-    def signatureinfo(self):
-        return self.doc("signatureinfo")
+    def signature_info(self):
+        return self.doc("signature-info")
 
     def logoinfo(self):
         return self.doc("logoinfo")

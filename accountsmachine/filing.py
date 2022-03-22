@@ -106,6 +106,16 @@ class Filing():
             except:
                 pass
 
+            try:
+                await request["state"].signature_info().delete(id)
+            except:
+                pass
+
+            try:
+                await request["state"].signature().delete(id)
+            except:
+                pass
+
             await request["state"].filing_config().delete(id)
             return web.Response()
 
@@ -155,7 +165,7 @@ class Filing():
                         payload += chunk
 
                     await request["state"].signature().put(id, payload)
-                    await request["state"].signatureinfo().put(id, {
+                    await request["state"].signature_info().put(id, {
                         "content-type": ctype,
                     })
 
@@ -179,7 +189,7 @@ class Filing():
             if ".." in id:
                 raise RuntimeError("Invalid id")
 
-            info = await request["state"].signatureinfo().get(id)
+            info = await request["state"].signature_info().get(id)
             ctype = info["content-type"]
 
             data = await request["state"].signature().get(id)
