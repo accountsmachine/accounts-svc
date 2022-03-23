@@ -89,6 +89,32 @@ class Company():
                 filing = await request["state"].filing_config().get(fid)
 
                 if "company" in filing and filing["company"] == id:
+
+                    try:
+                        await request["state"].filing_report().delete(fid)
+                    except:
+                        pass
+
+                    try:
+                        await request["state"].filing_data().delete(fid)
+                    except:
+                        pass
+
+                    try:
+                        await request["state"].filing_status().delete(fid)
+                    except:
+                        pass
+
+                    try:
+                        await request["state"].signature_info().delete(fid)
+                    except:
+                        pass
+
+                    try:
+                        await request["state"].signature().delete(fid)
+                    except:
+                        pass
+
                     await request["state"].filing_config().delete(fid)
 
             try:
