@@ -10,10 +10,82 @@ import datetime
 logger = logging.getLogger("subscription")
 logger.setLevel(logging.DEBUG)
 
+def powerset(s):
+    s = list(s)
+    x = len(s)
+    for i in range(1, 1 << x):
+        yield [s[j] for j in range(x) if (i & (1 << j))]
+
 class Subscription():
 
     def __init__(self, config):
         pass
+
+        self.available = [
+            {
+                "kind": "vat-6-month",
+                "provides": ["vat"],
+                "cost": 15,
+                "period": [6, "month"],
+                "horizon": [18, "month"],
+            },
+            {
+                "kind": "vat-1-year",
+                "provides": ["vat"],
+                "cost": 20,
+                "period": [1, "year"],
+                "horizon": [18, "month"],
+            },
+            {
+                "kind": "vat-2-year",
+                "provides": ["vat"],
+                "cost": 35,
+                "period": [2, "year"],
+                "horizon": [30, "month"],
+            },
+            {
+                "kind": "accounts-1-year",
+                "provides": ["accounts"],
+                "cost": 15,
+                "period": [1, "year"],
+                "horizon": [18, "month"],
+            },
+            {
+                "kind": "accounts-2-year",
+                "provides": ["accounts"],
+                "cost": 28,
+                "period": [2, "year"],
+                "horizon": [30, "month"],
+            },
+            {
+                "kind": "corptax-1-year",
+                "provides": ["corptax"],
+                "cost": 20,
+                "period": [1, "year"],
+                "horizon": [18, "month"],
+            },
+            {
+                "kind": "corptax-2-year",
+                "provides": ["corptax"],
+                "cost": 38,
+                "period": [2, "year"],
+                "horizon": [30, "month"],
+            },
+            {
+                "kind": "all-1-year",
+                "provides": ["corptax"],
+                "cost": 40,
+                "period": [1, "year"],
+                "horizon": [18, "month"],
+            },
+            {
+                "kind": "all-2-year",
+                "provides": ["corptax"],
+                "cost": 70,
+                "period": [2, "year"],
+                "horizon": [30, "month"],
+            }
+        ]
 
     async def get_all(self, request):
 
@@ -95,35 +167,9 @@ class Subscription():
 
             id = str(uuid.uuid4())
 
-            start = datetime.datetime.utcnow()
-            end = start.replace(year=start.year + 1)
-
-            provides = []
-
-            if kind.startswith("vat-"):
-                provides = ["vat"]
-            elif kind.startswith("all-"):
-                provides = ["vat", "corptax", "accounts"]
-
-            subs = {
-                "company": cmp,
-                "uid": user,
-                "email": request["auth"].email,
-                "kind": kind,
-                "opened": start.isoformat(),
-                "expires": end.isoformat(),
-                "purchaser": "Mr. J. Smith",
-                "address": [
-                    "The Wirrals", "Lemlith", "Beaconsford"
-                ],
-                "postcode": "BC1 9JJ",
-                "country": "UK",
-                "valid": True,
-                "billing_country": "UK",
-                "vat_rate": 20,
-                "vat_number": "GB123456789",
-                "provides": provides,
-            }
+            subs = self.configure_subscription(
+                kind, cmp, request["auth"].email
+            )
 
             await request["state"].subscription().put(id, subs)
 
@@ -134,4 +180,126 @@ class Subscription():
             return web.HTTPInternalServerError(
                 body=str(e), content_type="text/plain"
             )
+
+    async def configure_subscription(kind, company, email):
+
+        start = datetime.datetime.utcnow()
+        end = start.replace(year=start.year + 1)
+
+        provides = []
+
+        if kind.startswith("vat-"):
+            provides = ["vat"]
+        elif kind.startswith("all-"):
+            provides = ["vat", "corptax", "accounts"]
+
+        subs = {
+            "company": company,
+            "uid": user,
+            "email": email,
+            "kind": kind,
+            "opened": start.isoformat(),
+            "expires": end.isoformat(),
+            "purchaser": "Mr. J. Smith",
+            "address": [
+                "The Wirrals", "Lemlith", "Beaconsford"
+            ],
+            "postcode": "BC1 9JJ",
+            "country": "UK",
+            "valid": True,
+            "billing_country": "UK",
+            "vat_rate": 20,
+            "vat_number": "GB123456789",
+            "provides": provides,
+        }
+
+        return subs
+
+    async def get_options(self, request):
+
+        request["auth"].verify_scope("filing-config")
+        user = request["auth"].user
+
+        try:
+
+            company = request.match_info['company']
+
+            if ".." in company:
+                raise RuntimeError("Invalid id")
+
+            ss = await request["state"].subscription().list()
+
+            now = datetime.datetime.utcnow()
+
+            # Expire
+            for id in ss:
+                subs = ss[id]
+
+                exp = datetime.datetime.fromisoformat(subs["expires"])
+
+                # Expire, write back to DB
+                if subs["valid"] and exp < now:
+                    subs["valid"] = False
+                    subs["status"] = "expired"
+                    await request["state"].subscription().put(id, subs)
+
+            # Just subscriptions for this company
+            ss = [ss[k] for k in ss if ss[k]["company"] == company]
+            ss = [v for v in ss if v["valid"]]
+
+            options = self.compute_options(ss)
+
+            return web.json_response(options)
+
+        except Exception as e:
+            logger.debug("get: %s", e)
+            return web.HTTPInternalServerError(
+                body=str(e), content_type="text/plain"
+            )
+
+    def future(self, now, count, item):
+
+        if item == "month":
+            return now.add(datetime.datetime.timedelta(months=count))
+
+        if item == "year":
+            return now.add(datetime.datetime.timedelta(year=count))
+
+        raise RuntimeError("BROKEN")
+
+    # Find all options
+    # - Look for extensions on all the current features
+    # - Look for extensions on individual current features
+    # - Offer the 'all' package.
+
+    def compute_options(self, current):
+
+        avail = {
+            "vat": [],
+            "corptax": [],
+            "accounts": [],
+            "all": []
+        }
+
+        for a in self.available:
+            if a["provides"] == ["vat"]:
+                avail["vat"].append(a)
+            if a["provides"] == ["corptax"]:
+                avail["vat"].append(a)
+            if a["provides"] == ["accounts"]:
+                avail["vat"].append(a)
+            if set(a["provides"]) == set(["vat", "corptax", "accounts"]):
+                avail["all"].append(a)
+
+        print(">>>>>", avail)
+
+        provided = set()
+        for sub in current:
+            provided |= set(sub["provides"])
+
+        
+
+#        print([v for v in powerset(provided)])
+
+        return []
 
