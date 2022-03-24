@@ -26,20 +26,20 @@ class BlobKind:
         self.store = state.store.blobstore
         self.user = state.user
     def id(self, id):
-        return self.user + "/" + id
+        return self.user + "/" + id + "/" + self.collection
     async def list(self):
         raise RuntimeError("Not implemented")
     async def get(self, id):
-        obj = await self.store.get(self.collection, self.id(id))
+        obj = await self.store.get(self.id(id))
         return base64.b64decode(obj["blob"])
     async def put(self, id, data):
         obj = {
             "uid": self.user,
             "blob": base64.b64encode(data).decode("utf-8")
         }
-        return await self.store.put(self.collection, self.id(id), obj)
+        return await self.store.put(self.id(id), obj)
     async def delete(self, id):
-        return await self.store.delete(self.collection, self.id(id))
+        return await self.store.delete(self.id(id))
 
 class State:
     def __init__(self, store, user):

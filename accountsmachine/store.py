@@ -68,25 +68,21 @@ class BlobStore:
         self.bucket = self.db.bucket(config["bucket"])
         logger.debug("Opened")
 
-    async def get(self, coll, id):
-        logger.debug("get %s %s" % (coll, id))
-        blob = self.bucket.blob("%s/%s" % (coll, id))
+    async def get(self, id):
+        logger.debug("get %s" % (id))
+        blob = self.bucket.blob(id)
         return json.loads(blob.download_as_string())
 
-    async def put(self, coll, id, data):
-        logger.debug("put %s %s" % (coll, id))
-        blob = self.bucket.blob("%s/%s" % (coll, id))
+    async def put(self, id, data):
+        logger.debug("put %s" % (id))
+        blob = self.bucket.blob(id)
         strm = json.dumps(data).encode("utf-8")
         blob.upload_from_string(strm)
 
-    async def delete(self, coll, id):
-        logger.debug("delete %s %s" % (coll, id))
-        blob = self.bucket.blob("%s/%s" % (coll, id))
+    async def delete(self, id):
+        logger.debug("delete %s" % (id))
+        blob = self.bucket.blob(id)
         blob.delete()
-
-    async def get_all(self, coll, key, value):
-        logger.debug("get_all %s" % coll)
-        return self.collection(coll).all(key, value)
 
 class Store:
     def __init__(self, config, firebase):

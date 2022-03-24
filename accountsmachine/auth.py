@@ -23,7 +23,6 @@ class RequestAuth:
         self.user = user
         self.scope = scope
     def verify_scope(self, scope):
-#        raise self.scope_invalid()
         if scope not in self.scope:
             logger.debug("Scope forbidden: %s", scope)
             raise this.scope_invalid()
@@ -47,6 +46,11 @@ class Auth:
         self.jwt_secrets = config["jwt-secrets"]
         self.audience = config["audience"]
         self.algorithms = config["algorithms"]
+
+        try:
+            self.domain = config["restrict-user-domain"]
+        except:
+            self.domain = None
 
     async def verify_auth(self, request):
 
@@ -96,6 +100,11 @@ class Auth:
 
         if not auth["email_verified"]:
             raise self.email_not_verified()
+        
+        if self.domain:
+            email = auth["email"]
+            if not email.endswith("@" + self.domain):
+                raise self.auth_header_failure()
 
         if "scope" not in auth:
 
