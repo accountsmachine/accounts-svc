@@ -55,6 +55,9 @@ class State:
     def company(self):
         return self.doc("company")
 
+    def subscription(self):
+        return self.doc("subscription")
+
     def filing_config(self):
         return self.doc("filing")
 

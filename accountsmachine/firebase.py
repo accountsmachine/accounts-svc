@@ -20,3 +20,4 @@ class Firebase:
         firebase_admin.initialize_app(cred)
 
         logger.debug("Initialised")
+

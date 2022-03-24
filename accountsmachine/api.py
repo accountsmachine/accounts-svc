@@ -23,6 +23,7 @@ from . status import Status
 from . corptax import Corptax
 from . accounts import Accounts
 from . firebase import Firebase
+from . subscription import Subscription
 
 logger = logging.getLogger("api")
 logger.setLevel(logging.DEBUG)
@@ -62,6 +63,7 @@ class Api:
         self.corptax = Corptax()
         self.vat = Vat(self.config, self.store)
         self.status = Status()
+        self.subs = Subscription(self.config)
 
         self.dp = DataPass()
 
@@ -149,6 +151,11 @@ class Api:
         self.app.add_routes([web.get('/status/{id}', self.status.get)])
 
         self.app.add_routes([web.get('/company-reg/{id}', self.creg.get)])
+
+        self.app.add_routes([web.get('/subscriptions', self.subs.get_all)])
+        self.app.add_routes([web.get('/subscription/{id}', self.subs.get)])
+        self.app.add_routes([web.post('/subscription/{company}/{kind}',
+                                     self.subs.take)])
 
     def run(self):
 
