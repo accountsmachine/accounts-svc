@@ -23,7 +23,7 @@ from . status import Status
 from . corptax import Corptax
 from . accounts import Accounts
 from . firebase import Firebase
-from . subscription import Subscription
+from . commerce import Commerce
 
 logger = logging.getLogger("api")
 logger.setLevel(logging.DEBUG)
@@ -63,7 +63,7 @@ class Api:
         self.corptax = Corptax()
         self.vat = Vat(self.config, self.store)
         self.status = Status()
-        self.subs = Subscription(self.config)
+        self.commerce = Commerce(self.config)
 
         self.dp = DataPass()
 
@@ -152,12 +152,20 @@ class Api:
 
         self.app.add_routes([web.get("/company-reg/{id}", self.creg.get)])
 
-        self.app.add_routes([web.get("/subscriptions", self.subs.get_all)])
-        self.app.add_routes([web.get("/subscription/{id}", self.subs.get)])
-        self.app.add_routes([web.post("/subscription/{company}/{kind}",
-                                     self.subs.take)])
-        self.app.add_routes([web.get("/subscriptions/{company}/options",
-                                     self.subs.get_options)])
+        self.app.add_routes([web.get("/user-account/delete",
+                                     self.auth.delete_user)])
+        self.app.add_routes([web.post("/user-account/register",
+                                     self.auth.register_user)])
+
+#        self.app.add_routes([web.get("/commerce/balance",
+#                                     self.commerce.get_balance())])
+
+#        self.app.add_routes([web.get("/subscriptions", self.subs.get_all)])
+#        self.app.add_routes([web.get("/subscription/{id}", self.subs.get)])
+#        self.app.add_routes([web.post("/subscription/{company}/{kind}",
+#                                     self.subs.take)])
+#        self.app.add_routes([web.get("/subscriptions/{company}/options",
+#                                     self.subs.get_options)])
 
     def run(self):
 

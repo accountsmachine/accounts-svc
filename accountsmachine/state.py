@@ -67,6 +67,12 @@ class State:
     def booksinfo(self):
         return self.doc("booksinfo")
 
+    def balance(self):
+        return self.doc("balance")
+
+    def transaction(self):
+        return self.doc("transaction")
+
     def logo(self):
         return self.blob("logo")
 

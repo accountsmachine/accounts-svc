@@ -8,6 +8,8 @@ import json
 import hashlib
 import logging
 import asyncio
+import uuid
+import datetime
 
 import firebase_admin
 import firebase_admin.auth
@@ -106,39 +108,13 @@ class Auth:
             if not email.endswith("@" + self.domain):
                 raise self.auth_header_failure()
 
+        # This shouldn't happen. I believe it's possible for an attacker
+        # to use the Firebase API to create a user even though it's not in our
+        # code, but they can't setup custom claims for the user.
         if "scope" not in auth:
+            raise self.auth_header_failure()
 
-            # This is a new user.
-            profile = {
-                "version": "v1",
-                "creation": int(time.time()),
-                "email": auth["email"],
-            }
-
-            state = State(self.store, auth["sub"])
-
-            cs = await state.user_profile().put(
-                auth["sub"], profile
-            )
-
-            # set default scopes for user
-
-            scope = [
-                "vat", "filing-config", "books", "company",
-                "ch-lookup", "render", "status", "corptax",
-                "accounts"
-            ]
-
-            print(auth["sub"])
-
-            logger.debug("Setting scopes for user not seen before")
-
-            firebase_admin.auth.set_custom_user_claims(
-                auth["sub"], { "scope": scope }
-            )
-
-        else:
-            scope = auth["scope"]
+        scope = auth["scope"]
 
         logger.debug("OK %s %s", auth["sub"], scope)
 
@@ -171,9 +147,113 @@ class Auth:
         if request.url.path.startswith("/oauth"):
             return await handler(request)
 
+        if request.url.path == "/user-account/register":
+            return await handler(request)
+
         if request.url.path.startswith("/vat/receive-token"):
             return await handler(request)
 
         request["auth"] = await self.verify_auth(request)
 
         return await handler(request)
+
+
+    async def register_user(self, request):
+
+        try:
+
+            user = await request.json()
+
+            uid = str(uuid.uuid4())
+
+            # This is a new user.
+            profile = {
+                "version": "v1",
+                "creation": datetime.datetime.utcnow().isoformat(),
+                "email": user["email"],
+            }
+
+            scope = [
+                "vat", "filing-config", "books", "company",
+                "ch-lookup", "render", "status", "corptax",
+                "accounts", "commerce", "user"
+            ]
+
+            # Initial balance
+            balance = {
+                "uid": uid,
+                "time": datetime.datetime.utcnow().isoformat(),
+                "email": user["email"],
+                "credits": {
+                    "vat": 0,
+                    "corptax": 0,
+                    "accounts": 0,
+                }
+            }
+
+            state = State(self.store, uid)
+
+            try:
+
+                await state.user_profile().put(
+                    uid, profile
+                )
+
+                await state.balance().put(
+                    uid, balance
+                )
+
+                firebase_admin.auth.create_user(
+                    uid=uid, email=user["email"],
+                    phone_number=user["phone_number"],
+                    password=user["password"],
+                    display_name=user["display_name"],
+                    disabled=False
+                )
+
+                firebase_admin.auth.set_custom_user_claims(
+                    uid, { "scope": scope }
+                )
+
+                return web.Response()
+
+            except Exception as e:
+
+                # Tidy up, back-track
+                try:
+                    state.user_profile().delete(uid)
+                except: pass
+
+                try:
+                    state.balance().delete(uid)
+                except: pass
+
+                try:
+                    firebase_admin.auth.delete_user(uid)
+                except: pass
+
+                raise e
+
+        except Exception as e:
+            
+            logger.debug("put: %s", e)
+
+            return web.HTTPInternalServerError(
+                body=str(e), content_type="text/plain"
+            )
+
+    async def delete_user(self, request):
+
+        request["auth"].verify_scope("user")
+        user = request["auth"].user
+
+        try:
+
+            return web.Response()
+
+        except Exception as e:
+            logger.debug("delete: %s", e)
+
+            return web.HTTPInternalServerError(
+                body=str(e), content_type="text/plain"
+            )
