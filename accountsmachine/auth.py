@@ -200,7 +200,7 @@ class Auth:
                 )
 
                 await state.balance().put(
-                    uid, balance
+                    "balance", balance
                 )
 
                 firebase_admin.auth.create_user(

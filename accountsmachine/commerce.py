@@ -20,10 +20,10 @@ def purchase_price(base, units, discount=0.98):
 # credits:
 #
 # {
-#     kind: 'credit-purchase',
+#     transaction: 'buy',
 #     address: [ "The Wirrals", "Lemlith", "Beaconsford" ],
 #     billing_country: "UK", country: "UK", email: "mark@accountsmachine.io",
-#     resource: "vat", time: "2022-03-24T11:03:57.411167",
+#     kind: "vat", time: "2022-03-24T11:03:57.411167",
 #     postcode: "BC1 9JJ", name: "Mr. J. Smith",
 #     uid: "ROElfkN481YZAxmO6U6eMzvmXGt2", valid: true,
 #     vat_number: "GB123456789", vat_rate: 20
@@ -32,7 +32,7 @@ def purchase_price(base, units, discount=0.98):
 #
 # Consumption:
 # {
-#     kind: 'credit-spend',
+#     kind: 'use',
 #     company: "12874000", resource: "vat", filing: "fkN481YZAx",
 #     credits: -1, time: "2022-03-24T11:03:57.411167",
 #     uid: "ROElfkN481YZAxmO6U6eMzvmXGt2", email:  "mark@accountsmachine.io"
@@ -56,97 +56,96 @@ def purchase_price(base, units, discount=0.98):
 class Commerce():
 
     def __init__(self, config):
-        pass
 
-        self.available = [
-            {
-                "kind": "vat-6-month",
-                "provides": ["vat"],
-                "cost": 15,
-                "period": [6, "month"],
-                "horizon": [18, "month"],
+        self.values = {
+            "vat": {
+                "max-hoarding": 10,
+                "price": 6.50,
+                "discount": 0.99,
+                "min-purchase": 1,
             },
-            {
-                "kind": "vat-1-year",
-                "provides": ["vat"],
-                "cost": 20,
-                "period": [1, "year"],
-                "horizon": [18, "month"],
+            "corptax": {
+                "max-hoarding": 10,
+                "price": 6.50,
+                "discount": 0.99,
+                "min-purchase": 1,
             },
-            {
-                "kind": "vat-2-year",
-                "provides": ["vat"],
-                "cost": 35,
-                "period": [2, "year"],
-                "horizon": [30, "month"],
-            },
-            {
-                "kind": "accounts-1-year",
-                "provides": ["accounts"],
-                "cost": 15,
-                "period": [1, "year"],
-                "horizon": [18, "month"],
-            },
-            {
-                "kind": "accounts-2-year",
-                "provides": ["accounts"],
-                "cost": 28,
-                "period": [2, "year"],
-                "horizon": [30, "month"],
-            },
-            {
-                "kind": "corptax-1-year",
-                "provides": ["corptax"],
-                "cost": 20,
-                "period": [1, "year"],
-                "horizon": [18, "month"],
-            },
-            {
-                "kind": "corptax-2-year",
-                "provides": ["corptax"],
-                "cost": 38,
-                "period": [2, "year"],
-                "horizon": [30, "month"],
-            },
-            {
-                "kind": "all-1-year",
-                "provides": ["corptax"],
-                "cost": 40,
-                "period": [1, "year"],
-                "horizon": [18, "month"],
-            },
-            {
-                "kind": "all-2-year",
-                "provides": ["corptax"],
-                "cost": 70,
-                "period": [2, "year"],
-                "horizon": [30, "month"],
+            "accounts": {
+                "max-hoarding": 10,
+                "price": 6.50,
+                "discount": 0.99,
+                "min-purchase": 1,
             }
-        ]
+        }
 
-    async def get_all(self, request):
+    async def get_options(self, request):
+
+        request["auth"].verify_scope("filing-config")
+        user = request["auth"].user
+
+        return web.json_response(self.values)
+
+    async def get_balance(self, request):
+
+        request["auth"].verify_scope("filing-config")
+        user = request["auth"].user
+
+        balance = await request["state"].balance().get("balance")
+
+        return web.json_response(balance)
+
+    async def purchase(self, request):
+
+        request["auth"].verify_scope("filing-config")
+        user = request["auth"].user
+
+        kind = request.match_info['kind']
+        data = await request.json()
+
+        count = data["count"]
+
+        if kind not in ["vat", "accounts", "corptax"]:
+            raise web.HTTPBadRequest()
+
+        # FIXME Should be a transaction
+
+        values = self.values[kind]
+
+        price = purchase_price(values["price"], count, values["discount"])
+
+        # Get my balance
+        balance = request["state"].balance().get("balance")
+        if balance["credit"][kind] + count > values["max-hoarding"]:
+            return web.HTTPBadRequest("This exceeds your maximum hoarding")
+
+        transaction = {
+            "transaction": "buy",
+            "address": [ "The Wirrals", "Lemlith", "Beaconsford" ],
+            "billing_country": "UK", "country": "UK",
+            "email": request["auth"].email,
+            "kind": kind, "time": datetime.datetime.now().isoformat(),
+            "postcode": "BC1 9JJ", "name": "Mr. J. Smith",
+            "uid": request["auth"].user, "valid": True,
+            "vat_number": "GB123456789", "vat_rate": 20,
+            "credits": count, "price": price,
+        }
+
+        tid = str(uuid.uuid4())
+        balance["credits"][kind] += count
+        balance["time"] = datetime.datetime.now().isoformat()
+
+        request["state"].balance().put("balance", balance)
+        request["state"].transaction().put(tid, transaction)
+
+        return web.json_response(balance)
+    
+    async def get_transactions(self, request):
 
         request["auth"].verify_scope("filing-config")
         user = request["auth"].user
 
         try:
-            ss = await request["state"].subscription().list()
-
-            # There's nothing which expires subscriptions, so we have
-            # to do it on load.
-
-            now = datetime.datetime.utcnow()
-
-            for id in ss:
-                subs = ss[id]
-
-                exp = datetime.datetime.fromisoformat(subs["expires"])
-
-                # Expire, write back to DB
-                if subs["valid"] and exp < now:
-                    subs["valid"] = False
-                    subs["status"] = "expired"
-                    await request["state"].subscription().put(id, subs)
+            ss = await request["state"].transaction().list()
 
             return web.json_response(ss)
 
@@ -155,188 +154,3 @@ class Commerce():
             return web.HTTPInternalServerError(
                 body=str(e), content_type="text/plain"
             )
-
-    async def get(self, request):
-
-        request["auth"].verify_scope("filing-config")
-        user = request["auth"].user
-
-        try:
-
-            id = request.match_info['id']
-
-            if ".." in id:
-                raise RuntimeError("Invalid id")
-
-            data = await request["state"].subscription().get(id)
-
-            now = datetime.datetime.utcnow()
-
-            if data["valid"] and exp < now:
-                subs["valid"] = False
-                subs["status"] = "expired"
-                await request["state"].subscription().put(id, data)
-
-            return web.json_response(data)
-
-        except Exception as e:
-            logger.debug("get: %s", e)
-            return web.HTTPInternalServerError(
-                body=str(e), content_type="text/plain"
-            )
-
-    async def take(self, request):
-
-        request["auth"].verify_scope("filing-config")
-
-        user = request["auth"].user
-
-        try:
-
-            cmp = request.match_info['company']
-            kind = request.match_info['kind']
-
-            if ".." in cmp:
-                raise RuntimeError("Invalid id")
-
-            if ".." in kind:
-                raise RuntimeError("Invalid id")
-
-            id = str(uuid.uuid4())
-
-            subs = self.configure_subscription(
-                kind, cmp, request["auth"].email
-            )
-
-            await request["state"].subscription().put(id, subs)
-
-            return web.json_response(id)
-
-        except Exception as e:
-            logger.debug("get: %s", e)
-            return web.HTTPInternalServerError(
-                body=str(e), content_type="text/plain"
-            )
-
-    async def configure_subscription(kind, company, email):
-
-        start = datetime.datetime.utcnow()
-        end = start.replace(year=start.year + 1)
-
-        provides = []
-
-        if kind.startswith("vat-"):
-            provides = ["vat"]
-        elif kind.startswith("all-"):
-            provides = ["vat", "corptax", "accounts"]
-
-        subs = {
-            "company": company,
-            "uid": user,
-            "email": email,
-            "kind": kind,
-            "opened": start.isoformat(),
-            "expires": end.isoformat(),
-            "purchaser": "Mr. J. Smith",
-            "address": [
-                "The Wirrals", "Lemlith", "Beaconsford"
-            ],
-            "postcode": "BC1 9JJ",
-            "country": "UK",
-            "valid": True,
-            "billing_country": "UK",
-            "vat_rate": 20,
-            "vat_number": "GB123456789",
-            "provides": provides,
-        }
-
-        return subs
-
-    async def get_options(self, request):
-
-        request["auth"].verify_scope("filing-config")
-        user = request["auth"].user
-
-        try:
-
-            company = request.match_info['company']
-
-            if ".." in company:
-                raise RuntimeError("Invalid id")
-
-            ss = await request["state"].subscription().list()
-
-            now = datetime.datetime.utcnow()
-
-            # Expire
-            for id in ss:
-                subs = ss[id]
-
-                exp = datetime.datetime.fromisoformat(subs["expires"])
-
-                # Expire, write back to DB
-                if subs["valid"] and exp < now:
-                    subs["valid"] = False
-                    subs["status"] = "expired"
-                    await request["state"].subscription().put(id, subs)
-
-            # Just subscriptions for this company
-            ss = [ss[k] for k in ss if ss[k]["company"] == company]
-            ss = [v for v in ss if v["valid"]]
-
-            options = self.compute_options(ss)
-
-            return web.json_response(options)
-
-        except Exception as e:
-            logger.debug("get: %s", e)
-            return web.HTTPInternalServerError(
-                body=str(e), content_type="text/plain"
-            )
-
-    def future(self, now, count, item):
-
-        if item == "month":
-            return now.add(datetime.datetime.timedelta(months=count))
-
-        if item == "year":
-            return now.add(datetime.datetime.timedelta(year=count))
-
-        raise RuntimeError("BROKEN")
-
-    # Find all options
-    # - Look for extensions on all the current features
-    # - Look for extensions on individual current features
-    # - Offer the 'all' package.
-
-    def compute_options(self, current):
-
-        avail = {
-            "vat": [],
-            "corptax": [],
-            "accounts": [],
-            "all": []
-        }
-
-        for a in self.available:
-            if a["provides"] == ["vat"]:
-                avail["vat"].append(a)
-            if a["provides"] == ["corptax"]:
-                avail["vat"].append(a)
-            if a["provides"] == ["accounts"]:
-                avail["vat"].append(a)
-            if set(a["provides"]) == set(["vat", "corptax", "accounts"]):
-                avail["all"].append(a)
-
-        print(">>>>>", avail)
-
-        provided = set()
-        for sub in current:
-            provided |= set(sub["provides"])
-
-        
-
-#        print([v for v in powerset(provided)])
-
-        return []
-

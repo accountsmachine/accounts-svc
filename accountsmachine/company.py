@@ -39,7 +39,10 @@ class Company():
             if ".." in id:
                 raise RuntimeError("Invalid id")
 
-            data = await request["state"].company().get(id)
+            try:
+                data = await request["state"].company().get(id)
+            except KeyError:
+                return web.HTTPNotFound()
 
             return web.json_response(data)
 

@@ -157,8 +157,14 @@ class Api:
         self.app.add_routes([web.post("/user-account/register",
                                      self.auth.register_user)])
 
-#        self.app.add_routes([web.get("/commerce/balance",
-#                                     self.commerce.get_balance())])
+        self.app.add_routes([web.get("/commerce/balance",
+                                     self.commerce.get_balance)])
+        self.app.add_routes([web.get("/commerce/options",
+                                     self.commerce.get_options)])
+        self.app.add_routes([web.get("/commerce/transactions",
+                                     self.commerce.get_transactions)])
+        self.app.add_routes([web.post("/commerce/purchase/{kind}",
+                                      self.commerce.purchase)])
 
 #        self.app.add_routes([web.get("/subscriptions", self.subs.get_all)])
 #        self.app.add_routes([web.get("/subscription/{id}", self.subs.get)])
