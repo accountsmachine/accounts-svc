@@ -61,18 +61,21 @@ class Commerce():
 
         self.values = {
             "vat": {
+                "description": "VAT return",
                 "permitted": 10,
                 "price": 650,
                 "discount": 0.99,
                 "min_purchase": 1,
             },
             "corptax": {
+                "description": "Corporation tax filing",
                 "permitted": 4,
                 "price": 1450,
                 "discount": 0.98,
                 "min_purchase": 1,
             },
             "accounts": {
+                "description": "Accounts filing",
                 "permitted": 4,
                 "price": 950,
                 "discount": 0.98,
@@ -101,8 +104,6 @@ class Commerce():
             v: opts[v] for v in opts if opts[v]["permitted"] > 0
         }
 
-        print(opts)
-
         for kind in opts:
 
             res = opts[kind]
@@ -121,14 +122,17 @@ class Commerce():
                 discount = (res["price"] * v) - price
 
                 offer.append({
-                    "price": price, "discount": discount, "credits": v
+                    "price": price, "discount": discount, "quantity": v
                 })
 
             res["offer"] = offer
 
-        opts["vat_tax_rate"] = 0.2
+        offer = {
+            "offer": opts,
+            "vat_rate": 0.2,
+        }
 
-        return web.json_response(opts)
+        return web.json_response(offer)
 
     async def get_balance(self, request):
 
@@ -199,12 +203,12 @@ class Commerce():
         if abs(data["vat_rate"] - 0.2) > 0.00005:
             raise web.HTTPBadRequest(text="Tax rate is wrong")
 
-        tax = round(subtotal * data["vat_rate"])
+        vat = round(subtotal * data["vat_rate"])
 
-        if tax != data["tax"]:
-            raise web.HTTPBadRequest(text="Tax calculation is wrong")
+        if vat != data["vat"]:
+            raise web.HTTPBadRequest(text="VAT calculation is wrong")
 
-        total = subtotal + tax
+        total = subtotal + vat
 
         if total != data["total"]:
             raise web.HTTPBadRequest(text="Total calculation is wrong")
