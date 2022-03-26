@@ -6,6 +6,8 @@ import glob
 import logging
 import uuid
 import datetime
+import math
+import copy
 
 logger = logging.getLogger("commerce")
 logger.setLevel(logging.DEBUG)
@@ -59,22 +61,22 @@ class Commerce():
 
         self.values = {
             "vat": {
-                "max-hoarding": 10,
-                "price": 6.50,
+                "permitted": 10,
+                "price": 650,
                 "discount": 0.99,
-                "min-purchase": 1,
+                "min_purchase": 2,
             },
             "corptax": {
-                "max-hoarding": 10,
-                "price": 6.50,
-                "discount": 0.99,
-                "min-purchase": 1,
+                "permitted": 4,
+                "price": 1450,
+                "discount": 0.98,
+                "min_purchase": 1,
             },
             "accounts": {
-                "max-hoarding": 10,
-                "price": 6.50,
-                "discount": 0.99,
-                "min-purchase": 1,
+                "permitted": 4,
+                "price": 950,
+                "discount": 0.98,
+                "min_purchase": 1,
             }
         }
 
@@ -83,7 +85,32 @@ class Commerce():
         request["auth"].verify_scope("filing-config")
         user = request["auth"].user
 
-        return web.json_response(self.values)
+        balance = await request["state"].balance().get("balance")
+
+        opts = copy.deepcopy(self.values)
+
+        kinds = opts.keys()
+
+        for kind in opts:
+            if kind in balance["credits"]:
+                opts[kind]["permitted"] -= balance["credits"][kind]
+                opts[kind]["permitted"] = max(opts[kind]["permitted"], 0)
+
+        for kind in opts:
+            res = opts[kind]
+            res["offer"] = [
+                {
+                    "credits": v,
+                    "price": math.floor(
+                        purchase_price(
+                            res["price"], v, res["discount"]
+                        )
+                    )
+                }
+                for v in [0, *range(res["min_purchase"], res["permitted"])]
+            ]
+
+        return web.json_response(opts)
 
     async def get_balance(self, request):
 
@@ -115,8 +142,11 @@ class Commerce():
 
         # Get my balance
         balance = request["state"].balance().get("balance")
-        if balance["credit"][kind] + count > values["max-hoarding"]:
-            return web.HTTPBadRequest("This exceeds your maximum hoarding")
+        if balance["credit"][kind] + count > values["permitted"]:
+            return web.HTTPBadRequest("This exceeds your maximum permitted")
+
+        if count < values["min_purchase"]:
+            return web.HTTPBadRequest("This exceeds your minimum purchase")
 
         transaction = {
             "transaction": "buy",
