@@ -148,7 +148,7 @@ class Commerce():
             resource = self.values[kind]
 
             if kind not in ["vat", "accounts", "corptax"]:
-                raise web.HTTPBadRequest("Can't sell you one of those.")
+                raise web.HTTPBadRequest(text="Can't sell you one of those.")
 
             if kind not in balance["credits"]:
                 balance["credits"][kind] = 0
@@ -160,7 +160,7 @@ class Commerce():
 
             if balance["credits"][kind] > resource["permitted"]:
                 raise web.HTTPBadRequest(
-                    "That would exceed your maximum permitted"
+                    text="That would exceed your maximum permitted"
                 )
 
             price = math.floor(
@@ -178,22 +178,22 @@ class Commerce():
             subtotal += amount
 
         if subtotal != data["subtotal"]:
-            raise web.HTTPBadRequest("Computed subtotal is wrong")
+            raise web.HTTPBadRequest(text="Computed subtotal is wrong")
 
         # FIXME: Hard-coded VAT rate.
         # This avoids rounding errors.
         if abs(data["vat_rate"] - 0.2) > 0.00005:
-            raise web.HTTPBadRequest("Tax rate is wrong")
+            raise web.HTTPBadRequest(text="Tax rate is wrong")
 
         tax = round(subtotal * data["vat_rate"])
 
         if tax != data["tax"]:
-            raise web.HTTPBadRequest("Tax calculation is wrong")
+            raise web.HTTPBadRequest(text="Tax calculation is wrong")
 
         total = subtotal + tax
 
         if total != data["total"]:
-            raise web.HTTPBadRequest("Total calculation is wrong")
+            raise web.HTTPBadRequest(text="Total calculation is wrong")
 
         # The order has been verified.
 
