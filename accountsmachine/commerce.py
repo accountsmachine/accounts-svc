@@ -96,6 +96,13 @@ class Commerce():
                 opts[kind]["permitted"] -= balance["credits"][kind]
                 opts[kind]["permitted"] = max(opts[kind]["permitted"], 0)
 
+        # If you already have the max, we can't sell you more.
+        opts = {
+            v: opts[v] for v in opts if opts[v]["permitted"] > 0
+        }
+
+        print(opts)
+
         for kind in opts:
 
             res = opts[kind]
