@@ -22,7 +22,7 @@ def purchase_price(base, units, discount=0.98):
 # credits:
 #
 # {
-#     transaction: 'buy',
+#     transaction: 'order',
 #     address: [ "The Wirrals", "Lemlith", "Beaconsford" ],
 #     billing_country: "UK", country: "UK", email: "mark@accountsmachine.io",
 #     kind: "vat", time: "2022-03-24T11:03:57.411167",
@@ -125,51 +125,96 @@ class Commerce():
 
         return web.json_response(balance)
 
-    async def purchase(self, request):
+    async def place_order(self, request):
 
         request["auth"].verify_scope("filing-config")
         user = request["auth"].user
 
-        kind = request.match_info['kind']
         data = await request.json()
 
-        count = data["count"]
+        # Need to verify everything from the client side.  Can't trust
+        # any of it.
 
-        if kind not in ["vat", "accounts", "corptax"]:
-            raise web.HTTPBadRequest()
+        balance = await request["state"].balance().get("balance")
 
-        # FIXME Should be a transaction
+        subtotal = 0
 
-        values = self.values[kind]
+        for item in data["items"]:
 
-        price = purchase_price(values["price"], count, values["discount"])
+            kind = item["kind"]
+            count = item["quantity"]
+            amount = item["amount"]
 
-        # Get my balance
-        balance = request["state"].balance().get("balance")
-        if balance["credit"][kind] + count > values["permitted"]:
-            return web.HTTPBadRequest("This exceeds your maximum permitted")
+            resource = self.values[kind]
 
-        if count < values["min_purchase"]:
-            return web.HTTPBadRequest("This exceeds your minimum purchase")
+            if kind not in ["vat", "accounts", "corptax"]:
+                raise web.HTTPBadRequest("Can't sell you one of those.")
+
+            if kind not in balance["credits"]:
+                balance["credits"][kind] = 0
+
+            balance["credits"][kind] += count
+
+            # The same resource could be listed multiple times, this works
+            # for that case.
+
+            if balance["credits"][kind] > resource["permitted"]:
+                raise web.HTTPBadRequest(
+                    "That would exceed your maximum permitted"
+                )
+
+            price = math.floor(
+                purchase_price(
+                    resource["price"], count, resource["discount"]
+                )
+            )
+
+            if amount != price:
+                print(price, amount)
+                raise web.HTTPBadRequest(
+                    text="Wrong price"
+                )
+
+            subtotal += amount
+
+        if subtotal != data["subtotal"]:
+            raise web.HTTPBadRequest("Computed subtotal is wrong")
+
+        # FIXME: Hard-coded VAT rate.
+        # This avoids rounding errors.
+        if abs(data["vat_rate"] - 0.2) > 0.00005:
+            raise web.HTTPBadRequest("Tax rate is wrong")
+
+        tax = round(subtotal * data["vat_rate"])
+
+        if tax != data["tax"]:
+            raise web.HTTPBadRequest("Tax calculation is wrong")
+
+        total = subtotal + tax
+
+        if total != data["total"]:
+            raise web.HTTPBadRequest("Total calculation is wrong")
+
+        # The order has been verified.
 
         transaction = {
-            "transaction": "buy",
+            "transaction": "order",
             "address": [ "The Wirrals", "Lemlith", "Beaconsford" ],
             "billing_country": "UK", "country": "UK",
             "email": request["auth"].email,
-            "kind": kind, "time": datetime.datetime.now().isoformat(),
+            "time": datetime.datetime.now().isoformat(),
             "postcode": "BC1 9JJ", "name": "Mr. J. Smith",
             "uid": request["auth"].user, "valid": True,
-            "vat_number": "GB123456789", "vat_rate": 20,
-            "credits": count, "price": price,
+            "vat_number": "GB123456789",
+            "order": data
         }
 
         tid = str(uuid.uuid4())
-        balance["credits"][kind] += count
+
         balance["time"] = datetime.datetime.now().isoformat()
 
-        request["state"].balance().put("balance", balance)
-        request["state"].transaction().put(tid, transaction)
+        await request["state"].balance().put("balance", balance)
+        await request["state"].transaction().put(tid, transaction)
 
         return web.json_response(balance)
     

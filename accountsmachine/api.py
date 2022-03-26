@@ -163,15 +163,8 @@ class Api:
                                      self.commerce.get_offer)])
         self.app.add_routes([web.get("/commerce/transactions",
                                      self.commerce.get_transactions)])
-        self.app.add_routes([web.post("/commerce/purchase/{kind}",
-                                      self.commerce.purchase)])
-
-#        self.app.add_routes([web.get("/subscriptions", self.subs.get_all)])
-#        self.app.add_routes([web.get("/subscription/{id}", self.subs.get)])
-#        self.app.add_routes([web.post("/subscription/{company}/{kind}",
-#                                     self.subs.take)])
-#        self.app.add_routes([web.get("/subscriptions/{company}/options",
-#                                     self.subs.get_options)])
+        self.app.add_routes([web.post("/commerce/place-order",
+                                      self.commerce.place_order)])
 
     def run(self):
 
