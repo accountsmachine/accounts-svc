@@ -97,20 +97,27 @@ class Commerce():
                 opts[kind]["permitted"] = max(opts[kind]["permitted"], 0)
 
         for kind in opts:
+
             res = opts[kind]
-            res["offer"] = [
-                {
-                    "credits": v,
-                    "price": math.floor(
-                        purchase_price(
-                            res["price"], v, res["discount"]
-                        )
+
+            offer = []
+
+            for v in [0, *range(
+                    res["min_purchase"], res["permitted"] + 1
+            )]:
+                price = math.floor(
+                    purchase_price(
+                        res["price"], v, res["discount"]
                     )
-                }
-                for v in [0, *range(
-                        res["min_purchase"], res["permitted"] + 1
-                )]
-            ]
+                )
+
+                discount = (res["price"] * v) - price
+
+                offer.append({
+                    "price": price, "discount": discount, "credits": v
+                })
+
+            res["offer"] = offer
 
         opts["vat_tax_rate"] = 0.2
 
