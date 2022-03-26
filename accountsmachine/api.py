@@ -159,8 +159,8 @@ class Api:
 
         self.app.add_routes([web.get("/commerce/balance",
                                      self.commerce.get_balance)])
-        self.app.add_routes([web.get("/commerce/options",
-                                     self.commerce.get_options)])
+        self.app.add_routes([web.get("/commerce/offer",
+                                     self.commerce.get_offer)])
         self.app.add_routes([web.get("/commerce/transactions",
                                      self.commerce.get_transactions)])
         self.app.add_routes([web.post("/commerce/purchase/{kind}",

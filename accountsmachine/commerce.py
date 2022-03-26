@@ -64,7 +64,7 @@ class Commerce():
                 "permitted": 10,
                 "price": 650,
                 "discount": 0.99,
-                "min_purchase": 2,
+                "min_purchase": 1,
             },
             "corptax": {
                 "permitted": 4,
@@ -80,7 +80,7 @@ class Commerce():
             }
         }
 
-    async def get_options(self, request):
+    async def get_offer(self, request):
 
         request["auth"].verify_scope("filing-config")
         user = request["auth"].user
@@ -107,8 +107,12 @@ class Commerce():
                         )
                     )
                 }
-                for v in [0, *range(res["min_purchase"], res["permitted"])]
+                for v in [0, *range(
+                        res["min_purchase"], res["permitted"] + 1
+                )]
             ]
+
+        opts["vat_tax_rate"] = 0.2
 
         return web.json_response(opts)
 
