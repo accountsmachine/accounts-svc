@@ -334,7 +334,9 @@ class Vat():
                 except Exception as e:
                     raise RuntimeError("No company number in configuration")
 
-                h = await self.get_vat_client(user, company_number, state, request)
+                h = await self.get_vat_client(
+                        user, company_number, state, request
+                )
 
                 cmp = await state.company().get(company_number)
 
@@ -354,6 +356,44 @@ class Vat():
                     raise RuntimeError(
                         "VAT due date %s not found in obligations" % cfg["due"]
                     )
+
+                # Handle billing
+                balance = await state.balance().get("balance")
+
+                if balance["credits"]["vat"] < 1:
+                        raise web.HTTPPaymentRequired(
+                                text="No VAT credits available"
+                        )
+
+                balance["credits"]["vat"] -= 1
+                balance["time"] = datetime.datetime.now().isoformat()
+
+                transaction = {
+                    "time": datetime.datetime.now().isoformat(),
+                    "transaction": "use",
+                    "company": company_number,
+                    "kind": "vat",
+                    "filing": cfg["label"],
+                    "id": id,
+                    "email": request["auth"].email,
+                    "uid": request["auth"].user,
+                    "valid": True,
+                    "order": {
+                        "items": [
+                            {
+                                "kind": "vat",
+                                "quantity": -1,
+                            }
+                        ]
+                    }
+                }
+
+                tid = str(uuid.uuid4())
+
+                await state.balance().put("balance", balance)
+                await state.transaction().put(tid, transaction)
+
+                # Billing written
 
                 html = await renderer.render(
                     state, books, renderer, id, kind
@@ -432,6 +472,14 @@ class Vat():
 
             id = request.match_info['id']
             kind = "vat"
+
+            # Quick credit check before committing to background task
+            balance = await request["state"].balance().get("balance")
+
+            if balance["credits"]["vat"] < 1:
+                    return web.HTTPPaymentRequired(
+                            text="No VAT credits available"
+                    )
 
             asyncio.create_task(
                 self.background_submit(user, request["state"], request["books"],
