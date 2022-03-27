@@ -252,3 +252,21 @@ class Commerce():
                 body=str(e), content_type="text/plain"
             )
 
+    async def get_transaction(self, request):
+
+        request["auth"].verify_scope("filing-config")
+        user = request["auth"].user
+
+        try:
+            id = request.match_info['id']
+
+            tx = await request["state"].transaction().get(id)
+
+            return web.json_response(tx)
+
+        except Exception as e:
+            logger.debug("get_all: %s", e)
+            return web.HTTPInternalServerError(
+                body=str(e), content_type="text/plain"
+            )
+
