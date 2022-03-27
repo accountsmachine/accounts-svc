@@ -45,7 +45,11 @@ class Auth:
         self.authreqs = {}
         self.firebase = firebase
 
-        self.jwt_secrets = config["jwt-secrets"]
+        self.jwt_secrets = [
+            open(v, "r").read()
+            for v in config["jwt-keys"]
+        ]
+
         self.audience = config["audience"]
         self.algorithms = config["algorithms"]
 
