@@ -9,6 +9,9 @@ import datetime
 import math
 import copy
 
+import stripe
+stripe.api_key = "sk_test_51Khz14ImWys2SCctFJHlNKlUQEmspamspbKOU15uBwMYC6ja0vMvKUDyDkWPehenoDoEht7dNztLatVlQ5ud5Fxp009e5MfCDE"
+
 logger = logging.getLogger("commerce")
 logger.setLevel(logging.DEBUG)
 
@@ -228,6 +231,18 @@ class Commerce():
         }
 
         tid = str(uuid.uuid4())
+
+        intent = stripe.PaymentIntent.create(
+            amount=total,
+            currency='gbp',
+            automatic_payment_methods={
+                'enabled': True,
+            },
+        )
+
+        return web.json_response(intent)
+        
+        return web.json_response(tid)
 
         balance["time"] = datetime.datetime.now().isoformat()
 
