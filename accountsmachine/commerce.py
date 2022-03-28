@@ -144,8 +144,6 @@ class Commerce():
 
         balance = await request["state"].balance().get("balance")
 
-        print(balance)
-
         return web.json_response(balance)
 
     # Returns potential new balance
@@ -188,7 +186,6 @@ class Commerce():
             )
 
             if amount != price:
-                print(price, amount)
                 raise web.HTTPBadRequest(
                     text="Wrong price"
                 )
@@ -311,12 +308,7 @@ class Commerce():
         data = await request.json()
         id = data["id"]
 
-        print("ORDER", id, " succeeded")
-
         intent = stripe.PaymentIntent.retrieve(id)
-        print("Got intent")
-
-        print(intent)
 
         tid = intent["metadata"]["transaction"]
 
