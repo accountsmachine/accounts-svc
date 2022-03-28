@@ -167,8 +167,6 @@ class Api:
                                      self.commerce.get_transaction)])
         self.app.add_routes([web.post("/commerce/create-order",
                                       self.commerce.create_order)])
-        self.app.add_routes([web.post("/commerce/update-order/{id}",
-                                      self.commerce.update_order)])
         self.app.add_routes([web.post("/commerce/complete-order/{id}",
                                       self.commerce.complete_order)])
         self.app.add_routes([web.post("/commerce/create-payment/{id}",

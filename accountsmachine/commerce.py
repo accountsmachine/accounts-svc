@@ -67,21 +67,21 @@ class Commerce():
                 "description": "VAT return",
                 "permitted": 10,
                 "price": 650,
-                "discount": 0.99,
+                "discount": 0.995,
                 "min_purchase": 1,
             },
             "corptax": {
                 "description": "Corporation tax filing",
                 "permitted": 4,
                 "price": 1450,
-                "discount": 0.98,
+                "discount": 0.995,
                 "min_purchase": 1,
             },
             "accounts": {
                 "description": "Accounts filing",
                 "permitted": 4,
                 "price": 950,
-                "discount": 0.98,
+                "discount": 0.995,
                 "min_purchase": 1,
             }
         }
@@ -246,20 +246,6 @@ class Commerce():
 
         tid = str(uuid.uuid4())
 
-        # intent = stripe.PaymentIntent.create(
-        #     amount=order["total"],
-        #     currency='gbp',
-        #     receipt_email=request["auth"].email,
-        #     description="Accounts Machine credit purchase",
-        #     metadata={
-        #         "transaction": tid,
-        #         "uid": request["auth"].user,
-        #     },
-        #     automatic_payment_methods={ 'enabled': True },
-        # )
-
-#        transaction["payment_id"] = intent.id
-
         await request["state"].transaction().put(tid, transaction)
 
         return web.json_response(tid)
@@ -290,43 +276,6 @@ class Commerce():
         await request["state"].transaction().put(tid, transaction)
 
         return web.json_response(intent["client_secret"])
-
-    ## FIXME: Not used
-    async def update_order(self, request):
-        
-        request["auth"].verify_scope("filing-config")
-        user = request["auth"].user
-
-        tid = request.match_info['id']
-
-        balance = await request["state"].balance().get("balance")
-
-        order = await request.json()
-
-        # Need to verify everything from the client side.  Can't trust
-        # any of it.
-        self.verify_order(order, balance)
-
-        transaction = await request["state"].transaction().get(tid)
-
-        transaction["time"] = datetime.datetime.now().isoformat(),
-        transaction["amount"] = order["total"]
-        transaction["order"] = order
-
-        transaction = self.create_tx(request, order)
-
-        iid = transaction["payment_id"]
-
-        intent = stripe.PaymentIntent.retrieve(iid)
-
-        stripe.PaymentIntent.modify(
-            iid,
-            amount=order["total"],
-        )
-
-        await request["state"].transaction().put(tid, transaction)
-
-        return web.json_response(intent)
 
     async def complete_order(self, request):
 
