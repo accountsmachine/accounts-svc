@@ -146,7 +146,7 @@ class Commerce():
 
         return web.json_response(balance)
 
-    async def place_order(self, request):
+    async def create_order(self, request):
 
         request["auth"].verify_scope("filing-config")
         user = request["auth"].user
@@ -240,6 +240,8 @@ class Commerce():
             },
         )
 
+        print(intent)
+
         return web.json_response(intent)
         
         return web.json_response(tid)
@@ -251,6 +253,23 @@ class Commerce():
 
         return web.json_response(balance)
     
+    async def complete_order(self, request):
+
+        request["auth"].verify_scope("filing-config")
+        user = request["auth"].user
+
+        data = await request.json()
+        id = data["id"]
+
+        print("ORDER", id, " succeeded")
+
+        intent = stripe.PaymentIntent.retrieve(id)
+        print("Got intent")
+        print(intent)
+
+        return web.json_response()
+
+
     async def get_transactions(self, request):
 
         request["auth"].verify_scope("filing-config")

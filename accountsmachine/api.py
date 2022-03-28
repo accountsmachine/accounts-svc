@@ -165,8 +165,10 @@ class Api:
                                      self.commerce.get_transactions)])
         self.app.add_routes([web.get("/commerce/transaction/{id}",
                                      self.commerce.get_transaction)])
-        self.app.add_routes([web.post("/commerce/place-order",
-                                      self.commerce.place_order)])
+        self.app.add_routes([web.post("/commerce/create-order",
+                                      self.commerce.create_order)])
+        self.app.add_routes([web.post("/commerce/complete-order",
+                                      self.commerce.complete_order)])
 
     def run(self):
 
