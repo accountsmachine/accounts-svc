@@ -246,6 +246,33 @@ class Commerce():
 
         tid = str(uuid.uuid4())
 
+        # intent = stripe.PaymentIntent.create(
+        #     amount=order["total"],
+        #     currency='gbp',
+        #     receipt_email=request["auth"].email,
+        #     description="Accounts Machine credit purchase",
+        #     metadata={
+        #         "transaction": tid,
+        #         "uid": request["auth"].user,
+        #     },
+        #     automatic_payment_methods={ 'enabled': True },
+        # )
+
+#        transaction["payment_id"] = intent.id
+
+        await request["state"].transaction().put(tid, transaction)
+
+        return web.json_response(tid)
+
+    async def create_payment(self, request):
+
+        request["auth"].verify_scope("filing-config")
+        user = request["auth"].user
+
+        tid = request.match_info['id']
+        transaction = await request["state"].transaction().get(tid)
+        order = transaction["order"]
+
         intent = stripe.PaymentIntent.create(
             amount=order["total"],
             currency='gbp',
@@ -262,8 +289,9 @@ class Commerce():
 
         await request["state"].transaction().put(tid, transaction)
 
-        return web.json_response(intent)
+        return web.json_response(intent["client_secret"])
 
+    ## FIXME: Not used
     async def update_order(self, request):
         
         request["auth"].verify_scope("filing-config")
@@ -306,7 +334,7 @@ class Commerce():
         user = request["auth"].user
 
         data = await request.json()
-        id = data["id"]
+        id = request.match_info['id']
 
         intent = stripe.PaymentIntent.retrieve(id)
 
@@ -325,7 +353,7 @@ class Commerce():
         await request["state"].balance().put("balance", balance)
         await request["state"].transaction().put(tid, transaction)
 
-        return web.json_response()
+        return web.json_response(balance)
 
     async def get_transactions(self, request):
 
