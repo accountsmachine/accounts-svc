@@ -171,6 +171,8 @@ class Api:
                                       self.commerce.complete_order)])
         self.app.add_routes([web.post("/commerce/create-payment/{id}",
                                       self.commerce.create_payment)])
+        self.app.add_routes([web.get("/commerce/payment-key",
+                                      self.commerce.get_payment_key)])
 
     def run(self):
 

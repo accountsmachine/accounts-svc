@@ -10,7 +10,7 @@ import math
 import copy
 
 import stripe
-stripe.api_key = "sk_test_51Khz14ImWys2SCctFJHlNKlUQEmspamspbKOU15uBwMYC6ja0vMvKUDyDkWPehenoDoEht7dNztLatVlQ5ud5Fxp009e5MfCDE"
+stripe.api_key = ""
 
 logger = logging.getLogger("commerce")
 logger.setLevel(logging.DEBUG)
@@ -61,6 +61,10 @@ def purchase_price(base, units, discount=0.98):
 class Commerce():
 
     def __init__(self, config):
+
+        stripe.api_key = config["stripe-secret"]
+
+        self.stripe_public = config["stripe-public"] 
 
         self.values = {
             "vat": {
@@ -337,4 +341,13 @@ class Commerce():
             return web.HTTPInternalServerError(
                 body=str(e), content_type="text/plain"
             )
+
+    async def get_payment_key(self, request):
+
+        request["auth"].verify_scope("filing-config")
+        user = request["auth"].user
+
+        return web.json_response({
+            "key": self.stripe_public
+        })
 
