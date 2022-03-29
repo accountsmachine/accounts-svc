@@ -2,28 +2,20 @@
 FROM fedora:35
 
 # FIXME: Clean
-RUN dnf update -y && dnf install -y python3-pip
+RUN dnf update -y && dnf install -y python3-pip && \
+    dnf install -y python3-pyOpenSSL python3-ldap python3-jwt && dnf clean all
 
-RUN pip3 install ixbrl-reporter
+RUN mkdir /root/wheels/ && mkdir /usr/local/am
+ADD wheels/* /root/wheels/
 
-RUN mkdir /usr/local/am/
+RUN pip3 install /root/wheels/gnucash_uk_vat-* \
+    /root/wheels/ixbrl_parse-* \
+    /root/wheels/ixbrl_reporter-* \
+    /root/wheels/jsonnet-* \
+    /root/wheels/accounts_svc-* && rm -rf /root/wheels
 
 ADD ixbrl-reporter-jsonnet/ /usr/local/am/ixbrl-reporter-jsonnet/
 ADD base /usr/local/am/base/
-
-RUN dnf install -y python3-pyOpenSSL python3-ldap python3-jwt
-
-RUN mkdir /root/wheels/
-ADD wheels/* /root/wheels/
-
-RUN pip3 install /root/wheels/gnucash_uk_vat-*
-RUN pip3 install /root/wheels/ixbrl_parse-*
-RUN pip3 install /root/wheels/ixbrl_reporter-*
-RUN pip3 install /root/wheels/jsonnet-*
-RUN pip3 install /root/wheels/accounts_svc-*
-
-RUN dnf clean all
-RUN rm -rf /root/wheels
 
 ADD config-local.json /usr/local/am/config.json
 ADD private.json pubkey1.pem pubkey2.pem /usr/local/am/
