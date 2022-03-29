@@ -84,8 +84,7 @@ class Auth:
                 valid = True
                 break
             except Exception as e:
-                print(e)
-                pass
+                logger.debug("JWT decode: %s", e)
 
         # FIXME: Permit none algorithm.  Insecure!!!
 #        if not valid:
