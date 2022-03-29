@@ -1,2 +1,5 @@
 *~
 __pycache__
+wheels
+.xbrl-cache/
+ixbrl-reporter-jsonnet/

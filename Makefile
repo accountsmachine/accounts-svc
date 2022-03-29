@@ -27,6 +27,9 @@ wheels: setup.py
 	rm -rf wheels && mkdir wheels
 	pip3 wheel -w wheels --no-deps .
 	pip3 wheel -w wheels --no-deps jsonnet
+	pip3 wheel -w wheels --no-deps gnucash-uk-vat
+	pip3 wheel -w wheels --no-deps ixbrl-reporter
+	pip3 wheel -w wheels --no-deps ixbrl-parse
 
 push:
 	podman push --remove-signatures ${CONTAINER}:${VERSION}
