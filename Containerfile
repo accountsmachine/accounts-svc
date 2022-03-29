@@ -1,7 +1,6 @@
 
 FROM fedora:35
 
-# FIXME: Clean
 RUN dnf update -y && dnf install -y python3-pip && \
     dnf install -y python3-pyOpenSSL python3-ldap python3-jwt && dnf clean all
 

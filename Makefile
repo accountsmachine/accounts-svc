@@ -1,5 +1,5 @@
 
-VERSION=0.0.1
+VERSION=0.0.2
 
 JSONNET_REPO=git@github.com:cybermaggedon/ixbrl-reporter-jsonnet
 #REPORTER_REPO=https://github.com/cybermaggedon/ixbrl-reporter
@@ -8,7 +8,6 @@ all: ixbrl-reporter-jsonnet wheels
 
 ixbrl-reporter-jsonnet:
 	(mkdir $@; cd $@; git clone ${JSONNET_REPO} .)
-
 
 NAME=accounts-svc
 REPO=europe-west2-docker.pkg.dev/accounts-machine-dev/accounts-machine
