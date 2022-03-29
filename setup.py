@@ -21,16 +21,18 @@ setuptools.setup(
     python_requires='>=3.6',
     download_url = "https://github.com/accountsmachine/accounts-svc.git/archive/refs/tags/v0.0.1.tar.gz",
     install_requires=[
-
         'py-dmidecode',
-        'jwt',
-        'gnucash_uk_vat',
+        'pyjwt',
+        'gnucash-uk-vat',
         'aiohttp',
         'firebase_admin',
         'jsonnet',
         'secrets',
         'stripe',
-        'piecash'
+        'piecash',
+        'ixbrl-parse',
+        'rdflib',
+        'pandas',
     ],
     scripts=[
         "scripts/am-svc"

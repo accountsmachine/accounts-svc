@@ -23,6 +23,8 @@ RUN dnf clean all
 RUN rm -rf /root/wheels
 
 ADD config-local.json /usr/local/config.json
+ADD private.json /usr/local/
+ADD pubkey1.pem pubkey2.pem /usr/local/
 
 WORKDIR /usr/local
 CMD am-svc config.json

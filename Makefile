@@ -23,7 +23,7 @@ login:
 	    podman login -u oauth2accesstoken --password-stdin \
 	        europe-west2-docker.pkg.dev
 
-wheels:
+wheels: setup.py
 	rm -rf wheels && mkdir wheels
 	pip3 wheel -w wheels --no-deps .
 	pip3 wheel -w wheels --no-deps jsonnet
@@ -33,7 +33,7 @@ push:
 
 start:
 	podman run -d --name ${NAME} \
-	    -p 8081/tcp --expose=8081 \
+	    -p 8081:8081 \
 	    ${CONTAINER}:${VERSION}
 
 stop:
@@ -41,6 +41,4 @@ stop:
 
 clean:
 	rm -rf wheels/
-
-
 
