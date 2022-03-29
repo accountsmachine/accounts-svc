@@ -279,7 +279,7 @@ class Vat():
         
         await state.vat_auth().put(company, token)
 
-        url = "http://localhost:8080/status/%s/vat" % company
+        url = "/status/%s/vat" % company
         page = """
 <html>
     <body>
