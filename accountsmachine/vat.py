@@ -25,14 +25,10 @@ logger = logging.getLogger("vat")
 logger.setLevel(logging.DEBUG)
 
 def get_my_ip():
-
-        # FIXME
-        return '0.0.0.0'
-
-        res = requests.get("http://whatismyip.org")
-        myIp = re.compile('(\d{1,3}\.){3}\d{1,3}').search(res.text).group()
-        if myIp != "":
-            return myIp
+        import socket
+        hostname = socket.gethostname()
+        ip_address = socket.gethostbyname(hostname)
+        return ip_address
 
 # Like VAT, but talks to an API endpoints on localhost:8080.
 class VatHack(hmrc.Vat):
@@ -48,6 +44,7 @@ class VatHack(hmrc.Vat):
         dnt = self.config.get("identity.do-not-track")
         ua = self.config.get("identity.device.user-agent")
         dev_id = self.config.get("identity.device.id")
+        my_ip = self.config.get("server.ip")
 
         mfa = [
 #            ("type", "AUTH_CODE"),
@@ -95,7 +92,7 @@ class VatHack(hmrc.Vat):
         ])
         
         hops = [
-            ("by", self.config.get("server.ip")),
+            ("by", my_ip),
             ("for", client_ip),
         ]
 
@@ -104,7 +101,6 @@ class VatHack(hmrc.Vat):
         ])
 
         versions = [
-#            ("gnucash-uk-vat", "1.3"),
             ("accountsmachine.io", "0.0.1"),
         ]
 
@@ -120,7 +116,7 @@ class VatHack(hmrc.Vat):
             'Gov-Client-Browser-Do-Not-Track': dnt,
             'Gov-Client-Browser-JS-User-Agent': ua,
             'Gov-Client-Device-ID': dev_id,
-#            'Gov-Client-Multi-Factor': mfa,
+            'Gov-Client-Multi-Factor': mfa,
             'Gov-Client-Public-IP': client_ip,
             'Gov-Client-Public-IP-Timestamp': datetime.datetime.utcnow().isoformat(),
             'Gov-Client-Public-Port': client_port,
@@ -128,10 +124,10 @@ class VatHack(hmrc.Vat):
             'Gov-Client-Timezone': self.config.get("identity.device.tz"),
             'Gov-Client-User-IDs': user_ids,
             'Gov-Client-Window-Size': window,
-#            'Gov-Vendor-Forwarded': hops,
-#            'Gov-Vendor-License-IDs': 'n/a',
+            'Gov-Vendor-Forwarded': hops,
+            'Gov-Vendor-License-IDs': '',
             'Gov-Vendor-Product-Name': quote_plus(product),
-#            'Gov-Vendor-Public-IP': self.config.get("server.ip"),
+            'Gov-Vendor-Public-IP': my_ip,
             'Gov-Vendor-Version': versions,
             'Authorization': 'Bearer %s' % self.auth.get("access_token"),
         }
@@ -500,18 +496,23 @@ class Vat():
         if "X-Device-ID" not in request.headers:
             raise RuntimeError("No device ID")
 
-        if "X-Device-ID" not in request.headers:
+        if "X-Device-TZ" not in request.headers:
             raise RuntimeError("No timezone")
 
         host, port = request.transport.get_extra_info("peername")
 
         screen = json.loads(request.headers["X-Screen"])
 
+        # The DNT header is deprecated
+        dnt = "false"
+        if "DNT" in request.headers and request.headers["DNT"] == "1":
+                dnt = "true"
+
         return {
             "application.client-id": "ASD",
             "application.client-secret": "ASD",
             "identity.vrn": "DUNNO",
-            "identity.do-not-track": "0",
+                "identity.do-not-track": dnt,
             "identity.device.user-agent": request.headers["User-Agent"],
             "identity.device.id": request.headers["X-Device-ID"],
             "identity.device.tz": request.headers["X-Device-TZ"],
