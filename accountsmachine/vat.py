@@ -90,11 +90,31 @@ class VatHack(hmrc.Vat):
         user_ids = "&".join([
             urlencode({v[0]: v[1]}) for v in user_ids
         ])
+
+        hops = []
+
+        xff = self.config.get("transport.forwarded")
+
+        if len(xff) > 0:
+
+            src = None
+
+            for hop in xff:
+
+                if src:
+                    hops.append(("by", hop))
+                    hops.append(("for", src))
+
+                src = hop
+
+            # Final hop is to me
+            hops.append(("by", my_ip))
+            hops.append(("for", src))
+
+        else:
         
-        hops = [
-            ("by", my_ip),
-            ("for", client_ip),
-        ]
+            hops.append(("by", my_ip))
+            hops.append(("for", client_ip))
 
         hops = "&".join([
             urlencode({v[0]: v[1]}) for v in hops
@@ -508,9 +528,20 @@ class Vat():
         if "DNT" in request.headers and request.headers["DNT"] == "1":
                 dnt = "true"
 
+        # Get an parse X-Forwarded-For if it exists
+        if "X-Forwared-For" in request.headers:
+            xff = request.headers["X-Forwarded-For"]
+        else:
+            xff = ""
+
+        xff = xff.split(",")
+        xff = [ v.strip() for v in xff ]
+        xff = [v for v in filter(lambda x : x != "", xff)]
+
         return {
             "application.client-id": "ASD",
             "application.client-secret": "ASD",
+            "transport.forwarded": xff,
             "identity.vrn": "DUNNO",
                 "identity.do-not-track": dnt,
             "identity.device.user-agent": request.headers["User-Agent"],
