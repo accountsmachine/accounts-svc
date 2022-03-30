@@ -121,7 +121,8 @@ class VatHack(hmrc.Vat):
         ])
 
         versions = [
-            ("accountsmachine.io", "0.0.1"),
+            ("accounts-svc", "1.0.0"),
+            ("accounts-web", self.config.get("client.version")),
         ]
 
         versions = "&".join([
@@ -129,6 +130,7 @@ class VatHack(hmrc.Vat):
         ])
 
         product = "accountsmachine.io"
+        now = datetime.datetime.utcnow().isoformat()[:-3] + "Z"
 
         # Return headers
         return {
@@ -138,7 +140,7 @@ class VatHack(hmrc.Vat):
             'Gov-Client-Device-ID': dev_id,
             'Gov-Client-Multi-Factor': mfa,
             'Gov-Client-Public-IP': client_ip,
-            'Gov-Client-Public-IP-Timestamp': datetime.datetime.utcnow().isoformat(),
+            'Gov-Client-Public-IP-Timestamp': now,
             'Gov-Client-Public-Port': client_port,
             'Gov-Client-Screens': screens,
             'Gov-Client-Timezone': self.config.get("identity.device.tz"),
@@ -516,6 +518,9 @@ class Vat():
         if "X-Device-ID" not in request.headers:
             raise RuntimeError("No device ID")
 
+        if "X-Client-Version" not in request.headers:
+            raise RuntimeError("No client version")
+
         if "X-Device-TZ" not in request.headers:
             raise RuntimeError("No timezone")
 
@@ -541,9 +546,10 @@ class Vat():
         return {
             "application.client-id": "ASD",
             "application.client-secret": "ASD",
+            "client.version": request.headers["X-Client-Version"],
             "transport.forwarded": xff,
             "identity.vrn": "DUNNO",
-                "identity.do-not-track": dnt,
+            "identity.do-not-track": dnt,
             "identity.device.user-agent": request.headers["User-Agent"],
             "identity.device.id": request.headers["X-Device-ID"],
             "identity.device.tz": request.headers["X-Device-TZ"],
