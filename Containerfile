@@ -22,5 +22,5 @@ ADD private.json pubkey1.pem pubkey2.pem /usr/local/am/
 WORKDIR /usr/local/am
 
 CMD am-svc config.json
-EXPOSE 8081
+EXPOSE 8080
 
