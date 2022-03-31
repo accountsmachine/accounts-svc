@@ -14,12 +14,11 @@
     "jsonnet-base": "ixbrl-reporter-jsonnet/",
     "config-base": "base/",
 
-    "vat-auth-url": "https://vat-test.dev.accountsmachine.io",
-    "vat-api-url": "https://vat-test.dev.accountsmachine.io",
-    "vat-client-id": "id1",
-    "vat-client-secret": "secret1-5053-4e74-bbef-33b294b0e7d6",
+    "vat-auth-url": "https://test-www.tax.service.gov.uk",
+    "vat-api-url": "https://test-api.service.hmrc.gov.uk",
+    "vat-client-id": "cyA5UbJFwCwSozwN7F7OTJEoSpf5",
+    "vat-client-secret": "6a52bea9-a328-49fc-a3ef-69c3095d6b6b",
     "redirect-uri": "https://ui.dev.accountsmachine.io/api/vat/receive-token",
-
     "companies-house-api-key": "638bedcb-eb9d-4c97-b16d-fd28fc5a5739",
 
     "audience": "accounts-machine-dev",

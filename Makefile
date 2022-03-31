@@ -1,5 +1,5 @@
 
-VERSION=0.0.4
+VERSION=0.1.0
 
 JSONNET_REPO=git@github.com:cybermaggedon/ixbrl-reporter-jsonnet
 #REPORTER_REPO=https://github.com/cybermaggedon/ixbrl-reporter
@@ -54,6 +54,9 @@ create-secret:
 	-gcloud secrets delete --quiet accounts-svc-config
 	gcloud secrets create accounts-svc-config \
 	    --data-file=config-${KIND}.json
+
+delete-secret:
+	gcloud secrets delete --quiet accounts-svc-config
 
 container: all
 	podman build -f Containerfile -t ${CONTAINER}:${VERSION} \

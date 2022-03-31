@@ -16,8 +16,8 @@ RUN pip3 install /root/wheels/gnucash_uk_vat-* \
 ADD ixbrl-reporter-jsonnet/ /usr/local/am/ixbrl-reporter-jsonnet/
 ADD base /usr/local/am/base/
 
-ADD config-local.json /usr/local/am/config.json
 ADD private.json pubkey1.pem pubkey2.pem /usr/local/am/
+RUN ln -s /secrets/accounts-svc-config /usr/local/am/config.json 
 
 WORKDIR /usr/local/am
 
