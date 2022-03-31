@@ -107,9 +107,13 @@ class VatHack(hmrc.Vat):
 
                 src = hop
 
+            # The last address in X-Forward-For to the client address
+            hops.append(("by", client_ip))
+            hops.append(("for", src))
+
             # Final hop is to me
             hops.append(("by", my_ip))
-            hops.append(("for", src))
+            hops.append(("for", client_ip))
 
         else:
         
@@ -132,6 +136,11 @@ class VatHack(hmrc.Vat):
         product = "accountsmachine.io"
         now = datetime.datetime.utcnow().isoformat()[:-3] + "Z"
 
+        # So in a cloud run environment, the client IP isn't client_ip
+        # it's the an address in X-Forwared-For
+        if len(xff) > 0:
+                client_ip = xff[0]
+
         # Return headers
         return {
             'Gov-Client-Connection-Method': 'WEB_APP_VIA_SERVER',
@@ -141,7 +150,7 @@ class VatHack(hmrc.Vat):
             'Gov-Client-Multi-Factor': mfa,
             'Gov-Client-Public-IP': client_ip,
             'Gov-Client-Public-IP-Timestamp': now,
-            'Gov-Client-Public-Port': client_port,
+#            'Gov-Client-Public-Port': client_port,
             'Gov-Client-Screens': screens,
             'Gov-Client-Timezone': self.config.get("identity.device.tz"),
             'Gov-Client-User-IDs': user_ids,
@@ -149,7 +158,7 @@ class VatHack(hmrc.Vat):
             'Gov-Vendor-Forwarded': hops,
             'Gov-Vendor-License-IDs': '',
             'Gov-Vendor-Product-Name': quote_plus(product),
-            'Gov-Vendor-Public-IP': my_ip,
+#            'Gov-Vendor-Public-IP': my_ip,
             'Gov-Vendor-Version': versions,
             'Authorization': 'Bearer %s' % self.auth.get("access_token"),
         }

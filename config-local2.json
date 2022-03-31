@@ -27,7 +27,9 @@
 
     "jwt-keys": [
 	"pubkey1.pem", "pubkey2.pem"
-    ]
+    ],
+
+    "application-id": "378b4f4c-ee3f-4645-b513-e2d7775e1a05"
 
 }
 

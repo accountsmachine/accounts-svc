@@ -45,6 +45,8 @@ class Auth:
         self.authreqs = {}
         self.firebase = firebase
 
+        self.app_id = config["application-id"]
+
         self.jwt_secrets = [
             open(v, "r").read()
             for v in config["jwt-keys"]
@@ -169,6 +171,12 @@ class Auth:
 
             uid = str(uuid.uuid4())
 
+            if "X-Application-ID" not in request.headers:
+                raise HTTPUnauthorized()
+
+            if request.headers["X-Application-ID"] != self.app_id:
+                raise HTTPUnauthorized()
+
             # This is a new user.
             profile = {
                 "version": "v1",
@@ -215,7 +223,7 @@ class Auth:
                 )
 
                 firebase_admin.auth.set_custom_user_claims(
-                    uid, { "scope": scope }
+                    uid, { "scope": scope, "application-id": self.app_id }
                 )
 
                 return web.Response()
