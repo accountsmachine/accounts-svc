@@ -1,5 +1,5 @@
 
-VERSION=0.1.0
+VERSION=0.1.2
 
 JSONNET_REPO=git@github.com:cybermaggedon/ixbrl-reporter-jsonnet
 #REPORTER_REPO=https://github.com/cybermaggedon/ixbrl-reporter
@@ -88,4 +88,13 @@ stop:
 
 clean:
 	rm -rf wheels/
+
+SERVICE=accounts-svc
+PROJECT=accounts-machine-dev
+REGION=europe-west1
+
+deploy:
+	gcloud run services update ${SERVICE} \
+	    --project ${PROJECT} --region ${REGION} \
+	    --image ${CONTAINER}:${VERSION}
 

@@ -205,6 +205,8 @@ class Vat():
                 logger.error(e)
 
             i = IxbrlProcess()
+
+            # FIXME: Above error may cause html referenced before assignment
             vat = i.process(html)
 
             return web.json_response(vat)
