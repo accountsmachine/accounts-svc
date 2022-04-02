@@ -545,8 +545,10 @@ class Vat():
                 dnt = "true"
 
         # Get an parse X-Forwarded-For if it exists
-        if "X-Forwared-For" in request.headers:
+        if "X-Forwarded-For" in request.headers:
             xff = request.headers["X-Forwarded-For"]
+        elif "x-forwarded-for" in request.headers:
+            xff = request.headers["x-forwarded-for"]
         else:
             xff = ""
 
