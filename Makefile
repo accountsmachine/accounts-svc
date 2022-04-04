@@ -50,10 +50,16 @@ push-prod: push
 create-secret-dev: KIND=dev
 create-secret-dev: create-secret
 
+SECRET=accounts-svc-config
+USER=accounts-svc@accounts-machine-dev.iam.gserviceaccount.com
+
 create-secret:
 	-gcloud secrets delete --quiet accounts-svc-config
-	gcloud secrets create accounts-svc-config \
+	gcloud secrets create ${SECRET} \
 	    --data-file=config-${KIND}.json
+	gcloud secrets get-iam-policy ${SECRET} > secret-policy.tmp
+	cat secret-policy.json >> secret-policy.tmp
+	gcloud secrets set-iam-policy ${SECRET} secret-policy.tmp
 
 delete-secret:
 	gcloud secrets delete --quiet accounts-svc-config
