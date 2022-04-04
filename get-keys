@@ -1,0 +1,39 @@
+#!/usr/bin/env python3
+
+import requests
+from cryptography import x509
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives import serialization
+
+url="https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com"
+
+print("Get certs...")
+
+resp = requests.get(url)
+
+if resp.status_code != 200:
+    raise RuntimeError("Could not get certs");
+
+certs = resp.json()
+
+i=1
+
+for k in certs:
+
+    cert = certs[k].encode("utf-8")
+    
+    cert = x509.load_pem_x509_certificate(cert)
+
+    pkey = cert.public_key()
+
+    assert (isinstance(pkey, rsa.RSAPublicKey))
+
+    pem = pkey.public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo
+    )
+
+    with open("pubkey" + str(i) + ".pem", "w") as f:
+        f.write(pem.decode("utf-8"))
+
+    
