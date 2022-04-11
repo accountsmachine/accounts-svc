@@ -25,6 +25,11 @@ logger = logging.getLogger("vat")
 logger.setLevel(logging.DEBUG)
 
 def get_my_ip():
+
+        # Cloud run services don't have a public IP
+        return "0.0.0.0"
+
+        # This works on normal machines
         import socket
         hostname = socket.gethostname()
         ip_address = socket.gethostbyname(hostname)

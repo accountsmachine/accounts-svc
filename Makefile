@@ -1,5 +1,5 @@
 
-VERSION=0.1.4
+VERSION=0.9.0
 
 JSONNET_REPO=git@github.com:cybermaggedon/ixbrl-reporter-jsonnet
 #REPORTER_REPO=https://github.com/cybermaggedon/ixbrl-reporter
@@ -98,9 +98,11 @@ clean:
 SERVICE=accounts-svc
 PROJECT=accounts-machine-dev
 REGION=europe-west1
+TAG=v$(subst .,-,${VERSION})
 
 deploy:
 	gcloud run services update ${SERVICE} \
 	    --project ${PROJECT} --region ${REGION} \
-	    --image ${CONTAINER}:${VERSION}
+	    --image ${CONTAINER}:${VERSION} \
+	    --tag ${TAG}
 

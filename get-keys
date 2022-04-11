@@ -19,6 +19,7 @@ certs = resp.json()
 i=1
 
 for k in certs:
+    print(k)
 
     cert = certs[k].encode("utf-8")
     
