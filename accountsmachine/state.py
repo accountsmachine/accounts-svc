@@ -1,6 +1,8 @@
 
 import base64
 
+# Security target: Make sure the caller can't change the uid in other people's
+# data in order to take over.
 class DocKind:
     def __init__(self, collection, state):
         self.collection = collection
@@ -10,9 +12,16 @@ class DocKind:
     def id(self, id):
         return id + "@" + self.user
     async def list(self):
-        return await self.store.get_all(self.collection, "uid", self.user)
+        def discard_uid(x):
+            if "uid" in x: del x["uid"]
+            return x
+        data = await self.store.get_all(self.collection, "uid", self.user)
+        data = [discard_uid(data[v]) for v in data]
+        return  data
     async def get(self, id):
-        return await self.store.get(self.collection, self.id(id))
+        data = await self.store.get(self.collection, self.id(id))
+        del data["uid"]
+        return data
     async def put(self, id, data):
         data["uid"] = self.user
         return await self.store.put(self.collection, self.id(id), data)

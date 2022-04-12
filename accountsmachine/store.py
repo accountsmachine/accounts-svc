@@ -55,7 +55,8 @@ class DocStore:
 
     async def get_all(self, coll, key, value):
         logger.debug("get_all %s" % coll)
-        return self.collection(coll).all(key, value)
+        data = self.collection(coll).all(key, value)
+        return data
 
 class BlobStore:
     def __init__(self, config, firebase):
