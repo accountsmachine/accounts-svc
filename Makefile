@@ -1,5 +1,5 @@
 
-VERSION=0.9.2
+VERSION=0.9.3
 
 JSONNET_REPO=git@github.com:cybermaggedon/ixbrl-reporter-jsonnet
 #REPORTER_REPO=https://github.com/cybermaggedon/ixbrl-reporter
@@ -81,7 +81,7 @@ wheel-deps:
 	pip3 wheel -w $@ --no-deps ixbrl-parse
 
 wheels: setup.py scripts/am-svc $(wildcard */*.py)
-	rm -rf $@ && mkdir $
+	rm -rf $@ && mkdir $@
 	pip3 wheel -w $@ --no-deps .
 
 push:
