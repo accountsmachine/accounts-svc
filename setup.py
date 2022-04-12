@@ -22,7 +22,6 @@ setuptools.setup(
     download_url = "https://github.com/accountsmachine/accounts-svc.git/archive/refs/tags/v0.0.1.tar.gz",
     install_requires=[
         'py-dmidecode',
-        'pyjwt',
         'gnucash-uk-vat',
         'aiohttp',
         'firebase_admin',
