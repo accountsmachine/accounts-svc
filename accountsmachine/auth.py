@@ -166,9 +166,7 @@ class Auth:
             ]
 
             # Initial balance
-            # FIXME: uid is a managed by state.py
             balance = {
-                "uid": uid,
                 "time": datetime.datetime.utcnow().isoformat(),
                 "email": user["email"],
                 "credits": {
@@ -183,7 +181,7 @@ class Auth:
             try:
 
                 await state.user_profile().put(
-                    uid, profile
+                    "profile", profile
                 )
 
                 await state.balance().put(
