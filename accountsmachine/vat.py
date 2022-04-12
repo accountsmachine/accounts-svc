@@ -605,7 +605,6 @@ class Vat():
 
             cli = await self.get_vat_client(user, id, state, request)
 
-            # FIXME: This should be async
             liabs = await cli.get_vat_liabilities(cmp["vrn"], start, end)
 
             return web.json_response([v.to_dict() for v in liabs])            
@@ -638,7 +637,6 @@ class Vat():
 
             cli = await self.get_vat_client(user, id, state, request)
 
-            # FIXME: This should be async
             ret = await cli.get_obligations(cmp["vrn"], start, end)
 
             return web.json_response([v.to_dict() for v in ret])            
@@ -666,7 +664,6 @@ class Vat():
 
             cli = await self.get_vat_client(user, id, state, request)
 
-            # FIXME: This should be async
             ret = await cli.get_open_obligations(cmp["vrn"])
 
             return web.json_response([v.to_dict() for v in ret])            
@@ -699,7 +696,6 @@ class Vat():
 
             cli = await self.get_vat_client(user, id, state, request)
 
-            # FIXME: This should be async
             ret = await cli.get_vat_payments(cmp["vrn"], start, end)
 
             return web.json_response([v.to_dict() for v in ret])            
