@@ -1,0 +1,18 @@
+#!/usr/bin/env python3
+
+import requests
+import json
+
+token="09746205a0485e050816f3f0e995ae61"
+
+headers = {
+    "Authorization": "Bearer " + token,
+    "Accept": "application/vnd.hmrc.1.0+json",
+}
+
+url = "https://test-api.service.hmrc.gov.uk/test/fraud-prevention-headers/vat-mtd/validation-feedback?connectionMethod=WEB_APP_VIA_SERVER"
+
+resp = requests.get(url, headers=headers)
+print(resp.status_code)
+
+print(json.dumps(resp.json(), indent=4))
