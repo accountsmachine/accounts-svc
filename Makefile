@@ -64,7 +64,7 @@ create-secret:
 delete-secret:
 	gcloud secrets delete --quiet accounts-svc-config
 
-container: all
+container: wheel-deps wheels
 	podman build -f Containerfile -t ${CONTAINER}:${VERSION} \
 	    --format docker
 
@@ -73,13 +73,16 @@ login:
 	    podman login -u oauth2accesstoken --password-stdin \
 	        europe-west2-docker.pkg.dev
 
-wheels: setup.py
-	rm -rf wheels && mkdir wheels
-	pip3 wheel -w wheels --no-deps .
-	pip3 wheel -w wheels --no-deps jsonnet
-	pip3 wheel -w wheels --no-deps gnucash-uk-vat
-	pip3 wheel -w wheels --no-deps ixbrl-reporter
-	pip3 wheel -w wheels --no-deps ixbrl-parse
+wheel-deps:
+	rm -rf $@ && mkdir $@
+	pip3 wheel -w $@ --no-deps jsonnet
+	pip3 wheel -w $@ --no-deps gnucash-uk-vat
+	pip3 wheel -w $@ --no-deps ixbrl-reporter
+	pip3 wheel -w $@ --no-deps ixbrl-parse
+
+wheels: setup.py scripts/am-svc $(wildcard */*.py)
+	rm -rf $@ && mkdir $
+	pip3 wheel -w $@ --no-deps .
 
 push:
 	podman push --remove-signatures ${CONTAINER}:${VERSION}
