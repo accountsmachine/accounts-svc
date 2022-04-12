@@ -215,6 +215,7 @@ class Books:
                         "Expenses:VAT Purchases:EU Reverse VAT"
                     ],
                 }
+                await request["state"].books_mapping().put(id, data)
 
             return web.json_response(data)
 
