@@ -179,3 +179,70 @@ class Books:
                 pass
 
             return web.HTTPNotFound()
+
+    async def get_mapping(self, request):
+
+        request["auth"].verify_scope("books")
+        user = request["auth"].user
+
+        try:
+
+            id = request.match_info['id']
+
+            if ".." in id:
+                raise RuntimeError("Invalid id")
+
+            try:
+                data = await request["state"].books_mapping().get(id)
+            except KeyError:
+                data = {
+                    "vat-output-sales": [ "VAT:Output:Sales" ],
+                    "vat-output-acquisitions": [ "VAT:Output:EU" ],
+                    "vat-input": [ "VAT:Input" ],
+                    "vat-total-sales": [
+                        "Assets:Capital Equipment:EU Reverse VAT Purchase",
+                        "Income"
+                    ],
+                    "vat-purchases": [
+                        "Assets:Capital Equipment",
+                        "Expenses:VAT Purchases",
+                        "Expenses:VAT Purchases:EU Reverse VAT"
+                    ],
+                    "vat-goods-supplied": [
+                        "Income:Sales:EU:Goods"
+                    ],
+                    "vat-acquisitions": [
+                        "Expenses:VAT Purchases:EU Reverse VAT"
+                    ],
+                }
+
+            return web.json_response(data)
+
+        except Exception as e:
+            logger.debug("get: %s", e)
+            return web.HTTPInternalServerError(
+                body=str(e), content_type="text/plain"
+            )
+
+    async def put_mapping(self, request):
+
+        request["auth"].verify_scope("books")
+        user = request["auth"].user
+
+        try:
+
+            id = request.match_info['id']
+
+            if ".." in id:
+                raise RuntimeError("Invalid id")
+
+            config = await request.json()
+            await request["state"].books_mapping().put(id, config)
+            return web.Response()
+
+        except Exception as e:
+            logger.debug("put: %s", e)
+
+            return web.HTTPInternalServerError(
+                body=str(e), content_type="text/plain"
+            )

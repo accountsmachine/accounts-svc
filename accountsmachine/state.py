@@ -106,3 +106,5 @@ class State:
     def user_profile(self):
         return self.doc("user-profile")
 
+    def books_mapping(self):
+        return self.doc("books-mapping")

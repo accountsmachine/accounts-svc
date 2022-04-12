@@ -111,6 +111,10 @@ class Api:
                                      self.books.get_summary)])
         self.app.add_routes([web.delete("/books/{id}", self.books.delete)])
         self.app.add_routes([web.get("/books", self.books.get_all)])
+        self.app.add_routes([web.get("/books/{id}/mapping",
+                                     self.books.get_mapping)])
+        self.app.add_routes([web.put("/books/{id}/mapping",
+                                     self.books.put_mapping)])
 
         self.app.add_routes([web.get("/vat/liabilities/{id}",
                                      self.vat.get_liabilities)])
