@@ -199,19 +199,19 @@ class Books:
                     "vat-output-sales": [ "VAT:Output:Sales" ],
                     "vat-output-acquisitions": [ "VAT:Output:EU" ],
                     "vat-input": [ "VAT:Input" ],
-                    "vat-total-sales": [
+                    "total-vatex-sales": [
                         "Assets:Capital Equipment:EU Reverse VAT Purchase",
                         "Income"
                     ],
-                    "vat-purchases": [
+                    "total-vatex-purchases": [
                         "Assets:Capital Equipment",
                         "Expenses:VAT Purchases",
                         "Expenses:VAT Purchases:EU Reverse VAT"
                     ],
-                    "vat-goods-supplied": [
+                    "total-vatex-goods-supplied": [
                         "Income:Sales:EU:Goods"
                     ],
-                    "vat-acquisitions": [
+                    "total-vatex-acquisitions": [
                         "Expenses:VAT Purchases:EU Reverse VAT"
                     ],
                 }

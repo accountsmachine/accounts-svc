@@ -43,7 +43,8 @@ local accts = {
     resource(x):: {
     	"default-logo": import "detail/logo.jsonnet",
 	"cyberapocalypse-logo": import "detail/cyberapocalypse-logo.jsonnet",
-	"signature": import "detail/signature.jsonnet"
+	"signature": import "detail/signature.jsonnet",
+	"mappings": config.report.mappings
     }[x]
 };
 

@@ -170,8 +170,9 @@ class Renderer:
                 "metadata": cmp,
             }
 
-            await books.books(state, company_number, accts_file
-            )
+            await books.books(state, company_number, accts_file)
+
+            mappings = await state.books_mapping().get(company_number)
 
             logo = await self.logo(state, company_number)
             sig = await self.signature(state, id)
@@ -181,6 +182,7 @@ class Renderer:
             cfg["report"]["logo"] = logo
             cfg["report"]["signature"] = sig
             cfg["report"]["today"] = datetime.datetime.now().date().isoformat()
+            cfg["report"]["mappings"] = mappings
 
             data = json.dumps(cfg)
 
