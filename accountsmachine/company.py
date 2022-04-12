@@ -125,6 +125,10 @@ class Company():
             except: pass
 
             try:
+                await request["state"].books_mapping().delete(id)
+            except: pass
+
+            try:
                 await request["state"].booksinfo().delete(id)
             except: pass
 
