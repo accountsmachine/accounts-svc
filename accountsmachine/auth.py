@@ -166,6 +166,7 @@ class Auth:
             ]
 
             # Initial balance
+            # FIXME: uid is a managed by state.py
             balance = {
                 "uid": uid,
                 "time": datetime.datetime.utcnow().isoformat(),

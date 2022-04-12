@@ -16,11 +16,12 @@ class DocKind:
             if "uid" in x: del x["uid"]
             return x
         data = await self.store.get_all(self.collection, "uid", self.user)
-        data = [discard_uid(data[v]) for v in data]
+        data = {v: discard_uid(data[v]) for v in data}
         return  data
     async def get(self, id):
         data = await self.store.get(self.collection, self.id(id))
-        del data["uid"]
+        if "uid" in data:
+            del data["uid"]
         return data
     async def put(self, id, data):
         data["uid"] = self.user
