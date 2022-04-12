@@ -1,7 +1,6 @@
 
 from aiohttp import web
 import secrets
-import jwt
 import time
 from urllib.parse import urlencode, quote_plus
 import json
@@ -46,12 +45,6 @@ class Auth:
         self.firebase = firebase
 
         self.app_id = config["application-id"]
-
-        self.jwt_secrets = [
-            open(v, "r").read()
-            for v in config["jwt-keys"]
-        ]
-
         self.audience = config["audience"]
         self.algorithms = config["algorithms"]
 
@@ -76,29 +69,11 @@ class Auth:
             logger.debug("Bad auth header")
             raise self.auth_header_failure()
 
-        valid = False
-
-        for sec in self.jwt_secrets:
-            try:
-                auth = jwt.decode(toks[1], sec,
-                                  algorithms=self.algorithms,
-                                  audience=self.audience)
-                valid = True
-                break
-            except Exception as e:
-                logger.debug("JWT decode: %s", e)
-
-        # FIXME: Permit none algorithm.  Insecure!!!
-#        if not valid:
-#            try:
-#                auth = jwt.decode(toks[1], None, algorithms=["none"],
-#                                  verify=False)
-#                valid = True
-#            except Exception as e:
-#                pass
-
-        if not valid:
-            logger.debug("JWT not valid")
+        # Verify JWT token
+        try:
+            auth = firebase_admin.auth.verify_id_token(toks[1])
+        except:
+            logger.debug("Token not valid")
             raise self.auth_header_failure()
 
         if (auth["exp"] <= time.time()):
