@@ -6,6 +6,7 @@ import glob
 import logging
 
 from .. state import Company
+from . import standard
 
 logger = logging.getLogger("api.company")
 logger.setLevel(logging.DEBUG)
@@ -16,66 +17,20 @@ class CompanyApi:
         pass
 
     async def get_all(self, request):
-
-        request["auth"].verify_scope("company")
-        user = request["auth"].user
-
-        try:
-            cs = await Company.get_all(request["state"])
-            return web.json_response(cs)
-        except Exception as e:
-            logger.debug("get_all: %s", e)
-            return web.HTTPInternalServerError(
-                body=str(e), content_type="text/plain"
-            )
+        h = standard.get_all(self, "company", Company)
+        return await h(self, request)
 
     async def get(self, request):
-
-        request["auth"].verify_scope("company")
-        user = request["auth"].user
-        id = request.match_info['id']
-
-        c = Company(request["state"], id)
-
-        try:
-            info = await c.get()
-        except KeyError:
-            return web.HTTPNotFound()
-
-        return web.json_response(info)
+        h = standard.get(self, "company", Company)
+        return await h(self, request)
 
     async def put(self, request):
-
-        request["auth"].verify_scope("company")
-        user = request["auth"].user
-        id = request.match_info['id']
-        info = await request.json()
-
-        c = Company(request["state"], id)
-
-        try:
-            await c.put(info)
-            return web.json_response()
-        except Exception as e:
-            return web.HTTPInternalServerError(
-                body=str(e), content_type="text/plain"
-            )
+        h = standard.put(self, "company", Company)
+        return await h(self, request)
 
     async def delete(self, request):
-
-        request["auth"].verify_scope("company")
-        user = request["auth"].user
-        id = request.match_info['id']
-
-        c = Company(request["state"], id)
-
-        try:
-            await c.delete()
-            return web.json_response()
-        except Exception as e:
-            return web.HTTPInternalServerError(
-                body=str(e), content_type="text/plain"
-            )
+        h = standard.delete(self, "company", Company)
+        return await h(self, request)
 
     async def upload_logo(self, request):
 

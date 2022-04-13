@@ -5,6 +5,7 @@ import glob
 import logging
 
 from .. state import Filing
+from . import standard
 
 logger = logging.getLogger("api.filing")
 logger.setLevel(logging.DEBUG)
@@ -15,66 +16,20 @@ class FilingApi():
         pass
 
     async def get_all(self, request):
-
-        request["auth"].verify_scope("filing-config")
-        user = request["auth"].user
-
-        try:
-            i = await Filing.get_all(request["state"])
-            return web.json_response(i)
-        except Exception as e:
-            logger.debug("get_all: %s", e)
-            return web.HTTPInternalServerError(
-                body=str(e), content_type="text/plain"
-            )
+        h = standard.get_all(self, "filing-config", Filing)
+        return await h(self, request)
 
     async def get(self, request):
-
-        request["auth"].verify_scope("filing-config")
-        user = request["auth"].user
-        id = request.match_info['id']
-
-        o = Filing(request["state"], id)
-
-        try:
-            info = await o.get()
-        except KeyError:
-            return web.HTTPNotFound()
-
-        return web.json_response(info)
+        h = standard.get(self, "filing-config", Filing)
+        return await h(self, request)
 
     async def put(self, request):
-
-        request["auth"].verify_scope("filing-config")
-        user = request["auth"].user
-        id = request.match_info['id']
-        info = await request.json()
-
-        f = Filing(request["state"], id)
-
-        try:
-            await f.put(info)
-            return web.json_response()
-        except Exception as e:
-            return web.HTTPInternalServerError(
-                body=str(e), content_type="text/plain"
-            )
+        h = standard.put(self, "filing-config", Filing)
+        return await h(self, request)
 
     async def delete(self, request):
-
-        request["auth"].verify_scope("filing-config")
-        user = request["auth"].user
-        id = request.match_info['id']
-
-        f = Filing(request["state"], id)
-
-        try:
-            await f.delete()
-            return web.json_response()
-        except Exception as e:
-            return web.HTTPInternalServerError(
-                body=str(e), content_type="text/plain"
-            )
+        h = standard.delete(self, "filing-config", Filing)
+        return await h(self, request)
 
     async def upload_signature(self, request):
 
