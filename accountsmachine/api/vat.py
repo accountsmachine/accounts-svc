@@ -21,7 +21,7 @@ import gnucash_uk_vat.hmrc as hmrc
 import gnucash_uk_vat.model as model
 import gnucash_uk_vat.auth as auth
 
-logger = logging.getLogger("vat")
+logger = logging.getLogger("api.vat")
 logger.setLevel(logging.DEBUG)
 
 def get_my_ip():

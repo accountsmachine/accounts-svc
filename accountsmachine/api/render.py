@@ -18,7 +18,7 @@ from ixbrl_reporter.taxonomy import Taxonomy
 from .. ixbrl_process import IxbrlProcess
 from .. state.books import Books
 
-logger = logging.getLogger("render")
+logger = logging.getLogger("api.render")
 logger.setLevel(logging.DEBUG)
 
 class RendererApi:

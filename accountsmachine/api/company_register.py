@@ -5,7 +5,7 @@ import glob
 import logging
 import base64
 
-logger = logging.getLogger("company-register")
+logger = logging.getLogger("api.company-register")
 logger.setLevel(logging.INFO)
 
 class CompanyRegisterApi():

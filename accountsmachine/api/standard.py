@@ -12,7 +12,6 @@ def get_all(self, scope, cls):
             i = await cls.get_all(request["state"])
             return web.json_response(i)
         except Exception as e:
-            logger.debug("get_all: %s", e)
             return web.HTTPInternalServerError(
                 body=str(e), content_type="text/plain"
             )

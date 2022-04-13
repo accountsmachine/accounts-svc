@@ -9,7 +9,7 @@ import logging
 
 from .. ixbrl_process import IxbrlProcess
 
-logger = logging.getLogger("accounts")
+logger = logging.getLogger("api.accounts")
 logger.setLevel(logging.DEBUG)
 
 class AccountsApi:

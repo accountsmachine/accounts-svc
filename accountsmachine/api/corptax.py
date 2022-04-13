@@ -9,7 +9,7 @@ import logging
 
 from .. ixbrl_process import IxbrlProcess
 
-logger = logging.getLogger("corptax")
+logger = logging.getLogger("api.corptax")
 logger.setLevel(logging.DEBUG)
 
 class CorptaxApi():

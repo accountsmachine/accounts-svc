@@ -3,6 +3,10 @@ import json
 from aiohttp import web
 import aiohttp
 import glob
+import logging
+
+logger = logging.getLogger("api.status")
+logger.setLevel(logging.DEBUG)
 
 class StatusApi():
 

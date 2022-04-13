@@ -15,7 +15,7 @@ import firebase_admin.auth
 
 from .. state import State
 
-logger = logging.getLogger("auth")
+logger = logging.getLogger("api.auth")
 logger.setLevel(logging.INFO)
 
 class RequestAuth:

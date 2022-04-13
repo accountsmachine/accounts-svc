@@ -12,7 +12,7 @@ import copy
 import stripe
 stripe.api_key = ""
 
-logger = logging.getLogger("commerce")
+logger = logging.getLogger("api.commerce")
 logger.setLevel(logging.DEBUG)
 
 def purchase_price(base, units, discount=0.98):
