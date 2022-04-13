@@ -10,20 +10,19 @@ import logging
 import firebase_admin
 from firebase_admin import credentials
 
-from . store import Store
-from . state import State
-from . vat import Vat
-from . render import Renderer
-from . company import Company
-from . auth import Auth
-from . filing import Filing
-from . books import Books
-from . company_register import CompanyRegister
-from . status import Status
-from . corptax import Corptax
-from . accounts import Accounts
-from . firebase import Firebase
-from . commerce import Commerce
+from .. state import Store, State
+from .. vat import Vat
+from .. render import Renderer
+from .. company import Company
+from .. auth import Auth
+from .. filing import Filing
+from . books import BooksApi
+from .. company_register import CompanyRegister
+from .. status import Status
+from .. corptax import Corptax
+from .. accounts import Accounts
+from .. firebase import Firebase
+from .. commerce import Commerce
 
 logger = logging.getLogger("api")
 logger.setLevel(logging.DEBUG)
@@ -54,7 +53,7 @@ class Api:
 
         self.store = Store(self.config, self.firebase)
         self.auth = Auth(self.config, self.store, self.firebase)
-        self.books = Books()
+        self.books = BooksApi()
         self.company = Company()
         self.creg = CompanyRegister(self.config)
         self.filing = Filing()
