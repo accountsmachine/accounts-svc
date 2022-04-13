@@ -16,7 +16,7 @@ import firebase_admin.auth
 from . state import State
 
 logger = logging.getLogger("auth")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 class RequestAuth:
     def __init__(self, user, scope, auth):
@@ -25,7 +25,7 @@ class RequestAuth:
         self.scope = scope
     def verify_scope(self, scope):
         if scope not in self.scope:
-            logger.debug("Scope forbidden: %s", scope)
+            logger.info("Scope forbidden: %s", scope)
             raise this.scope_invalid()
     def scope_invalid(self):
         return web.HTTPForbidden(
@@ -62,22 +62,22 @@ class Auth:
         toks = request.headers["Authorization"].split(" ")
 
         if len(toks) != 2:
-            logger.debug("Bad auth header")
+            logger.info("Bad auth header")
             raise self.auth_header_failure()
 
         if toks[0] != "Bearer":
-            logger.debug("Bad auth header")
+            logger.info("Bad auth header")
             raise self.auth_header_failure()
 
         # Verify JWT token
         try:
             auth = firebase_admin.auth.verify_id_token(toks[1])
         except:
-            logger.debug("Token not valid")
+            logger.info("Token not valid")
             raise self.auth_header_failure()
 
         if (auth["exp"] <= time.time()):
-            logger.debug("Token expired.")
+            logger.info("Token expired.")
             raise self.auth_header_failure()
 
         if not auth["email_verified"]:
@@ -121,6 +121,16 @@ class Auth:
             content_type="application/json"
         )
 
+    def bad_domain(self):
+        return web.HTTPUnauthorized(
+            text=json.dumps({
+                "error_message":
+                "Your email address is not in an authorised domain",
+                "code": "auth-wrong-domain"
+            }),
+            content_type="application/json"
+        )
+
     @web.middleware
     async def verify(self, request, handler):
 
@@ -147,10 +157,16 @@ class Auth:
             uid = str(uuid.uuid4())
 
             if "X-Application-ID" not in request.headers:
-                raise HTTPUnauthorized()
+                return HTTPUnauthorized()
+        
+            if self.domain:
+                email = user["email"]
+                if not email.endswith("@" + self.domain):
+                    logger.info("User registered email with wrong domain")
+                    return self.bad_domain()
 
             if request.headers["X-Application-ID"] != self.app_id:
-                raise HTTPUnauthorized()
+                return HTTPUnauthorized()
 
             # This is a new user.
             profile = {
@@ -204,24 +220,29 @@ class Auth:
 
             except Exception as e:
 
+                logger.info("User create failed for %s", uid)
+
                 # Tidy up, back-track
                 try:
-                    state.user_profile().delete(uid)
-                except: pass
+                    await state.user_profile().delete("profile")
+                except Exception as f:
+                    logger.info("Exception: %s", f)
 
                 try:
-                    state.balance().delete(uid)
-                except: pass
+                    await state.balance().delete("balance")
+                except Exception as f:
+                    logger.info("Exception: %s", f)
 
                 try:
                     firebase_admin.auth.delete_user(uid)
-                except: pass
+                except Exception as f:
+                    logger.info("Exception (delete_user): %s", f)
 
                 raise e
 
         except Exception as e:
             
-            logger.debug("put: %s", e)
+            logger.info("register_user: %s", e)
 
             return web.HTTPInternalServerError(
                 body=str(e), content_type="text/plain"
@@ -237,7 +258,7 @@ class Auth:
             return web.Response()
 
         except Exception as e:
-            logger.debug("delete: %s", e)
+            logger.debug("delete_user: %s", e)
 
             return web.HTTPInternalServerError(
                 body=str(e), content_type="text/plain"
