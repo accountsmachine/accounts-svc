@@ -9,7 +9,7 @@ from .. state import Books
 
 from ixbrl_reporter.accounts import get_class
 
-logger = logging.getLogger("books")
+logger = logging.getLogger("api.books")
 logger.setLevel(logging.DEBUG)
 
 class BooksApi:
@@ -37,10 +37,7 @@ class BooksApi:
 
         books = Books(request["state"], id)
 
-        try:
-            info = await books.get_mapping()
-        except:
-            return web.HTTPNotFound()
+        info = await books.get_mapping()
 
         return web.json_response(info)
 

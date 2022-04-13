@@ -13,7 +13,7 @@ from firebase_admin import credentials
 from .. state import Store, State
 from .. vat import Vat
 from .. render import Renderer
-from .. company import Company
+from . company import CompanyApi
 from .. auth import Auth
 from .. filing import Filing
 from . books import BooksApi
@@ -54,7 +54,7 @@ class Api:
         self.store = Store(self.config, self.firebase)
         self.auth = Auth(self.config, self.store, self.firebase)
         self.books = BooksApi()
-        self.company = Company()
+        self.company = CompanyApi()
         self.creg = CompanyRegister(self.config)
         self.filing = Filing()
         self.renderer = Renderer(self.config)
