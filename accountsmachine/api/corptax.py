@@ -16,7 +16,7 @@ class CorptaxApi():
     def __init__(self):
         pass
 
-    async def background_submit(self, state, books, renderer, id, kind):
+    async def background_submit(self, state, renderer, id, kind):
 
         try:
 
@@ -34,7 +34,7 @@ class CorptaxApi():
 
             try:
                 html = await renderer.render(
-                    state, books, renderer, id, kind
+                    state, renderer, id, kind
                 )
 
                 i = IxbrlProcess()
@@ -94,7 +94,7 @@ Filing complete."""
             kind = "corptax"
 
             asyncio.create_task(
-                self.background_submit(request["state"], request["books"],
+                self.background_submit(request["state"], 
                                        request["renderer"], id, kind)
             )
 
