@@ -25,7 +25,7 @@ class Books:
         await self.state.books().delete(self.id)
 
     def default_mapping(self):
-        data = {
+        return {
             "vat-output-sales": [ "VAT:Output:Sales" ],
             "vat-output-acquisitions": [ "VAT:Output:EU" ],
             "vat-input": [ "VAT:Input" ],
@@ -58,6 +58,21 @@ class Books:
     @staticmethod
     async def get_all_info(state):
         return await state.booksinfo().list()
+
+    async def create_temp_file(self, tmp_file):
+
+        class FileContext:
+            def __init__(self, books, file):
+                self.file = file
+                open(file, "wb").write(books)
+            def __enter__(self):
+                return self.file
+            def __exit__(self, type, value, traceback):
+                os.remove(self.file)
+
+        books = await self.state.books().get(self.id)
+
+        return FileContext(books, tmp_file)
 
     async def open_accounts(self, tmp_file):
 

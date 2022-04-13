@@ -23,73 +23,73 @@ class Company:
 
     async def delete(self):
 
-        for fid in await this.state.filing_config().list():
+        for fid in await self.state.filing_config().list():
 
-            filing = await request["state"].filing_config().get(fid)
+            filing = await self.state.filing_config().get(fid)
 
-            if "company" in filing and filing["company"] == id:
+            if "company" in filing and filing["company"] == self.id:
 
                 try:
-                    await request["state"].filing_report().delete(fid)
+                    await self.state.filing_report().delete(fid)
                 except:
                     pass
 
                 try:
-                    await request["state"].filing_data().delete(fid)
+                    await self.state.filing_data().delete(fid)
                 except:
                     pass
 
                 try:
-                    await request["state"].filing_status().delete(fid)
+                    await self.state.filing_status().delete(fid)
                 except:
                     pass
 
                 try:
-                    await request["state"].signature_info().delete(fid)
+                    await self.state.signature_info().delete(fid)
                 except:
                     pass
 
                 try:
-                    await request["state"].signature().delete(fid)
+                    await self.state.signature().delete(fid)
                 except:
                     pass
 
-                await request["state"].filing_config().delete(fid)
+                await self.state.filing_config().delete(fid)
 
         try:
-            await request["state"].books().delete(id)
+            await self.state.books().delete(self.id)
         except: pass
 
         try:
-            await request["state"].books_mapping().delete(id)
+            await self.state.books_mapping().delete(self.id)
         except: pass
 
         try:
-            await request["state"].booksinfo().delete(id)
+            await self.state.booksinfo().delete(self.id)
         except: pass
 
         try:
-            await request["state"].logo().delete(id)
+            await self.state.logo().delete(self.id)
         except: pass
 
         try:
-            await request["state"].logoinfo().delete(id)
+            await self.state.logoinfo().delete(self.id)
         except: pass
 
         try:
-            await request["state"].vat_auth().delete(id)
+            await self.state.vat_auth().delete(self.id)
         except: pass
 
         try:
-            await request["state"].corptax_auth().delete(id)
+            await self.state.corptax_auth().delete(self.id)
         except: pass
 
         try:
-            await request["state"].accounts_auth().delete(id)
+            await self.state.accounts_auth().delete(self.id)
         except: pass
 
         try:
-            await request["state"].company().delete(id)
+            await self.state.company().delete(self.id)
         except: pass
 
         return web.Response()

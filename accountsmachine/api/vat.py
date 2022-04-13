@@ -203,7 +203,7 @@ class VatApi():
 
             try:
                 html = await request["renderer"].render(
-                    request["state"], request["books"], request["renderer"],
+                    request["state"], request["renderer"],
                     id, "vat"
                 )
             except Exception as e:
@@ -329,7 +329,7 @@ class VatApi():
         return web.Response(body=page, content_type="text/html")
 
     async def background_submit(
-            self, user, state, books, renderer, id, kind, request
+            self, user, state, renderer, id, kind, request
     ):
 
         log_stream = StringIO()
@@ -430,7 +430,7 @@ class VatApi():
                 # Billing written
 
                 html = await renderer.render(
-                    state, books, renderer, id, kind
+                    state, renderer, id, kind
                 )
 
                 i = IxbrlProcess()
@@ -516,7 +516,7 @@ class VatApi():
                     )
 
             asyncio.create_task(
-                self.background_submit(user, request["state"], request["books"],
+                self.background_submit(user, request["state"], 
                                        request["renderer"], id, kind, request)
             )
 

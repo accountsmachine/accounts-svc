@@ -16,6 +16,7 @@ from ixbrl_reporter.data_source import DataSource
 from ixbrl_reporter.taxonomy import Taxonomy
 
 from .. ixbrl_process import IxbrlProcess
+from .. state.books import Books
 
 logger = logging.getLogger("render")
 logger.setLevel(logging.DEBUG)
@@ -150,9 +151,7 @@ class RendererApi:
         obj = self.process_jsonnet(kind, config)
         return self.process_to_html(obj)
 
-    async def render(self, state, books, renderer, id, kind):
-        
-        accts_file = "tmp." + str(uuid.uuid4()) + ".dat"
+    async def render(self, state, renderer, id, kind):
 
         try:
 
@@ -170,25 +169,27 @@ class RendererApi:
                 "metadata": cmp,
             }
 
-            await books.books(state, company_number, accts_file)
+            books = Books(state, company_number)
+        
+            tmp_file = "tmp." + str(uuid.uuid4()) + ".dat"
 
             mappings = await state.books_mapping().get(company_number)
-
             logo = await self.logo(state, company_number)
             sig = await self.signature(state, id)
-            
-            cfg["report"]["structure"]["accounts_file"] = accts_file
-            cfg["report"]["structure"]["accounts_kind"] = "piecash"
-            cfg["report"]["logo"] = logo
-            cfg["report"]["signature"] = sig
-            cfg["report"]["today"] = datetime.datetime.now().date().isoformat()
-            cfg["report"]["mappings"] = mappings
 
-            data = json.dumps(cfg)
+            today = datetime.datetime.now().date().isoformat()
 
-            html = renderer.render_accounts_html(kind, data)
+            with await books.create_temp_file(tmp_file) as f:
+                cfg["report"]["structure"]["accounts_file"] = tmp_file
+                cfg["report"]["structure"]["accounts_kind"] = "piecash"
+                cfg["report"]["logo"] = logo
+                cfg["report"]["signature"] = sig
+                cfg["report"]["today"] = today
+                cfg["report"]["mappings"] = mappings
 
-            os.remove(accts_file)
+                data = json.dumps(cfg)
+
+                html = renderer.render_accounts_html(kind, data)
 
             return html
 
@@ -211,10 +212,7 @@ class RendererApi:
 
             cfg = await request["state"].filing_config().get(id)
 
-            html = await self.render(
-                request["state"], request["books"], self,
-                id, cfg["kind"]
-            )
+            html = await self.render(request["state"], self, id, cfg["kind"])
 
             return web.Response(text=html, content_type="text/html")
 
