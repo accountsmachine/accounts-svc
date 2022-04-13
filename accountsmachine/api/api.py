@@ -87,11 +87,11 @@ class Api:
         self.app.add_routes([web.get("/company/{id}/logo",
                                      self.company.get_logo)])
 
-        self.app.add_routes([web.get("/filings", self.filing.get_filings)])
-        self.app.add_routes([web.get("/filing/{id}", self.filing.get_filing)])
-        self.app.add_routes([web.put("/filing/{id}", self.filing.put_filing)])
+        self.app.add_routes([web.get("/filings", self.filing.get_all)])
+        self.app.add_routes([web.get("/filing/{id}", self.filing.get)])
+        self.app.add_routes([web.put("/filing/{id}", self.filing.put)])
         self.app.add_routes([web.delete("/filing/{id}",
-                                        self.filing.delete_filing)])
+                                        self.filing.delete)])
         self.app.add_routes([web.post("/filing/{id}/signature",
                                       self.filing.upload_signature)])
         self.app.add_routes([web.get("/filing/{id}/signature",

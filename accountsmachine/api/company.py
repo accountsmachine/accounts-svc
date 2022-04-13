@@ -21,7 +21,7 @@ class CompanyApi:
         user = request["auth"].user
 
         try:
-            cs = await request["state"].company().list()
+            cs = await Company.get_all(request["state"])
             return web.json_response(cs)
         except Exception as e:
             logger.debug("get_all: %s", e)

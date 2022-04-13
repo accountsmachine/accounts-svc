@@ -4,7 +4,9 @@ from aiohttp import web
 import glob
 import logging
 
-logger = logging.getLogger("filing")
+from .. state import Filing
+
+logger = logging.getLogger("api.filing")
 logger.setLevel(logging.DEBUG)
 
 class FilingApi():
@@ -12,116 +14,64 @@ class FilingApi():
     def __init__(self):
         pass
 
-    async def get_filings(self, request):
+    async def get_all(self, request):
 
         request["auth"].verify_scope("filing-config")
         user = request["auth"].user
 
         try:
-
-            resp = await request["state"].filing_config().list()
-            return web.json_response(
-                resp,
-                headers={'X-Object-Type': 'FilingItem[]'}
-            )
-
+            i = await Filing.get_all(request["state"])
+            return web.json_response(i)
         except Exception as e:
-            logger.debug("Exception: %s", e)
+            logger.debug("get_all: %s", e)
             return web.HTTPInternalServerError(
                 body=str(e), content_type="text/plain"
             )
 
-    async def get_filing(self, request):
+    async def get(self, request):
 
         request["auth"].verify_scope("filing-config")
         user = request["auth"].user
+        id = request.match_info['id']
+
+        o = Filing(request["state"], id)
 
         try:
+            info = await o.get()
+        except KeyError:
+            return web.HTTPNotFound()
 
-            id = request.match_info['id']
+        return web.json_response(info)
 
-            if ".." in id:
-                raise RuntimeError("Invalid id")
+    async def put(self, request):
 
-            data = await request["state"].filing_config().get(id)
+        request["auth"].verify_scope("filing-config")
+        user = request["auth"].user
+        id = request.match_info['id']
+        info = await request.json()
 
-            return web.json_response(
-                data,
-                headers={'X-Object-Type': 'FilingItem'}
-            )
+        f = Filing(request["state"], id)
 
+        try:
+            await f.put(info)
+            return web.json_response()
         except Exception as e:
-            logger.debug("Exception: %s", e)
             return web.HTTPInternalServerError(
                 body=str(e), content_type="text/plain"
             )
 
-    async def put_filing(self, request):
+    async def delete(self, request):
 
         request["auth"].verify_scope("filing-config")
         user = request["auth"].user
+        id = request.match_info['id']
+
+        f = Filing(request["state"], id)
 
         try:
-
-            id = request.match_info['id']
-
-            if ".." in id:
-                raise RuntimeError("Invalid id")
-
-            config = await request.json()
-            await request["state"].filing_config().put(id, config)
-            return web.Response()
-
+            await f.delete()
+            return web.json_response()
         except Exception as e:
-            logger.debug("Exception: %s", e)
-
-            return web.HTTPInternalServerError(
-                body=str(e), content_type="text/plain"
-            )
-
-    async def delete_filing(self, request):
-
-        request["auth"].verify_scope("filing-config")
-        user = request["auth"].user
-
-        try:
-
-            id = request.match_info['id']
-
-            if ".." in id:
-                raise RuntimeError("Invalid id")
-
-            try:
-                await request["state"].filing_report().delete(id)
-            except:
-                pass
-
-            try:
-                await request["state"].filing_data().delete(id)
-            except:
-                pass
-
-            try:
-                await request["state"].filing_status().delete(id)
-            except:
-                pass
-
-            try:
-                await request["state"].signature_info().delete(id)
-            except:
-                pass
-
-            try:
-                await request["state"].signature().delete(id)
-            except:
-                pass
-
-            await request["state"].filing_config().delete(id)
-            return web.Response()
-
-        except Exception as e:
-            logger.debug("Exception: %s", e)
-
             return web.HTTPInternalServerError(
                 body=str(e), content_type="text/plain"
             )
@@ -130,13 +80,11 @@ class FilingApi():
 
         request["auth"].verify_scope("filing-config")
         user = request["auth"].user
+        id = request.match_info['id']
+
+        f = Filing(request["state"], id)
 
         try:
-
-            id = request.match_info['id']
-
-            if ".." in id:
-                raise RuntimeError("Invalid id")
 
             reader = await request.multipart()
 
@@ -164,10 +112,7 @@ class FilingApi():
                         size += len(chunk)
                         payload += chunk
 
-                    await request["state"].signature().put(id, payload)
-                    await request["state"].signature_info().put(id, {
-                        "content-type": ctype,
-                    })
+                    await f.put_signature(payload, ctype)
 
             return web.Response()
 
@@ -181,85 +126,50 @@ class FilingApi():
 
         request["auth"].verify_scope("filing-config")
         user = request["auth"].user
+        id = request.match_info['id']
 
-        try:
+        f = Filing(request["state"], id)
 
-            id = request.match_info['id']
+        img, ctype = await f.get_signature()
 
-            if ".." in id:
-                raise RuntimeError("Invalid id")
-
-            info = await request["state"].signature_info().get(id)
-            ctype = info["content-type"]
-
-            data = await request["state"].signature().get(id)
-
-            return web.Response(body=data, content_type=ctype)
-
-        except Exception as e:
-            logger.debug("Exception: %s", e)
-            return web.HTTPInternalServerError(
-                body=str(e), content_type="text/plain"
-            )
+        return web.Response(body=img, content_type=ctype)
 
     async def get_report(self, request):
 
         request["auth"].verify_scope("filing-config")
         user = request["auth"].user
+        id = request.match_info['id']
 
-        try:
+        f = Filing(request["state"], id)
 
-            id = request.match_info['id']
+        data = await f.get_report()
+        text = data.decode("utf-8")
 
-            data = await request["state"].filing_report().get(id)
-            
-            text = data.decode("utf-8")
-
-            return web.Response(body=text, content_type="text/html")
-
-        except Exception as e:
-            logger.debug("Exception: %s", e)
-            return web.HTTPInternalServerError(
-                body=str(e), content_type="text/plain"
-            )
+        return web.Response(body=text, content_type="text/html")
 
     async def get_data(self, request):
 
         request["auth"].verify_scope("filing-config")
         user = request["auth"].user
+        id = request.match_info['id']
 
-        try:
+        f = Filing(request["state"], id)
 
-            id = request.match_info['id']
+        data = await f.get_data()
 
-            data = await request["state"].filing_data().get(id)
-
-            return web.json_response(data)
-
-        except Exception as e:
-            logger.debug("Exception: %s", e)
-            return web.HTTPInternalServerError(
-                body=str(e), content_type="text/plain"
-            )
+        return web.json_response(data)
 
     async def get_status(self, request):
 
         request["auth"].verify_scope("filing-config")
         user = request["auth"].user
+        id = request.match_info['id']
 
-        try:
+        f = Filing(request["state"], id)
 
-            id = request.match_info['id']
+        data = await f.get_status()
 
-            status = await request["state"].filing_status().get(id)
-
-            return web.json_response(status)
-
-        except Exception as e:
-            logger.debug("Exception: %s", e)
-            return web.HTTPInternalServerError(
-                body=str(e), content_type="text/plain"
-            )
+        return web.json_response(data)
 
     async def move_draft(self, request):
 
