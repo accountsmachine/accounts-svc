@@ -5,6 +5,11 @@ import logging
 
 logging.basicConfig(level=logging.DEBUG)
 
+logging.getLogger("cachecontrol.controller").setLevel(logging.ERROR)
+logging.getLogger("google.auth.transport.requests").setLevel(logging.ERROR)
+logging.getLogger("urllib3.connectionpool").setLevel(logging.ERROR)
+
+
 from accountsmachine.api import Api
 
 if len(sys.argv) != 2:
