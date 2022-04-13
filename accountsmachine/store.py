@@ -5,7 +5,6 @@ import logging
 import asyncio
 import io
 
-#from google.cloud import firestore
 from google.cloud import storage
 from firebase_admin import firestore
 
@@ -26,9 +25,10 @@ class Collection:
     def __delitem__(self, key):
         self.collection.document(key).delete()
     def all(self, key, value):
+        docs = [v for v in self.collection.where(key, '==', value).stream()]
         return {
             doc.id.split("@")[0]: doc.to_dict()
-            for doc in self.collection.where(key, '==', value).stream()
+            for doc in docs
         }
 
 class DocStore:

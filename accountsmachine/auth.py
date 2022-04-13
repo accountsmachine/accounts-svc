@@ -30,7 +30,7 @@ class RequestAuth:
     def scope_invalid(self):
         return web.HTTPForbidden(
             text=json.dumps({
-                "error_message": "You do not have permission",
+                "message": "You do not have permission",
                 "code": "no-permission"
             }),
             content_type="application/json"
@@ -106,7 +106,7 @@ class Auth:
     def email_not_verified(self):
         return web.HTTPUnauthorized(
             text=json.dumps({
-                "error_message": "Email not verified",
+                "message": "Email not verified",
                 "code": "email-not-verified"
             }),
             content_type="application/json"
@@ -115,7 +115,7 @@ class Auth:
     def auth_header_failure(self):
         return web.HTTPUnauthorized(
             text=json.dumps({
-                "error_message": "Authorization not present",
+                "message": "Authorization not present",
                 "code": "auth-not-present"
             }),
             content_type="application/json"
@@ -124,7 +124,7 @@ class Auth:
     def bad_domain(self):
         return web.HTTPUnauthorized(
             text=json.dumps({
-                "error_message":
+                "message":
                 "Your email address is not in an authorised domain",
                 "code": "auth-wrong-domain"
             }),

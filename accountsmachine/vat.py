@@ -265,7 +265,7 @@ class Vat():
         if state not in self.token_states:
                 raise web.HTTPUnauthorized(
                         text=json.dumps({
-                                "error_message": "VAT token not valid",
+                                "message": "VAT token not valid",
                                 "code": "vat-token-invalid"
                         }),
                         content_type="application/json"
