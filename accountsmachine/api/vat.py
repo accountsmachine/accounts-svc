@@ -605,9 +605,15 @@ class VatApi():
 
             cli = await self.get_vat_client(user, id, state, request)
 
-            l = await cli.get_vat_liabilities(cmp["vrn"], start, end)
-            p = await cli.get_vat_payments(cmp["vrn"], start, end)
-            o = await cli.get_obligations(cmp["vrn"], start, end)
+#            l = await cli.get_vat_liabilities(cmp["vrn"], start, end)
+#            p = await cli.get_vat_payments(cmp["vrn"], start, end)
+#            o = await cli.get_obligations(cmp["vrn"], start, end)
+
+            l, p, o = await asyncio.gather(
+                    cli.get_vat_liabilities(cmp["vrn"], start, end),
+                    cli.get_vat_payments(cmp["vrn"], start, end),
+                    cli.get_obligations(cmp["vrn"], start, end)
+            )
 
             return web.json_response({
                 "liabilities": [v.to_dict() for v in l],
