@@ -35,8 +35,8 @@ def get_my_ip():
         ip_address = socket.gethostbyname(hostname)
         return ip_address
 
-# Like VAT, but talks to an API endpoints on localhost:8080.
-class VatHack(hmrc.Vat):
+# Like VAT, but talks to configuration endpoints
+class VatEndpoint(hmrc.Vat):
     def __init__(self, config, auth):
         super().__init__(config, auth)
         self.oauth_base = config["vat-auth-url"]
@@ -168,7 +168,7 @@ class VatHack(hmrc.Vat):
             'Authorization': 'Bearer %s' % self.auth.get("access_token"),
         }
 
-class AuthHack(auth.Auth):
+class AuthEndpoint(auth.Auth):
     def __init__(self, auth):
         self.auth = auth
     def write(self):
@@ -723,9 +723,8 @@ class VatApi():
             raise("No VAT auth stored.  "
                   "You should authenticate with the VAT service")
 
-        auth = AuthHack(vauth)
-
-        h = VatHack(config, auth)
+        auth = AuthEndpoint(vauth)
+        h = VatEndpoint(config, auth)
 
         # Refresh if needed.
         if "access_token" in auth.auth:
