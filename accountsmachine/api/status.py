@@ -4,7 +4,7 @@ from aiohttp import web
 import aiohttp
 import glob
 
-class Status():
+class StatusApi():
 
     def __init__(self):
         pass

@@ -58,7 +58,7 @@ def purchase_price(base, units, discount=0.98):
 #     }
 # }
 
-class Commerce():
+class CommerceApi():
 
     def __init__(self, config):
 

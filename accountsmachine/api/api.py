@@ -11,18 +11,19 @@ import firebase_admin
 from firebase_admin import credentials
 
 from .. state import Store, State
-from .. vat import Vat
-from .. render import Renderer
-from . company import CompanyApi
-from .. auth import Auth
-from .. filing import Filing
-from . books import BooksApi
-from .. company_register import CompanyRegister
-from .. status import Status
-from .. corptax import Corptax
-from .. accounts import Accounts
 from .. firebase import Firebase
-from .. commerce import Commerce
+
+from . vat import VatApi
+from . render import RendererApi
+from . company import CompanyApi
+from . auth import AuthApi
+from . filing import FilingApi
+from . books import BooksApi
+from . company_register import CompanyRegisterApi
+from . status import StatusApi
+from . corptax import CorptaxApi
+from . accounts import AccountsApi
+from . commerce import CommerceApi
 
 logger = logging.getLogger("api")
 logger.setLevel(logging.DEBUG)
@@ -52,17 +53,17 @@ class Api:
         self.firebase = Firebase(self.config)
 
         self.store = Store(self.config, self.firebase)
-        self.auth = Auth(self.config, self.store, self.firebase)
+        self.auth = AuthApi(self.config, self.store, self.firebase)
         self.books = BooksApi()
         self.company = CompanyApi()
-        self.creg = CompanyRegister(self.config)
-        self.filing = Filing()
-        self.renderer = Renderer(self.config)
-        self.accounts = Accounts()
-        self.corptax = Corptax()
-        self.vat = Vat(self.config, self.store)
-        self.status = Status()
-        self.commerce = Commerce(self.config)
+        self.creg = CompanyRegisterApi(self.config)
+        self.filing = FilingApi()
+        self.renderer = RendererApi(self.config)
+        self.accounts = AccountsApi()
+        self.corptax = CorptaxApi()
+        self.vat = VatApi(self.config, self.store)
+        self.status = StatusApi()
+        self.commerce = CommerceApi(self.config)
 
         self.dp = DataPass()
 

@@ -13,7 +13,7 @@ import datetime
 import firebase_admin
 import firebase_admin.auth
 
-from . state import State
+from .. state import State
 
 logger = logging.getLogger("auth")
 logger.setLevel(logging.INFO)
@@ -36,7 +36,7 @@ class RequestAuth:
             content_type="application/json"
         )
     
-class Auth:
+class AuthApi:
 
     def __init__(self, config, store, firebase):
 

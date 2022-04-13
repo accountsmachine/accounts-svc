@@ -14,8 +14,8 @@ import requests
 import re
 import time
 
-from . state import State
-from . ixbrl_process import IxbrlProcess
+from .. state import State
+from .. ixbrl_process import IxbrlProcess
 
 import gnucash_uk_vat.hmrc as hmrc
 import gnucash_uk_vat.model as model
@@ -175,7 +175,7 @@ class AuthHack(auth.Auth):
         # Do nothing, we'll pick up the changed auth later.
         pass
 
-class Vat():
+class VatApi():
     def __init__(self, config, store):
 
         self.vat_auth_url = config["vat-auth-url"]

@@ -8,7 +8,7 @@ import base64
 logger = logging.getLogger("company-register")
 logger.setLevel(logging.INFO)
 
-class CompanyRegister():
+class CompanyRegisterApi():
 
     def __init__(self, config):
 

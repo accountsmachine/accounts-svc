@@ -7,12 +7,12 @@ import datetime
 import json
 import logging
 
-from . ixbrl_process import IxbrlProcess
+from .. ixbrl_process import IxbrlProcess
 
-logger = logging.getLogger("accounts")
+logger = logging.getLogger("corptax")
 logger.setLevel(logging.DEBUG)
 
-class Accounts():
+class CorptaxApi():
     def __init__(self):
         pass
 
@@ -91,7 +91,7 @@ Filing complete."""
         try:
 
             id = request.match_info['id']
-            kind = "accounts"
+            kind = "corptax"
 
             asyncio.create_task(
                 self.background_submit(request["state"], request["books"],
@@ -109,7 +109,7 @@ Filing complete."""
 
     async def authorize(self, request):
 
-        request["auth"].verify_scope("accounts")
+        request["auth"].verify_scope("corptax")
         user = request["auth"].user
 
         try:
@@ -120,7 +120,7 @@ Filing complete."""
                 raise RuntimeError("Invalid id")
 
             config = await request.json()
-            await request["state"].accounts_auth().put(id, config)
+            await request["state"].corptax_auth().put(id, config)
             return web.Response()
 
         except Exception as e:
@@ -132,7 +132,7 @@ Filing complete."""
 
     async def deauthorize(self, request):
 
-        request["auth"].verify_scope("accounts")
+        request["auth"].verify_scope("corptax")
         user = request["auth"].user
 
         try:
@@ -142,7 +142,7 @@ Filing complete."""
             if ".." in id:
                 raise RuntimeError("Invalid id")
 
-            await request["state"].accounts_auth().delete(id)
+            await request["state"].corptax_auth().delete(id)
             return web.Response()
 
         except Exception as e:

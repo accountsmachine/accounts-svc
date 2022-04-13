@@ -7,7 +7,7 @@ import logging
 logger = logging.getLogger("filing")
 logger.setLevel(logging.DEBUG)
 
-class Filing():
+class FilingApi():
 
     def __init__(self):
         pass
