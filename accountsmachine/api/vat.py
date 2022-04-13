@@ -584,6 +584,44 @@ class VatApi():
             "server.ip": self.my_ip,
         }
     
+    async def get_status(self, request):
+
+        request["auth"].verify_scope("vat")
+        user = request["auth"].user
+
+        state = request["state"]
+
+        try:
+
+            id = request.match_info['id']
+            start = request.query['start']
+            end = request.query['end']
+
+            start = datetime.date.fromisoformat(start)
+            end = datetime.date.fromisoformat(end)
+
+            # FIXME: Also called inside get_vat_client, too many reads
+            cmp = await state.company().get(id)
+
+            cli = await self.get_vat_client(user, id, state, request)
+
+            l = await cli.get_vat_liabilities(cmp["vrn"], start, end)
+            p = await cli.get_vat_payments(cmp["vrn"], start, end)
+            o = await cli.get_obligations(cmp["vrn"], start, end)
+
+            return web.json_response({
+                "liabilities": [v.to_dict() for v in l],
+                "payments": [v.to_dict() for v in p],
+                "obligations": [v.to_dict() for v in o]
+            })
+
+        except Exception as e:
+
+            logger.debug("get_status: Exception: %s", e)
+            return web.HTTPInternalServerError(
+                body=str(e), content_type="text/plain"
+            )
+
     async def get_liabilities(self, request):
 
         request["auth"].verify_scope("vat")

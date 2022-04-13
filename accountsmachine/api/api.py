@@ -120,6 +120,8 @@ class Api:
                                      self.vat.get_liabilities)])
         self.app.add_routes([web.get("/vat/obligations/{id}",
                                      self.vat.get_obligations)])
+        self.app.add_routes([web.get("/vat/status/{id}",
+                                     self.vat.get_status)])
         self.app.add_routes([web.get("/vat/open-obligations/{id}",
                                      self.vat.get_open_obligations)])
         self.app.add_routes([web.get("/vat/payments/{id}",
