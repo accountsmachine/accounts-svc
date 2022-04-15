@@ -143,7 +143,7 @@ class RendererApi:
             return buf.getvalue()
 
         except Exception as e:
-            logger.info("Exception: %s", e)
+            logger.info("Exception: (%s) %s", type(e), e)
             return "Exception:" + str(e)
 
     def render_accounts_html(self, kind, config):
@@ -173,7 +173,7 @@ class RendererApi:
         
             tmp_file = "tmp." + str(uuid.uuid4()) + ".dat"
 
-            mappings = await state.books_mapping().get(company_number)
+            mappings = await books.get_mapping()
             logo = await self.logo(state, company_number)
             sig = await self.signature(state, id)
 
@@ -218,7 +218,7 @@ class RendererApi:
 
         except Exception as e:
 
-            logger.debug("render: Exception: %s", e)
+            logger.debug("render: Exception: (%s) %s", type(e), e)
             return web.HTTPInternalServerError(
                 body=str(e), content_type="text/plain"
             )
