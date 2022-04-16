@@ -9,86 +9,13 @@ import datetime
 import math
 import copy
 
-import stripe
-stripe.api_key = ""
-
 logger = logging.getLogger("api.commerce")
 logger.setLevel(logging.DEBUG)
-
-def purchase_price(base, units, discount=0.98):
-    return base * units * (discount ** (units - 1))
-
-# Accounts have a credit balance associated with them.  Credits are whole
-# numbers.
-# 
-# The transaction collection has a list of transactions.  Purchase of
-# credits:
-#
-# {
-#     transaction: 'order',
-#     address: [ "The Wirrals", "Lemlith", "Beaconsford" ],
-#     billing_country: "UK", country: "UK", email: "mark@accountsmachine.io",
-#     kind: "vat", time: "2022-03-24T11:03:57.411167",
-#     postcode: "BC1 9JJ", name: "Mr. J. Smith",
-#     uid: "ROElfkN481YZAxmO6U6eMzvmXGt2", status: "complete", complete: true,
-#     vat_number: "GB123456789", vat_rate: 20
-#     credits: 10, price: 14.84,
-# }
-#
-# Consumption:
-# {
-#     kind: 'use',
-#     company: "12874000", resource: "vat", filing: "fkN481YZAx",
-#     credits: -1, time: "2022-03-24T11:03:57.411167",
-#     uid: "ROElfkN481YZAxmO6U6eMzvmXGt2", email:  "mark@accountsmachine.io"
-# }
-#
-# Transaction status for purchases can be 'pending', 'applied', 'rejected'
-# Transaction status for consumptions can be 'applied', 'complete', 'removed'
-#
-# Balance:
-# {
-#     uid: "ROElfkN481YZAxmO6U6eMzvmXGt2",
-#     time: "2022-03-24T11:03:57.41116",
-#     email: "mark@accountsmachine.io",
-#     credits: {
-#         vat: 0,
-#         accounts: 0,
-#         corptax: 0,
-#     }
-# }
 
 class CommerceApi():
 
     def __init__(self, config):
-
-        stripe.api_key = config["stripe-secret"]
-
-        self.stripe_public = config["stripe-public"] 
-
-        self.values = {
-            "vat": {
-                "description": "VAT return",
-                "permitted": 10,
-                "price": 650,
-                "discount": 0.995,
-                "min_purchase": 1,
-            },
-            "corptax": {
-                "description": "Corporation tax filing",
-                "permitted": 4,
-                "price": 1450,
-                "discount": 0.995,
-                "min_purchase": 1,
-            },
-            "accounts": {
-                "description": "Accounts filing",
-                "permitted": 4,
-                "price": 950,
-                "discount": 0.995,
-                "min_purchase": 1,
-            }
-        }
+        pass
 
     async def get_offer(self, request):
 
