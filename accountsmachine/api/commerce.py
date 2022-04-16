@@ -95,49 +95,7 @@ class CommerceApi():
         request["auth"].verify_scope("filing-config")
         user = request["auth"].user
 
-        balance = await request["state"].balance().get("balance")
-
-        opts = copy.deepcopy(self.values)
-
-        kinds = opts.keys()
-
-        for kind in opts:
-            if kind in balance["credits"]:
-                opts[kind]["permitted"] -= balance["credits"][kind]
-                opts[kind]["permitted"] = max(opts[kind]["permitted"], 0)
-
-        # If you already have the max, we can't sell you more.
-        opts = {
-            v: opts[v] for v in opts if opts[v]["permitted"] > 0
-        }
-
-        for kind in opts:
-
-            res = opts[kind]
-
-            offer = []
-
-            for v in [0, *range(
-                    res["min_purchase"], res["permitted"] + 1
-            )]:
-                price = math.floor(
-                    purchase_price(
-                        res["price"], v, res["discount"]
-                    )
-                )
-
-                discount = (res["price"] * v) - price
-
-                offer.append({
-                    "price": price, "discount": discount, "quantity": v
-                })
-
-            res["offer"] = offer
-
-        offer = {
-            "offer": opts,
-            "vat_rate": 0.2,
-        }
+        offer = await request["commerce"].get_offer(request["state"])
 
         return web.json_response(offer)
 
@@ -146,111 +104,21 @@ class CommerceApi():
         request["auth"].verify_scope("filing-config")
         user = request["auth"].user
 
-        balance = await request["state"].balance().get("balance")
+        balance = await request["commerce"].get_balance(request["state"])
 
         return web.json_response(balance)
-
-    # Returns potential new balance
-    def verify_order(self, order, balance):
-
-        balance = copy.deepcopy(balance)
-        
-        subtotal = 0
-
-        for item in order["items"]:
-
-            kind = item["kind"]
-            count = item["quantity"]
-            amount = item["amount"]
-
-            resource = self.values[kind]
-
-            if kind not in ["vat", "accounts", "corptax"]:
-                raise web.HTTPBadRequest(
-                    text="We don't sell you one of those."
-                )
-
-            if kind not in balance["credits"]:
-                balance["credits"][kind] = 0
-
-            balance["credits"][kind] += count
-
-            # The same resource could be listed multiple times, this works
-            # for that case.
-
-            if balance["credits"][kind] > resource["permitted"]:
-                raise web.HTTPBadRequest(
-                    text="That would exceed your maximum permitted"
-                )
-
-            price = math.floor(
-                purchase_price(
-                    resource["price"], count, resource["discount"]
-                )
-            )
-
-            if amount != price:
-                raise web.HTTPBadRequest(
-                    text="Wrong price"
-                )
-
-            subtotal += amount
-
-        if subtotal != order["subtotal"]:
-            raise web.HTTPBadRequest(text="Computed subtotal is wrong")
-
-        # FIXME: Hard-coded VAT rate.
-        # This avoids rounding errors.
-        if abs(order["vat_rate"] - 0.2) > 0.00005:
-            raise web.HTTPBadRequest(text="Tax rate is wrong")
-
-        vat = round(subtotal * order["vat_rate"])
-
-        if vat != order["vat"]:
-            raise web.HTTPBadRequest(text="VAT calculation is wrong")
-
-        total = subtotal + vat
-
-        if total != order["total"]:
-            raise web.HTTPBadRequest(text="Total calculation is wrong")
-
-        return balance
-
-    def create_tx(self, request, order):
-
-        transaction = {
-            "transaction": "order",
-            "address": [ "The Wirrals", "Lemlith", "Beaconsford" ],
-            "billing_country": "UK", "country": "UK",
-            "email": request["auth"].email,
-            "time": datetime.datetime.now().isoformat(),
-            "postcode": "BC1 9JJ", "name": "Mr. J. Smith",
-            "uid": request["auth"].user, "complete": False,
-            "status": "pending",
-            "vat_number": "GB123456789",
-            "order": order
-        }
-
-        return transaction
 
     async def create_order(self, request):
 
         request["auth"].verify_scope("filing-config")
         user = request["auth"].user
-
-        balance = await request["state"].balance().get("balance")
+        email = request["auth"].email
 
         order = await request.json()
 
-        # Need to verify everything from the client side.  Can't trust
-        # any of it.
-        balance = self.verify_order(order, balance)
-
-        transaction = self.create_tx(request, order)
-
-        tid = str(uuid.uuid4())
-
-        await request["state"].transaction().put(tid, transaction)
+        tid = await request["commerce"].create_order(
+            request["state"], order, user, email
+        )
 
         return web.json_response(tid)
 
@@ -259,65 +127,29 @@ class CommerceApi():
         request["auth"].verify_scope("filing-config")
         user = request["auth"].user
 
-        tid = request.match_info['id']
-        transaction = await request["state"].transaction().get(tid)
-        order = transaction["order"]
-
-        intent = stripe.PaymentIntent.create(
-            amount=order["total"],
-            currency='gbp',
-            receipt_email=request["auth"].email,
-            description="Accounts Machine credit purchase",
-            metadata={
-                "transaction": tid,
-                "uid": request["auth"].user,
-            },
-            automatic_payment_methods={ 'enabled': True },
+        secret = await request["commerce"].create_payment(
+            request["state"], request.match_info["id"], user,
+            request["auth"].email
         )
 
-        transaction["payment_id"] = intent.id
-
-        await request["state"].transaction().put(tid, transaction)
-
-        return web.json_response(intent["client_secret"])
+        return web.json_response(secret)
 
     async def complete_order(self, request):
 
         request["auth"].verify_scope("filing-config")
-        user = request["auth"].user
-
-        data = await request.json()
         id = request.match_info['id']
 
-        intent = stripe.PaymentIntent.retrieve(id)
-
-        tid = intent["metadata"]["transaction"]
-
-        balance = await request["state"].balance().get("balance")
-        transaction = await request["state"].transaction().get(tid)
-
-        # Don't need to validate the order, but this returns the new
-        # balance.
-        balance = self.verify_order(transaction["order"], balance)
-
-        transaction["status"] = "complete"
-        transaction["complete"] = True
-
-        await request["state"].balance().put("balance", balance)
-        await request["state"].transaction().put(tid, transaction)
+        balance = await request["commerce"].complete_order(request["state"], id)
 
         return web.json_response(balance)
 
     async def get_transactions(self, request):
 
         request["auth"].verify_scope("filing-config")
-        user = request["auth"].user
 
         try:
-            ss = await request["state"].transaction().list()
-
+            ss = await request["commerce"].get_transactions(request["state"])
             return web.json_response(ss)
-
         except Exception as e:
             logger.debug("get_all: %s", e)
             return web.HTTPInternalServerError(
@@ -327,15 +159,11 @@ class CommerceApi():
     async def get_transaction(self, request):
 
         request["auth"].verify_scope("filing-config")
-        user = request["auth"].user
+        id = request.match_info['id']
 
         try:
-            id = request.match_info['id']
-
-            tx = await request["state"].transaction().get(id)
-
+            tx = await request["commerce"].get_transaction(id)
             return web.json_response(tx)
-
         except Exception as e:
             logger.debug("get_all: %s", e)
             return web.HTTPInternalServerError(
@@ -343,11 +171,12 @@ class CommerceApi():
             )
 
     async def get_payment_key(self, request):
-
         request["auth"].verify_scope("filing-config")
-        user = request["auth"].user
+
+        key = await request["commerce"].get_payment_key(request["state"])
+        print("key", key)
 
         return web.json_response({
-            "key": self.stripe_public
+            "key": key
         })
 

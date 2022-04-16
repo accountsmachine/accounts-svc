@@ -24,6 +24,7 @@ from . status import StatusApi
 from . corptax import CorptaxApi
 from . accounts import AccountsApi
 from . commerce import CommerceApi
+from .. state import Commerce
 
 logger = logging.getLogger("api")
 logger.setLevel(logging.DEBUG)
@@ -33,8 +34,6 @@ class DataPass:
     @web.middleware
     async def add_data(self, request, handler):
 
-        request["books"] = request.app["books"]
-
         if "auth" in request:
 
             # State provides a higher-level view, and knows the calling user
@@ -42,6 +41,7 @@ class DataPass:
 
         request["config"] = request.app["config"]
         request["renderer"] = request.app["renderer"]
+        request["commerce"] = request.app["commerce"]
         return await handler(request)
 
 class Api:
@@ -51,6 +51,8 @@ class Api:
         self.port = self.config["port"]
 
         self.firebase = Firebase(self.config)
+
+        self.commerce = Commerce(self.config)
 
         self.store = Store(self.config, self.firebase)
         self.auth = AuthApi(self.config, self.store, self.firebase)
@@ -63,17 +65,16 @@ class Api:
         self.corptax = CorptaxApi()
         self.vat = VatApi(self.config, self.store)
         self.status = StatusApi()
-        self.commerce = CommerceApi(self.config)
 
         self.dp = DataPass()
 
         self.app = web.Application(middlewares=[self.auth.verify,
                                                 self.dp.add_data])
 
-        self.app["books"] = self.books
         self.app["store"] = self.store
         self.app["config"] = self.config
         self.app["renderer"] = self.renderer
+        self.app["commerce"] = self.commerce
 
         self.app.add_routes([web.post("/render-html/{id}",
                                       self.renderer.to_html)])
@@ -163,22 +164,24 @@ class Api:
         self.app.add_routes([web.post("/user-account/register",
                                      self.auth.register_user)])
 
+        commerce_api = CommerceApi(self.config)
+
         self.app.add_routes([web.get("/commerce/balance",
-                                     self.commerce.get_balance)])
+                                     commerce_api.get_balance)])
         self.app.add_routes([web.get("/commerce/offer",
-                                     self.commerce.get_offer)])
+                                     commerce_api.get_offer)])
         self.app.add_routes([web.get("/commerce/transactions",
-                                     self.commerce.get_transactions)])
+                                     commerce_api.get_transactions)])
         self.app.add_routes([web.get("/commerce/transaction/{id}",
-                                     self.commerce.get_transaction)])
+                                     commerce_api.get_transaction)])
         self.app.add_routes([web.post("/commerce/create-order",
-                                      self.commerce.create_order)])
+                                      commerce_api.create_order)])
         self.app.add_routes([web.post("/commerce/complete-order/{id}",
-                                      self.commerce.complete_order)])
+                                      commerce_api.complete_order)])
         self.app.add_routes([web.post("/commerce/create-payment/{id}",
-                                      self.commerce.create_payment)])
+                                      commerce_api.create_payment)])
         self.app.add_routes([web.get("/commerce/payment-key",
-                                      self.commerce.get_payment_key)])
+                                      commerce_api.get_payment_key)])
 
     def run(self):
 
