@@ -1,42 +1,13 @@
 
 from aiohttp import web
-import secrets
-import time
-from urllib.parse import urlencode, quote_plus
 import json
-import hashlib
 import logging
-import asyncio
-import uuid
-import datetime
 
-import firebase_admin
-import firebase_admin.auth
-
-from .. state import State
-from .. admin.user import UserAdmin
+from .. admin.user import UserAdmin, EmailNotVerified, AuthHeaderFailure, BadDomain
 
 logger = logging.getLogger("api.auth")
 logger.setLevel(logging.INFO)
 
-class RequestAuth:
-    def __init__(self, user, scope, auth):
-        self.auth = auth
-        self.user = user
-        self.scope = scope
-    def verify_scope(self, scope):
-        if scope not in self.scope:
-            logger.info("Scope forbidden: %s", scope)
-            raise this.scope_invalid()
-    def scope_invalid(self):
-        return web.HTTPForbidden(
-            text=json.dumps({
-                "message": "You do not have permission",
-                "code": "no-permission"
-            }),
-            content_type="application/json"
-        )
-    
 class AuthApi:
 
     def __init__(self, config, store, firebase):
@@ -67,38 +38,17 @@ class AuthApi:
             raise self.auth_header_failure()
 
         # Verify JWT token
+
         try:
-            auth = firebase_admin.auth.verify_id_token(toks[1])
-        except:
-            logger.info("Token not valid")
-            raise self.auth_header_failure()
-
-        if (auth["exp"] <= time.time()):
-            logger.info("Token expired.")
-            raise self.auth_header_failure()
-
-        if not auth["email_verified"]:
+            authr = await self.user_admin.verify_token(toks[1])
+        except EmailNotVerified:
             raise self.email_not_verified()
-        
-        if self.domain:
-            email = auth["email"]
-            if not email.endswith("@" + self.domain):
-                raise self.auth_header_failure()
-
-        # This shouldn't happen. I believe it's possible for an attacker
-        # to use the Firebase API to create a user even though it's not in our
-        # code, but they can't setup custom claims for the user.
-        if "scope" not in auth:
+        except AuthHeaderFailure:
             raise self.auth_header_failure()
+        except BadDomain:
+            raise self.bad_domain()
 
-        scope = auth["scope"]
-
-        logger.debug("OK %s %s", auth["sub"], scope)
-
-        a = RequestAuth(auth["sub"], scope, self)
-        a.email = auth["email"]
-
-        return a
+        return authr
 
     def email_not_verified(self):
         return web.HTTPUnauthorized(
@@ -151,8 +101,6 @@ class AuthApi:
 
             user = await request.json()
 
-            uid = str(uuid.uuid4())
-
             if "X-Application-ID" not in request.headers:
                 return HTTPUnauthorized()
 
@@ -186,7 +134,8 @@ class AuthApi:
 
         try:
 
-            # FIXME: Not implemented.
+            await self.user_admin.delete_user(user)
+
             return web.Response()
 
         except Exception as e:

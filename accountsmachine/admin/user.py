@@ -2,6 +2,7 @@
 import datetime
 import logging
 import uuid
+import time
 
 import firebase_admin
 import firebase_admin.auth
@@ -11,6 +12,33 @@ from .. state import State
 logger = logging.getLogger("admin.user")
 logger.setLevel(logging.INFO)
 
+class AuthHeaderFailure(Exception):
+    pass
+
+class EmailNotVerified(Exception):
+    pass
+
+class BadDomain(Exception):
+    pass
+
+class RequestAuth:
+    def __init__(self, user, scope, auth):
+        self.auth = auth
+        self.user = user
+        self.scope = scope
+    def verify_scope(self, scope):
+        if scope not in self.scope:
+            logger.info("Scope forbidden: %s", scope)
+            raise this.scope_invalid()
+    def scope_invalid(self):
+        return web.HTTPForbidden(
+            text=json.dumps({
+                "message": "You do not have permission",
+                "code": "no-permission"
+            }),
+            content_type="application/json"
+        )
+    
 class UserAdmin:
     def __init__(self, config, store):
 
@@ -20,6 +48,10 @@ class UserAdmin:
             self.domain = None
 
         self.store = store
+
+    async def delete_user(self, user):
+
+        raise RuntimeError("Not implemented")
 
     async def register_user(
             self, email, phone_number, display_name, password, app_id
@@ -104,3 +136,40 @@ class UserAdmin:
                 logger.info("Exception (delete_user): %s", f)
 
             raise e
+
+    async def verify_token(self, token):
+        
+        try:
+            # Annoying - not async?
+            # FIXME: Not async
+            auth = firebase_admin.auth.verify_id_token(token)
+        except:
+            logger.info("Token not valid")
+            raise AuthHeaderFailure()
+
+        if (auth["exp"] <= time.time()):
+            logger.info("Token expired.")
+            raise AuthHeaderFailure()
+
+        if not auth["email_verified"]:
+            raise EmailNotVerified()
+        
+        if self.domain:
+            email = auth["email"]
+            if not email.endswith("@" + self.domain):
+                raise BadDomain()
+
+        # This shouldn't happen. I believe it's possible for an attacker
+        # to use the Firebase API to create a user even though it's not in our
+        # code, but they can't setup custom claims for the user.
+        if "scope" not in auth:
+            raise AuthHeaderFailure()
+
+        scope = auth["scope"]
+
+        logger.info("OK %s %s", auth["sub"], scope)
+
+        a = RequestAuth(auth["sub"], scope, self)
+        a.email = auth["email"]
+
+        return a
