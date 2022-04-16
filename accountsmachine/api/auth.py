@@ -14,6 +14,7 @@ import firebase_admin
 import firebase_admin.auth
 
 from .. state import State
+from .. admin.user import UserAdmin
 
 logger = logging.getLogger("api.auth")
 logger.setLevel(logging.INFO)
@@ -42,16 +43,12 @@ class AuthApi:
 
         self.store = store
         self.authreqs = {}
-        self.firebase = firebase
 
         self.app_id = config["application-id"]
         self.audience = config["audience"]
         self.algorithms = config["algorithms"]
 
-        try:
-            self.domain = config["restrict-user-domain"]
-        except:
-            self.domain = None
+        self.user_admin = UserAdmin(config, store)
 
     async def verify_auth(self, request):
 
@@ -158,87 +155,21 @@ class AuthApi:
 
             if "X-Application-ID" not in request.headers:
                 return HTTPUnauthorized()
-        
-            if self.domain:
-                email = user["email"]
-                if not email.endswith("@" + self.domain):
-                    logger.info("User registered email with wrong domain")
-                    return self.bad_domain()
 
+            # App-id isn't a feature which is used, currently, it's here in
+            # case we want to do API as a service later.
             if request.headers["X-Application-ID"] != self.app_id:
                 return HTTPUnauthorized()
 
-            # This is a new user.
-            profile = {
-                "version": "v1",
-                "creation": datetime.datetime.utcnow().isoformat(),
-                "email": user["email"],
-            }
+            # Security feature: Passing parameters by name, because don't want
+            # to accidentally put password in the wrong field.
+            uid = await self.user_admin.register_user(
+                email=user["email"], phone_number=user["phone_number"],
+                display_name=user["display_name"], password=user["password"],
+                app_id=self.app_id
+            )
 
-            scope = [
-                "vat", "filing-config", "books", "company",
-                "ch-lookup", "render", "status", "corptax",
-                "accounts", "commerce", "user"
-            ]
-
-            # Initial balance
-            balance = {
-                "time": datetime.datetime.utcnow().isoformat(),
-                "email": user["email"],
-                "credits": {
-                    "vat": 0,
-                    "corptax": 0,
-                    "accounts": 0,
-                }
-            }
-
-            state = State(self.store, uid)
-
-            try:
-
-                await state.user_profile().put(
-                    "profile", profile
-                )
-
-                await state.balance().put(
-                    "balance", balance
-                )
-
-                firebase_admin.auth.create_user(
-                    uid=uid, email=user["email"],
-                    phone_number=user["phone_number"],
-                    password=user["password"],
-                    display_name=user["display_name"],
-                    disabled=False
-                )
-
-                firebase_admin.auth.set_custom_user_claims(
-                    uid, { "scope": scope, "application-id": self.app_id }
-                )
-
-                return web.Response()
-
-            except Exception as e:
-
-                logger.info("User create failed for %s", uid)
-
-                # Tidy up, back-track
-                try:
-                    await state.user_profile().delete("profile")
-                except Exception as f:
-                    logger.info("Exception: %s", f)
-
-                try:
-                    await state.balance().delete("balance")
-                except Exception as f:
-                    logger.info("Exception: %s", f)
-
-                try:
-                    firebase_admin.auth.delete_user(uid)
-                except Exception as f:
-                    logger.info("Exception (delete_user): %s", f)
-
-                raise e
+            return web.Response()
 
         except Exception as e:
             
@@ -255,6 +186,7 @@ class AuthApi:
 
         try:
 
+            # FIXME: Not implemented.
             return web.Response()
 
         except Exception as e:
