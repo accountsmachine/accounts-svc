@@ -173,3 +173,13 @@ class UserAdmin:
         a.email = auth["email"]
 
         return a
+
+    async def get_profile(self, state):
+
+        return await state.user_profile().get("profile")
+
+
+    async def put_profile(self, state, profile):
+
+        return await state.user_profile().put("profile", profile)
+

@@ -163,6 +163,10 @@ class Api:
                                      self.auth.delete_user)])
         self.app.add_routes([web.post("/user-account/register",
                                      self.auth.register_user)])
+        self.app.add_routes([web.get("/user-account/profile",
+                                     self.auth.get_profile)])
+        self.app.add_routes([web.put("/user-account/profile",
+                                     self.auth.put_profile)])
 
         commerce_api = CommerceApi(self.config)
 

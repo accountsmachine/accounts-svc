@@ -2,6 +2,7 @@
 from aiohttp import web
 import json
 import logging
+import copy
 
 from .. admin.user import UserAdmin, EmailNotVerified, AuthHeaderFailure, BadDomain
 
@@ -144,3 +145,39 @@ class AuthApi:
             return web.HTTPInternalServerError(
                 body=str(e), content_type="text/plain"
             )
+
+    async def get_profile(self, request):
+
+        request["auth"].verify_scope("user")
+
+        prof = await self.user_admin.get_profile(request["state"])
+
+        return web.json_response(prof)
+
+    async def put_profile(self, request):
+
+        request["auth"].verify_scope("user")
+        user = request["auth"].user
+        info = await request.json()
+
+        # Get profile
+        prof = await self.user_admin.get_profile(request["state"])
+
+        prof2 = copy.deepcopy(prof)
+
+        # Add all the updates
+        prof2 |= info
+
+        # Some things can't be over-ridden in the profile
+
+        # FIXME: When would this ever change?  Users can update their email
+        # addresses?
+        prof2["email"] = prof["email"]
+        prof2["version"] = prof["version"]
+        prof2["creation"] = prof["creation"]
+
+        await self.user_admin.put_profile(request["state"], prof2)
+
+
+        return web.json_response()
+

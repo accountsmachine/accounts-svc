@@ -101,7 +101,6 @@ class CommerceApi():
         request["auth"].verify_scope("filing-config")
 
         key = await request["commerce"].get_payment_key(request["state"])
-        print("key", key)
 
         return web.json_response({
             "key": key
