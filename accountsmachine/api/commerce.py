@@ -89,7 +89,7 @@ class CommerceApi():
         id = request.match_info['id']
 
         try:
-            tx = await request["commerce"].get_transaction(id)
+            tx = await request["commerce"].get_transaction(request["state"], id)
             return web.json_response(tx)
         except Exception as e:
             logger.debug("get_all: %s", e)

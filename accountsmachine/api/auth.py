@@ -160,24 +160,7 @@ class AuthApi:
         user = request["auth"].user
         info = await request.json()
 
-        # Get profile
-        prof = await self.user_admin.get_profile(request["state"])
-
-        prof2 = copy.deepcopy(prof)
-
-        # Add all the updates
-        prof2 |= info
-
-        # Some things can't be over-ridden in the profile
-
-        # FIXME: When would this ever change?  Users can update their email
-        # addresses?
-        prof2["email"] = prof["email"]
-        prof2["version"] = prof["version"]
-        prof2["creation"] = prof["creation"]
-
-        await self.user_admin.put_profile(request["state"], prof2)
-
+        await self.user_admin.put_profile(request["state"], info)
 
         return web.json_response()
 

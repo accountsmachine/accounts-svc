@@ -68,7 +68,15 @@ class UserAdmin:
         profile = {
             "version": "v1",
             "creation": datetime.datetime.utcnow().isoformat(),
-            "email": email,
+            "billing_name": "",
+            "billing_address": [],
+            "billing_city": "",
+            "billing_county": "",
+            "billing_country": "",
+            "billing_postcode": "",
+            "billing_vat": "",
+            "billing_email": email,
+            "billing_tel": "",
         }
 
         scope = [
@@ -180,6 +188,5 @@ class UserAdmin:
 
 
     async def put_profile(self, state, profile):
-
         return await state.user_profile().put("profile", profile)
 

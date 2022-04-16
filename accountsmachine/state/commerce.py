@@ -211,18 +211,25 @@ class Commerce:
 
         return balance
 
-    def create_tx(self, state, order, user, email):
+    async def create_tx(self, state, order, user, email):
+
+        profile = await state.user_profile().get("profile")
+        print(profile)
 
         transaction = {
             "transaction": "order",
-            "address": [ "The Wirrals", "Lemlith", "Beaconsford" ],
-            "billing_country": "UK", "country": "UK",
-            "email": email,
+            "name": profile["billing_name"],
+            "address": profile["billing_address"],
+            "city": profile["billing_city"],
+            "county": profile["billing_county"],
+            "country": profile["billing_country"],
+            "postcode": profile["billing_postcode"],
+            "email": profile["billing_email"],
+            "tel": profile["billing_tel"],
             "time": datetime.datetime.now().isoformat(),
-            "postcode": "BC1 9JJ", "name": "Mr. J. Smith",
             "uid": user, "complete": False,
             "status": "pending",
-            "vat_number": "GB123456789",
+            "vat_number": profile["billing_vat"],
             "order": order
         }
 
@@ -236,7 +243,7 @@ class Commerce:
         # any of it.
         balance = self.verify_order(order, balance)
 
-        transaction = self.create_tx(state, order, user, email)
+        transaction = await self.create_tx(state, order, user, email)
 
         tid = str(uuid.uuid4())
 
