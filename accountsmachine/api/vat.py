@@ -183,7 +183,6 @@ class VatApi():
 
         self.client_id = config["vat-client-id"]
         self.client_secret = config["vat-client-secret"]
-        # FIXME: Hard-coded
         self.redirect_uri = config["redirect-uri"]
 
         self.store = store
@@ -207,11 +206,10 @@ class VatApi():
                     id, "vat"
                 )
             except Exception as e:
+                html = ""
                 logger.error(e)
 
             i = IxbrlProcess()
-
-            # FIXME: Above error may cause html referenced before assignment
             vat = i.process(html)
 
             return web.json_response(vat)
@@ -326,7 +324,8 @@ class VatApi():
 
 """ % url
 
-        return web.Response(body=page, content_type="text/html")
+#        Return web.Response(body=page, content_type="text/html")
+        return web.HTTPFound(url)
 
     async def background_submit(
             self, user, state, renderer, id, kind, request
