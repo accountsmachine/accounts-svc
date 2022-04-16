@@ -1,9 +1,6 @@
 
 import json
-import base64
 import logging
-import asyncio
-import io
 
 from google.cloud import storage
 from firebase_admin import firestore

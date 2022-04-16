@@ -1,9 +1,7 @@
 
-from aiohttp import web
 import datetime
 import logging
 import os
-import uuid
 
 from ixbrl_reporter.accounts import get_class
 

@@ -1,8 +1,4 @@
 
-import json
-from aiohttp import web
-import aiohttp
-import glob
 import logging
 
 logger = logging.getLogger("company")
@@ -91,8 +87,6 @@ class Company:
         try:
             await self.state.company().delete(self.id)
         except: pass
-
-        return web.Response()
 
     async def put_logo(self, data, ctype):
         await self.state.logo().put(self.id, data)

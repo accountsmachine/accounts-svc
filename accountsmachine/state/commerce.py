@@ -1,6 +1,5 @@
 
 import json
-from aiohttp import web
 import aiohttp
 import glob
 import logging
@@ -14,6 +13,9 @@ stripe.api_key = ""
 
 logger = logging.getLogger("api.commerce")
 logger.setLevel(logging.DEBUG)
+
+class InvalidOrder(Exception):
+    pass
 
 # Accounts have a credit balance associated with them.  Credits are whole
 # numbers.
@@ -159,7 +161,7 @@ class Commerce:
             resource = self.values[kind]
 
             if kind not in ["vat", "accounts", "corptax"]:
-                raise web.HTTPBadRequest(
+                raise InvalidOrder(
                     text="We don't sell you one of those."
                 )
 
@@ -172,7 +174,7 @@ class Commerce:
             # for that case.
 
             if balance["credits"][kind] > resource["permitted"]:
-                raise web.HTTPBadRequest(
+                raise InvalidOrder(
                     text="That would exceed your maximum permitted"
                 )
 
@@ -183,29 +185,29 @@ class Commerce:
             )
 
             if amount != price:
-                raise web.HTTPBadRequest(
+                raise InvalidOrder(
                     text="Wrong price"
                 )
 
             subtotal += amount
 
         if subtotal != order["subtotal"]:
-            raise web.HTTPBadRequest(text="Computed subtotal is wrong")
+            raise InvalidOrder(text="Computed subtotal is wrong")
 
         # FIXME: Hard-coded VAT rate.
         # This avoids rounding errors.
         if abs(order["vat_rate"] - 0.2) > 0.00005:
-            raise web.HTTPBadRequest(text="Tax rate is wrong")
+            raise InvalidOrder(text="Tax rate is wrong")
 
         vat = round(subtotal * order["vat_rate"])
 
         if vat != order["vat"]:
-            raise web.HTTPBadRequest(text="VAT calculation is wrong")
+            raise InvalidOrder(text="VAT calculation is wrong")
 
         total = subtotal + vat
 
         if total != order["total"]:
-            raise web.HTTPBadRequest(text="Total calculation is wrong")
+            raise InvalidOrder(text="Total calculation is wrong")
 
         return balance
 
@@ -296,7 +298,7 @@ class Commerce:
             return tx
         except Exception as e:
             logger.debug("get_all: %s", e)
-            return web.HTTPInternalServerError(
+            return RuntimeError(
                 body=str(e), content_type="text/plain"
             )
 
