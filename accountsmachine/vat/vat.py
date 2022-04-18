@@ -466,3 +466,8 @@ class Vat:
 
         return uid, company
 
+    async def store_auth(self, uid, company, auth):
+
+        state = State(self.store, uid)
+        await state.vat_auth().put(company, auth)
+

@@ -130,16 +130,14 @@ class VatApi():
                 content_type="text/plain"
             )
 
-        state = State(self.store, uid)
-
         now = datetime.datetime.utcnow()
         expires = now + datetime.timedelta(seconds=int(token["expires_in"]))
         expires = expires.replace(microsecond=0)
         expires = expires.isoformat()
 
         token["expires"] = expires
-        
-        await state.vat_auth().put(company, token)
+
+        await self.vat.store_auth(uid, company, token)
 
         url = "/status/%s/vat" % company
 
