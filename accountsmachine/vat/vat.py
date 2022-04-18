@@ -3,6 +3,9 @@ from urllib.parse import urlencode, quote_plus
 import datetime
 import asyncio
 import logging
+from io import StringIO
+import json
+import uuid
 
 import gnucash_uk_vat.hmrc as hmrc
 import gnucash_uk_vat.model as model
@@ -177,11 +180,15 @@ class Vat:
     async def get_vat_client(self, config, state, id):
 
         try:
+            print(id)
             vauth = await state.vat_auth().get(id)
-        except:
+        except Exception as e:
+            print(e, type(e))
+        
             logger.error("No VAT auth stored")
-            raise("No VAT auth stored.  "
-                  "You should authenticate with the VAT service")
+            raise RuntimeError("No VAT auth stored.  "
+                  "You should authenticate with the VAT service"
+            )
 
         auth = AuthEndpoint(vauth)
         h = VatEndpoint(config, auth)
@@ -227,23 +234,206 @@ class Vat:
         cmp = await state.company().get(id)
         cli = await self.get_vat_client(config, state, id)
         l = await cli.get_vat_liabilities(cmp["vrn"], start, end)
-        return l
+        return [v.to_dict() for v in l]
 
     async def get_obligations(self, config, state, id, start, end):
         cmp = await state.company().get(id)
         cli = await self.get_vat_client(config, state, id)
         l = await cli.get_obligations(cmp["vrn"], start, end)
-        return l
+        return [v.to_dict() for v in l]
 
     async def get_open_obligations(self, config, state, id):
         cmp = await state.company().get(id)
         cli = await self.get_vat_client(config, state, id)
-        l = await cli.get_obligations(cmp["vrn"])
-        return l
+        l = await cli.get_open_obligations(cmp["vrn"])
+        return [v.to_dict() for v in l]
 
     async def get_payments(self, config, state, id, start, end):
         cmp = await state.company().get(id)
         cli = await self.get_vat_client(config, state, id)
         l = await cli.get_vat_payments(cmp["vrn"], start, end)
-        return l
+        return [v.to_dict() for v in l]
 
+    async def background_submit(
+        self, user, email, config, state, renderer, id
+    ):
+
+        print(">>>>", id)
+        log_stream = StringIO()
+        sthislog = logging.StreamHandler(log_stream)
+        thislog = logging.getLoggerClass()("vat")
+        thislog.addHandler(sthislog)
+
+        try:
+
+            try:
+                await state.filing_report().delete(id)
+            except: pass
+
+            try:
+                await state.filing_data().delete(id)
+            except: pass
+
+            try:
+                await state.filing_status().delete(id)
+            except: pass
+
+            try:
+
+                logger.debug("Submission of VAT config %s", id)
+
+                cfg = await state.filing_config().get(id)
+
+                cfg["state"] = "pending"
+                await state.filing_config().put(id, cfg)
+
+                logger.debug("VAT config %s", json.dumps(cfg))
+                thislog.info("VAT config ID: %s", id)
+
+                try:
+                    company_number = cfg["company"]
+                except Exception as e:
+                    raise RuntimeError("No company number in configuration")
+
+                cmp = await state.company().get(company_number)
+
+                h = await self.get_vat_client(config, state, company_number)
+
+                logger.debug("VRN is %s", cmp["vrn"])
+                thislog.info("VRN is %s", cmp["vrn"])
+
+                obs = await h.get_open_obligations(cmp["vrn"])
+
+                logger.debug("Looking for obligation period due %s", cfg["due"])
+                thislog.info("Period due %s", cfg["due"])
+
+                obl = None
+                for o in obs:
+                    if str(o.due) == cfg["due"]: obl = o
+
+                if obl is None:
+                    raise RuntimeError(
+                        "VAT due date %s not found in obligations" % cfg["due"]
+                    )
+
+                # Handle billing
+                balance = await state.balance().get("balance")
+
+                if balance["credits"]["vat"] < 1:
+                        raise web.HTTPPaymentRequired(
+                                text="No VAT credits available"
+                        )
+
+                balance["credits"]["vat"] -= 1
+                balance["time"] = datetime.datetime.now().isoformat()
+
+                transaction = {
+                    "time": datetime.datetime.now().isoformat(),
+                    "type": "filing",
+                    "company": company_number,
+                    "kind": "vat",
+                    "filing": cfg["label"],
+                    "id": id,
+                    "email": email,
+                    "uid": user,
+                    "valid": True,
+                    "order": {
+                        "items": [
+                            {
+                                "kind": "vat",
+                                "quantity": -1,
+                            }
+                        ]
+                    }
+                }
+
+                tid = str(uuid.uuid4())
+
+                await state.balance().put("balance", balance)
+                await state.transaction().put(tid, transaction)
+
+                # Billing written
+
+                html = await renderer.render(
+                    state, renderer, id, "vat"
+                )
+
+                i = IxbrlProcess()
+                vat = i.process(html)
+
+                await state.filing_report().put(id, html.encode("utf-8"))
+                await state.filing_data().put(id, vat)
+
+                rtn = model.Return()
+                rtn.periodKey = obl.periodKey
+                rtn.finalised = True
+                rtn.vatDueSales = vat["VatDueSales"]
+                rtn.vatDueAcquisitions = vat["VatDueAcquisitions"]
+                rtn.totalVatDue = vat["TotalVatDue"]
+                rtn.vatReclaimedCurrPeriod = vat["VatReclaimedCurrPeriod"]
+                rtn.netVatDue = vat["NetVatDue"]
+                rtn.totalValueSalesExVAT = vat["TotalValueSalesExVAT"]
+                rtn.totalValuePurchasesExVAT = vat["TotalValuePurchasesExVAT"]
+                rtn.totalValueGoodsSuppliedExVAT = vat["TotalValueGoodsSuppliedExVAT"]
+                rtn.totalAcquisitionsExVAT = vat["TotalAcquisitionsExVAT"]
+
+                thislog.info("VAT record:")
+                for k, v in rtn.to_dict().items():
+                    thislog.info("  %s: %s", k, v)
+
+                thislog.info("Submitting VAT return...")
+                await h.submit_vat_return(cmp["vrn"], rtn)
+                thislog.info("Success.")
+
+                await state.filing_status().put(id, {
+                    "report": log_stream.getvalue()
+                })
+
+            except Exception as e:
+
+                logger.debug("background_submit: Exception: %s", e)
+                thislog.error("background_submit: Exception: %s", e)
+
+                l = log_stream.getvalue()
+
+                await state.filing_status().put(id, {
+                    "report": l
+                })
+
+                await state.filing_report().put(id, "".encode("utf-8"))
+
+                cfg = await state.filing_config().get(id)
+                cfg["state"] = "errored"
+                await state.filing_config().put(id, cfg)
+
+                return
+
+            cfg = await state.filing_config().get(id)
+            cfg["state"] = "published"
+            await state.filing_config().put(id, cfg)
+
+        except Exception as e:
+
+            logger.debug("background_submit: Exception: %s", e)
+
+            try:
+                await state.filing_status().put(id, {
+                    "report": str(e)
+                })
+            except: pass
+
+    async def submit(self, user, email, config, state, renderer, id):
+
+        rec = state.filing_config().get(id)
+
+        # Quick credit check before committing to background task
+        balance = await state.balance().get("balance")
+
+        if balance["credits"]["vat"] < 1:
+                raise RuntimeError("No VAT credits available")
+
+        print("____", id)
+
+        asyncio.create_task(
+                self.background_submit(user, email, config, state, renderer, id)
+        )
