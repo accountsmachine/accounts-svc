@@ -515,7 +515,9 @@ class VatApi():
                 body=str(e), content_type="text/plain"
             )
 
-    def get_vat_client_config(self, user, cmp, request):
+    def get_vat_client_config(self, request):
+
+        user = request["auth"].user
 
         if "X-Device-ID" not in request.headers:
             raise RuntimeError("No device ID")
@@ -568,14 +570,16 @@ class VatApi():
             "screen.colour-depth": screen[4],
             "screen.scaling-factor": screen[5],
             "server.ip": self.my_ip,
+            "vat-auth-url": self.vat_auth_url,
+            "vat-api-url": self.vat_api_url,
         }
     
     async def get_status(self, request):
 
         request["auth"].verify_scope("vat")
         user = request["auth"].user
-
         state = request["state"]
+        config = self.get_vat_client_config(request)
 
         try:
 
@@ -586,26 +590,9 @@ class VatApi():
             start = datetime.date.fromisoformat(start)
             end = datetime.date.fromisoformat(end)
 
-            # FIXME: Also called inside get_vat_client, too many reads
-            cmp = await state.company().get(id)
+            status = await self.vat.get_status(config, state, id, start, end)
 
-            cli = await self.get_vat_client(user, id, state, request)
-
-#            l = await cli.get_vat_liabilities(cmp["vrn"], start, end)
-#            p = await cli.get_vat_payments(cmp["vrn"], start, end)
-#            o = await cli.get_obligations(cmp["vrn"], start, end)
-
-            l, p, o = await asyncio.gather(
-                    cli.get_vat_liabilities(cmp["vrn"], start, end),
-                    cli.get_vat_payments(cmp["vrn"], start, end),
-                    cli.get_obligations(cmp["vrn"], start, end)
-            )
-
-            return web.json_response({
-                "liabilities": [v.to_dict() for v in l],
-                "payments": [v.to_dict() for v in p],
-                "obligations": [v.to_dict() for v in o]
-            })
+            return web.json_response(status)
 
         except Exception as e:
 

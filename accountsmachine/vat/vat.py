@@ -1,4 +1,7 @@
 
+from urllib.parse import urlencode, quote_plus
+import datetime
+import asyncio
 import logging
 
 import gnucash_uk_vat.hmrc as hmrc
@@ -182,3 +185,52 @@ class Vat:
 
         return vat
 
+    async def get_vat_client(self, config, state, id):
+
+        try:
+            vauth = await state.vat_auth().get(id)
+        except:
+            logger.error("No VAT auth stored")
+            raise("No VAT auth stored.  "
+                  "You should authenticate with the VAT service")
+
+        auth = AuthEndpoint(vauth)
+        h = VatEndpoint(config, auth)
+
+        # Refresh if needed.
+        if "access_token" in auth.auth:
+            old_token = auth.auth["access_token"]
+        else:
+            old_token = ""
+
+        await auth.maybe_refresh(h)
+
+        if  auth.auth["access_token"] != old_token:
+
+            try:
+                await state.vat_auth().put(company_number, auth.auth)
+            except:
+                await state.vat_auth().delete(company_number)
+
+                raise RuntimeError("Failure to store refreshed token")
+
+        return h
+
+    async def get_status(self, config, state, id, start, end):
+
+        # FIXME: Also called inside get_vat_client, too many reads
+        cmp = await state.company().get(id)
+
+        cli = await self.get_vat_client(config, state, id)
+
+        l, p, o = await asyncio.gather(
+            cli.get_vat_liabilities(cmp["vrn"], start, end),
+            cli.get_vat_payments(cmp["vrn"], start, end),
+            cli.get_obligations(cmp["vrn"], start, end),
+        )
+
+        return {
+            "liabilities": [v.to_dict() for v in l],
+            "payments": [v.to_dict() for v in p],
+            "obligations": [v.to_dict() for v in o]
+        }
