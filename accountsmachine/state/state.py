@@ -116,3 +116,7 @@ class State:
 
     def books_mapping(self):
         return self.doc("books-mapping")
+
+    def vat_auth_ref(self):
+        return self.doc("vat-auth-ref")
+

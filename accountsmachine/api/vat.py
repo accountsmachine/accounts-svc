@@ -50,14 +50,12 @@ class VatApi():
 
         self.store = store
 
-        self.token_states = {}
-
         self.my_ip = get_my_ip()
 
         # FIXME: Lifecycle needs refactoring?  Doesn't belong here?
         self.renderer = RendererApi(config)
 
-        self.vat = Vat(config)
+        self.vat = Vat(config, store)
 
     async def compute(self, request):
 
@@ -72,34 +70,24 @@ class VatApi():
     async def redirect_auth(self, request):
 
         request["auth"].verify_scope("vat")
-        user = request["auth"].user
-
+        state = request["state"]
         id = request.match_info['id']
 
         url = self.vat_auth_url + "/oauth/authorize?"
 
-        # FIXME: Well, this is OK for developing. Only handles one VAT
-        # connection at once.
-        # The fix would be to add to the token_states array, and expire old
-        # values.
-        state = secrets.token_hex(16)
-
-        # FIXME: Never gets cleared up.
-        # FIXME: Needs to be shared across all API servers.
-        self.token_states = {
-            state: {
-                "user": user,
-                "company": id
-            }
-        }
+        secret = await self.vat.get_auth_ref(
+                request["auth"].user, request["state"], id
+        )
 
         url += urlencode({
             "response_type": "code",
             "redirect_uri": self.redirect_uri,
-            "state": state,
+            "state": secret,
             "scope": "read:vat write:vat",
             "client_id": self.client_id
         })
+
+        print(secret)
 
         return web.json_response({
             "url": url
@@ -110,17 +98,9 @@ class VatApi():
         code = request.query["code"]
         state = request.query["state"]
 
-        if state not in self.token_states:
-                raise web.HTTPUnauthorized(
-                        text=json.dumps({
-                                "message": "VAT token not valid",
-                                "code": "vat-token-invalid"
-                        }),
-                        content_type="application/json"
-                )
+        uid, company = await self.vat.receive_token(code, state)
 
-        user = self.token_states[state]["user"]
-        company = self.token_states[state]["company"]
+        print(uid, company)
 
         try:
 
@@ -150,7 +130,7 @@ class VatApi():
                 content_type="text/plain"
             )
 
-        state = State(self.store, user)
+        state = State(self.store, uid)
 
         now = datetime.datetime.utcnow()
         expires = now + datetime.timedelta(seconds=int(token["expires_in"]))
@@ -162,19 +142,7 @@ class VatApi():
         await state.vat_auth().put(company, token)
 
         url = "/status/%s/vat" % company
-        page = """
-<html>
-    <body>
-        <h1>VAT authentication was successful</h1>
-        <p>Click 
-        <a href="%s">here</a>
-        to return to the application.</p>
-    </body>
-</html>
 
-""" % url
-
-#        Return web.Response(body=page, content_type="text/html")
         return web.HTTPFound(url)
 
     async def submit(self, request):

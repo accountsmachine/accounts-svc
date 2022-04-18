@@ -1,11 +1,13 @@
 
 from urllib.parse import urlencode, quote_plus
 import datetime
+import time
 import asyncio
 import logging
 from io import StringIO
 import json
 import uuid
+import secrets
 
 import gnucash_uk_vat.hmrc as hmrc
 import gnucash_uk_vat.model as model
@@ -15,6 +17,7 @@ logger = logging.getLogger("vat.vat")
 logger.setLevel(logging.DEBUG)
 
 from .. ixbrl_process import IxbrlProcess
+from .. state import State
 
 # Like VAT, but talks to configuration endpoints
 class VatEndpoint(hmrc.Vat):
@@ -158,11 +161,12 @@ class AuthEndpoint(auth.Auth):
 
 class Vat:
 
-    def __init__(self, config):
+    def __init__(self, config, store):
 
         self.client_id = config["vat-client-id"]
         self.client_secret = config["vat-client-secret"]
         self.redirect_uri = config["redirect-uri"]
+        self.store = store
 
     async def compute(self, state, renderer, id):
 
@@ -431,3 +435,34 @@ class Vat:
         asyncio.create_task(
                 self.background_submit(user, email, config, state, renderer, id)
         )
+
+    async def get_auth_ref(self, uid, state, cmp):
+
+        secret = secrets.token_hex(32)
+
+        token = {
+            "secret": secret,
+            "company": cmp,
+            "time": int(time.time()),
+        }
+        
+        await state.vat_auth_ref().put("ref", token)
+
+        return uid + ":" + secret
+
+    async def receive_token(self, code, state):
+
+        # Don't trust the inputs. uid may not be valid
+        uid, secret = state.split(":", 1)
+
+        state = State(self.store, uid)
+
+        token = await state.vat_auth_ref().get("ref")
+
+        if secret != token["secret"]:
+            raise RuntimeError("Token not valid")
+
+        company = token["company"]
+
+        return uid, company
+
