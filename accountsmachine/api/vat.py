@@ -230,7 +230,7 @@ class VatApi():
             "application.client-secret": "ASD",
             "client.version": request.headers["X-Client-Version"],
             "transport.forwarded": xff,
-            "identity.vrn": "DUNNO",
+#            "identity.vrn": "DUNNO",
             "identity.do-not-track": dnt,
             "identity.device.user-agent": request.headers["User-Agent"],
             "identity.device.id": request.headers["X-Device-ID"],
