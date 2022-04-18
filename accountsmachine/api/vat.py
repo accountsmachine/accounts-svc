@@ -37,145 +37,6 @@ def get_my_ip():
         ip_address = socket.gethostbyname(hostname)
         return ip_address
 
-# Like VAT, but talks to configuration endpoints
-class VatEndpoint(hmrc.Vat):
-    def __init__(self, config, auth):
-        super().__init__(config, auth)
-        self.oauth_base = config["vat-auth-url"]
-        self.api_base = config["vat-api-url"]
-
-    # Constructs HTTP headers which meet the Fraud API.  Most of this
-    # comes from config
-    def build_fraud_headers(self):
-
-        dnt = self.config.get("identity.do-not-track")
-        ua = self.config.get("identity.device.user-agent")
-        dev_id = self.config.get("identity.device.id")
-        my_ip = self.config.get("server.ip")
-
-        mfa = [
-#            ("type", "AUTH_CODE"),
-#            ("timestamp", "2021-11-21T13:23Z"),
-#            ("unique-reference", "fc4b5fd6816f75a7c"),
-#            ("type", "TOTP"),
-#            ("timestamp", "2021-11-21T13:20Z"),
-#            ("unique-reference", "0283da60063abfb3a")
-        ]
-
-        mfa = "&".join([
-            urlencode({v[0]: v[1]}) for v in mfa
-        ])
-
-        client_ip = self.config.get("identity.transport.host")
-        client_port =  self.config.get("identity.transport.port")
-
-        window = [
-            ("width", self.config.get("window.width")),
-            ("height", self.config.get("window.height"))
-        ]
-
-        window = "&".join([
-            urlencode({v[0]: v[1]}) for v in window
-        ])
-
-        screens = [
-            ("width", self.config.get("screen.width")),
-            ("height", self.config.get("screen.height")),
-            ("scaling-factor", self.config.get("screen.scaling-factor")),
-            ("colour-depth", self.config.get("screen.colour-depth"))
-        ]
-
-        screens = "&".join([
-            urlencode({v[0]: v[1]}) for v in screens
-        ])
-
-        user_ids = [
-            ("accountsmachine.io", self.config.get("identity.user")),
-            ("email", self.config.get("identity.email"))
-        ]
-
-        user_ids = "&".join([
-            urlencode({v[0]: v[1]}) for v in user_ids
-        ])
-
-        hops = []
-
-        xff = self.config.get("transport.forwarded")
-
-        if len(xff) > 0:
-
-            src = None
-
-            for hop in xff:
-
-                if src:
-                    hops.append(("by", hop))
-                    hops.append(("for", src))
-
-                src = hop
-
-            # The last address in X-Forward-For to the client address
-            hops.append(("by", client_ip))
-            hops.append(("for", src))
-
-            # Final hop is to me
-            hops.append(("by", my_ip))
-            hops.append(("for", client_ip))
-
-        else:
-        
-            hops.append(("by", my_ip))
-            hops.append(("for", client_ip))
-
-        hops = "&".join([
-            urlencode({v[0]: v[1]}) for v in hops
-        ])
-
-        versions = [
-            ("accounts-svc", "1.0.0"),
-            ("accounts-web", self.config.get("client.version")),
-        ]
-
-        versions = "&".join([
-            urlencode({v[0]: v[1]}) for v in versions
-        ])
-
-        product = "accountsmachine.io"
-        now = datetime.datetime.utcnow().isoformat()[:-3] + "Z"
-
-        # So in a cloud run environment, the client IP isn't client_ip
-        # it's the an address in X-Forwared-For
-        if len(xff) > 0:
-                client_ip = xff[0]
-
-        # Return headers
-        return {
-            'Gov-Client-Connection-Method': 'WEB_APP_VIA_SERVER',
-            'Gov-Client-Browser-Do-Not-Track': dnt,
-            'Gov-Client-Browser-JS-User-Agent': ua,
-            'Gov-Client-Device-ID': dev_id,
-            'Gov-Client-Multi-Factor': mfa,
-            'Gov-Client-Public-IP': client_ip,
-            'Gov-Client-Public-IP-Timestamp': now,
-#            'Gov-Client-Public-Port': client_port,
-            'Gov-Client-Screens': screens,
-            'Gov-Client-Timezone': self.config.get("identity.device.tz"),
-            'Gov-Client-User-IDs': user_ids,
-            'Gov-Client-Window-Size': window,
-            'Gov-Vendor-Forwarded': hops,
-            'Gov-Vendor-License-IDs': '',
-            'Gov-Vendor-Product-Name': quote_plus(product),
-#            'Gov-Vendor-Public-IP': my_ip,
-            'Gov-Vendor-Version': versions,
-            'Authorization': 'Bearer %s' % self.auth.get("access_token"),
-        }
-
-class AuthEndpoint(auth.Auth):
-    def __init__(self, auth):
-        self.auth = auth
-    def write(self):
-        # Do nothing, we'll pick up the changed auth later.
-        pass
 
 class VatApi():
     def __init__(self, config, store):
@@ -577,7 +438,6 @@ class VatApi():
     async def get_status(self, request):
 
         request["auth"].verify_scope("vat")
-        user = request["auth"].user
         state = request["state"]
         config = self.get_vat_client_config(request)
 
@@ -604,9 +464,8 @@ class VatApi():
     async def get_liabilities(self, request):
 
         request["auth"].verify_scope("vat")
-        user = request["auth"].user
-
         state = request["state"]
+        config = self.get_vat_client_config(request)
 
         try:
 
@@ -617,18 +476,13 @@ class VatApi():
             start = datetime.date.fromisoformat(start)
             end = datetime.date.fromisoformat(end)
 
-            # FIXME: Also called inside get_vat_client, too many reads
-            cmp = await state.company().get(id)
+            liabs = await self.vat.get_liabilities(cmp["vrn"], start, end)
 
-            cli = await self.get_vat_client(user, id, state, request)
-
-            liabs = await cli.get_vat_liabilities(cmp["vrn"], start, end)
-
-            return web.json_response([v.to_dict() for v in liabs])            
+            return web.json_response(status)
 
         except Exception as e:
 
-            logger.debug("get_liabilities: Exception: %s", e)
+            logger.debug("get_status: Exception: %s", e)
             return web.HTTPInternalServerError(
                 body=str(e), content_type="text/plain"
             )
@@ -636,9 +490,8 @@ class VatApi():
     async def get_obligations(self, request):
 
         request["auth"].verify_scope("vat")
-        user = request["auth"].user
-
         state = request["state"]
+        config = self.get_vat_client_config(request)
 
         try:
 
@@ -649,18 +502,13 @@ class VatApi():
             start = datetime.date.fromisoformat(start)
             end = datetime.date.fromisoformat(end)
 
-            # FIXME: Also called inside get_vat_client, too many reads
-            cmp = await state.company().get(id)
+            liabs = await self.vat.get_obligations(cmp["vrn"], start, end)
 
-            cli = await self.get_vat_client(user, id, state, request)
-
-            ret = await cli.get_obligations(cmp["vrn"], start, end)
-
-            return web.json_response([v.to_dict() for v in ret])            
+            return web.json_response(status)
 
         except Exception as e:
 
-            logger.debug("get_obligations: Exception: %s", e)
+            logger.debug("get_status: Exception: %s", e)
             return web.HTTPInternalServerError(
                 body=str(e), content_type="text/plain"
             )
@@ -668,36 +516,8 @@ class VatApi():
     async def get_open_obligations(self, request):
 
         request["auth"].verify_scope("vat")
-        user = request["auth"].user
-
         state = request["state"]
-
-        try:
-
-            id = request.match_info['id']
-
-            # FIXME: Also called inside get_vat_client, too many reads
-            cmp = await state.company().get(id)
-
-            cli = await self.get_vat_client(user, id, state, request)
-
-            ret = await cli.get_open_obligations(cmp["vrn"])
-
-            return web.json_response([v.to_dict() for v in ret])            
-
-        except Exception as e:
-
-            logger.debug("get_open_obligations: Exception: %s", e)
-            return web.HTTPInternalServerError(
-                body=str(e), content_type="text/plain"
-            )
-
-    async def get_payments(self, request):
-
-        request["auth"].verify_scope("vat")
-        user = request["auth"].user
-
-        state = request["state"]
+        config = self.get_vat_client_config(request)
 
         try:
 
@@ -708,59 +528,42 @@ class VatApi():
             start = datetime.date.fromisoformat(start)
             end = datetime.date.fromisoformat(end)
 
-            # FIXME: Also called inside get_vat_client, too many reads
-            cmp = await state.company().get(id)
+            liabs = await self.vat.get_open_obligations(cmp["vrn"], start, end)
 
-            cli = await self.get_vat_client(user, id, state, request)
-
-            ret = await cli.get_vat_payments(cmp["vrn"], start, end)
-
-            return web.json_response([v.to_dict() for v in ret])            
+            return web.json_response(status)
 
         except Exception as e:
 
-            logger.debug("get_payments: Exception: %s", e)
+            logger.debug("get_status: Exception: %s", e)
             return web.HTTPInternalServerError(
                 body=str(e), content_type="text/plain"
             )
 
-    async def get_vat_client(self, user, company_number, state, request):
+    async def get_payments(self, request):
 
-        cmp = await state.company().get(company_number)
-
-        config = self.get_vat_client_config(user, cmp, request)
-
-        config["vat-auth-url"] = self.vat_auth_url
-        config["vat-api-url"] = self.vat_api_url
+        request["auth"].verify_scope("vat")
+        state = request["state"]
+        config = self.get_vat_client_config(request)
 
         try:
-            vauth = await state.vat_auth().get(company_number)
-        except:
-            logger.error("No VAT auth stored")
-            raise("No VAT auth stored.  "
-                  "You should authenticate with the VAT service")
 
-        auth = AuthEndpoint(vauth)
-        h = VatEndpoint(config, auth)
+            id = request.match_info['id']
+            start = request.query['start']
+            end = request.query['end']
 
-        # Refresh if needed.
-        if "access_token" in auth.auth:
-            old_token = auth.auth["access_token"]
-        else:
-            old_token = ""
+            start = datetime.date.fromisoformat(start)
+            end = datetime.date.fromisoformat(end)
 
-        await auth.maybe_refresh(h)
+            liabs = await self.vat.get_payments(cmp["vrn"], start, end)
 
-        if  auth.auth["access_token"] != old_token:
+            return web.json_response(status)
 
-            try:
-                await state.vat_auth().put(company_number, auth.auth)
-            except:
-                await state.vat_auth().delete(company_number)
+        except Exception as e:
 
-                raise RuntimeError("Failure to store refreshed token")
-
-        return h
+            logger.debug("get_status: Exception: %s", e)
+            return web.HTTPInternalServerError(
+                body=str(e), content_type="text/plain"
+            )
 
     async def deauthorize(self, request):
 

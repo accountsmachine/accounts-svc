@@ -13,17 +13,6 @@ logger.setLevel(logging.DEBUG)
 
 from .. ixbrl_process import IxbrlProcess
 
-def get_my_ip():
-
-        # Cloud run services don't have a public IP
-        return "0.0.0.0"
-
-        # This works on normal machines
-        import socket
-        hostname = socket.gethostname()
-        ip_address = socket.gethostbyname(hostname)
-        return ip_address
-
 # Like VAT, but talks to configuration endpoints
 class VatEndpoint(hmrc.Vat):
     def __init__(self, config, auth):
@@ -218,7 +207,6 @@ class Vat:
 
     async def get_status(self, config, state, id, start, end):
 
-        # FIXME: Also called inside get_vat_client, too many reads
         cmp = await state.company().get(id)
 
         cli = await self.get_vat_client(config, state, id)
@@ -234,3 +222,28 @@ class Vat:
             "payments": [v.to_dict() for v in p],
             "obligations": [v.to_dict() for v in o]
         }
+
+    async def get_liabilities(self, config, state, id, start, end):
+        cmp = await state.company().get(id)
+        cli = await self.get_vat_client(config, state, id)
+        l = await cli.get_vat_liabilities(cmp["vrn"], start, end)
+        return l
+
+    async def get_obligations(self, config, state, id, start, end):
+        cmp = await state.company().get(id)
+        cli = await self.get_vat_client(config, state, id)
+        l = await cli.get_obligations(cmp["vrn"], start, end)
+        return l
+
+    async def get_open_obligations(self, config, state, id):
+        cmp = await state.company().get(id)
+        cli = await self.get_vat_client(config, state, id)
+        l = await cli.get_obligations(cmp["vrn"])
+        return l
+
+    async def get_payments(self, config, state, id, start, end):
+        cmp = await state.company().get(id)
+        cli = await self.get_vat_client(config, state, id)
+        l = await cli.get_vat_payments(cmp["vrn"], start, end)
+        return l
+
