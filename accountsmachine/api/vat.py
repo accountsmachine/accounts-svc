@@ -16,6 +16,8 @@ import time
 
 from .. state import State
 from .. ixbrl_process import IxbrlProcess
+from . render import RendererApi
+from .. vat.vat import Vat
 
 import gnucash_uk_vat.hmrc as hmrc
 import gnucash_uk_vat.model as model
@@ -191,35 +193,20 @@ class VatApi():
 
         self.my_ip = get_my_ip()
 
+        # FIXME: Lifecycle needs refactoring?  Doesn't belong here?
+        self.renderer = RendererApi(config)
+
+        self.vat = Vat(config)
+
     async def compute(self, request):
 
         request["auth"].verify_scope("vat")
         user = request["auth"].user
+        id = request.match_info['id']
 
-        try:
+        vat = await self.vat.compute(request["state"], self.renderer, id)
 
-            id = request.match_info['id']
-
-            try:
-                html = await request["renderer"].render(
-                    request["state"], request["renderer"],
-                    id, "vat"
-                )
-            except Exception as e:
-                html = ""
-                logger.error(e)
-
-            i = IxbrlProcess()
-            vat = i.process(html)
-
-            return web.json_response(vat)
-
-        except Exception as e:
-
-            logger.debug("compute: Exception: %s", e)
-            return web.HTTPInternalServerError(
-                body=str(e), content_type="text/plain"
-            )
+        return web.json_response(vat)
         
     async def redirect_auth(self, request):
 
