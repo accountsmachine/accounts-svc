@@ -184,8 +184,6 @@ class VatApi():
         id = request.match_info['id']
         config = self.get_vat_client_config(request)
 
-        print("ID IS", id)
-
         await self.vat.submit(
                 user, request["auth"].email, config, request["state"],
                 self.renderer, id

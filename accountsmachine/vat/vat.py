@@ -180,11 +180,8 @@ class Vat:
     async def get_vat_client(self, config, state, id):
 
         try:
-            print(id)
             vauth = await state.vat_auth().get(id)
         except Exception as e:
-            print(e, type(e))
-        
             logger.error("No VAT auth stored")
             raise RuntimeError("No VAT auth stored.  "
                   "You should authenticate with the VAT service"
@@ -258,7 +255,6 @@ class Vat:
         self, user, email, config, state, renderer, id
     ):
 
-        print(">>>>", id)
         log_stream = StringIO()
         sthislog = logging.StreamHandler(log_stream)
         thislog = logging.getLoggerClass()("vat")
@@ -431,8 +427,6 @@ class Vat:
 
         if balance["credits"]["vat"] < 1:
                 raise RuntimeError("No VAT credits available")
-
-        print("____", id)
 
         asyncio.create_task(
                 self.background_submit(user, email, config, state, renderer, id)
