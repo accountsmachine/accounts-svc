@@ -403,7 +403,7 @@ class VatApi():
 
                 transaction = {
                     "time": datetime.datetime.now().isoformat(),
-                    "transaction": "filing",
+                    "type": "filing",
                     "company": company_number,
                     "kind": "vat",
                     "filing": cfg["label"],

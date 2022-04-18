@@ -24,7 +24,7 @@ class InvalidOrder(Exception):
 # credits:
 #
 # {
-#     transaction: 'order',
+#     type: 'order',
 #     address: [ "The Wirrals", "Lemlith", "Beaconsford" ],
 #     billing_country: "UK", country: "UK", email: "mark@accountsmachine.io",
 #     kind: "vat", time: "2022-03-24T11:03:57.411167",
@@ -221,7 +221,7 @@ class Commerce:
         print(profile)
 
         transaction = {
-            "transaction": "order",
+            "type": "order",
             "name": profile["billing_name"],
             "address": profile["billing_address"],
             "city": profile["billing_city"],
