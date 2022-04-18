@@ -10,6 +10,9 @@
 
     "stripe-public": "pk_test_51Khz14ImWys2SCctYBeX8uqlDHma6bHjO6mig7oHpaVTENa71keRcTiE1vDEpQewPc7UJWMX31CTJU6B2ycamnZa00PuWMDZPX",
     "stripe-secret": "sk_test_51Khz14ImWys2SCctFJHlNKlUQEmspamspbKOU15uBwMYC6ja0vMvKUDyDkWPehenoDoEht7dNztLatVlQ5ud5Fxp009e5MfCDE",
+    "seller-name": "accountsmachine.io",
+    "seller-vat-number": "GB123456789",
+    "vat-rate": 20,
 
     "jsonnet-base": "ixbrl-reporter-jsonnet/",
     "config-base": "base/",

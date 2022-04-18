@@ -36,7 +36,7 @@ class InvalidOrder(Exception):
 #
 # Consumption:
 # {
-#     kind: 'use',
+#     kind: 'filing',
 #     company: "12874000", resource: "vat", filing: "fkN481YZAx",
 #     credits: -1, time: "2022-03-24T11:03:57.411167",
 #     uid: "ROElfkN481YZAxmO6U6eMzvmXGt2", email:  "mark@accountsmachine.io"
@@ -62,8 +62,12 @@ class Commerce:
     def __init__(self, config):
 
         stripe.api_key = config["stripe-secret"]
-
         self.stripe_public = config["stripe-public"] 
+        self.seller_name = config["seller-name"] 
+        self.seller_vat_number = config["seller-vat-number"]
+
+        # 3 decimal places
+        self.vat_rate = round(config["vat-rate"] / 100, 3)
 
         self.values = {
             "vat": {
@@ -136,7 +140,7 @@ class Commerce:
 
         offer = {
             "offer": opts,
-            "vat_rate": 0.2,
+            "vat_rate": self.vat_rate,
         }
 
         return offer
@@ -196,7 +200,7 @@ class Commerce:
 
         # FIXME: Hard-coded VAT rate.
         # This avoids rounding errors.
-        if abs(order["vat_rate"] - 0.2) > 0.00005:
+        if abs(order["vat_rate"] - self.vat_rate) > 0.00005:
             raise InvalidOrder(text="Tax rate is wrong")
 
         vat = round(subtotal * order["vat_rate"])
@@ -226,6 +230,8 @@ class Commerce:
             "postcode": profile["billing_postcode"],
             "email": profile["billing_email"],
             "tel": profile["billing_tel"],
+            "seller_name": self.seller_name,
+            "seller_vat_number": self.seller_vat_number,
             "time": datetime.datetime.now().isoformat(),
             "uid": user, "complete": False,
             "status": "pending",
