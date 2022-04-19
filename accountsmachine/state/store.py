@@ -21,9 +21,10 @@ class DocCollection:
         return doc.to_dict()
     async def delete(self, key):
         await self.collection.document(key).delete()
-    def all(self, key, value):
+    async def all(self, key, value):
         qry = self.collection.where(key, '==', value)
-        docs = [v for v in qry.stream()]
+        strm = await qry.get()
+        docs = [v for v in strm]
         return {
             doc.id.split("@")[0]: doc.to_dict()
             for doc in docs
