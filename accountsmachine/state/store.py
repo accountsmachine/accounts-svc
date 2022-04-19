@@ -14,8 +14,8 @@ class DocCollection:
         self.collection = db.collection(collection)
     async def set(self, key, item):
         await self.collection.document(key).set(item)
-    async def get(self, key):
-        doc = await self.collection.document(key).get()
+    async def get(self, key, tx=None):
+        doc = await self.collection.document(key).get(transaction=tx)
         if not doc.exists:
             raise KeyError()
         return doc.to_dict()
@@ -39,9 +39,9 @@ class DocStore:
     def collection(self, coll):
         return DocCollection(self.db, coll)
 
-    async def get(self, coll, id):
+    async def get(self, coll, id, tx=None):
         logger.debug("get %s %s" % (coll, id))
-        return await self.collection(coll).get(id)
+        return await self.collection(coll).get(id, tx)
 
     async def put(self, coll, id, data):
         logger.debug("put %s %s" % (coll, id))

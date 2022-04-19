@@ -9,6 +9,7 @@ class DocKind:
         self.state = state
         self.store = state.store.docstore
         self.user = state.user
+        self.tx = None
     def id(self, id):
         return id + "@" + self.user
     async def list(self):
@@ -16,7 +17,7 @@ class DocKind:
         data = {v: data[v]["data"] for v in data}
         return  data
     async def get(self, id):
-        data = await self.store.get(self.collection, self.id(id))
+        data = await self.store.get(self.collection, self.id(id), tx=self.tx)
         return data["data"]
     async def put(self, id, data):
         data = {
@@ -49,10 +50,37 @@ class BlobKind:
     async def delete(self, id):
         return await self.store.delete(self.id(id))
 
+class StateTx:
+    def __init__(self):
+        pass
+    def get_tx(self, val):
+        return self.tx
+        
+    def __getattr__(self, val):
+
+        if not hasattr(self.state, val):
+            raise RuntimeError("Collection " + val + " not known.")
+
+        mthd = getattr(self.state, val)
+
+        obj = mthd()
+
+        # Hackery.  Put transaction in the DocKind object.
+        if isinstance(obj, DocKind):
+            obj.transaction = self.tx
+
+        return obj
+    
 class State:
     def __init__(self, store, user):
         self.store = store
         self.user = user
+
+    def create_transaction(self):
+        t = StateTx()
+        t.state = self
+        t.tx = self.store.docstore.db.transaction()
+        return t
 
     def doc(self, collection):
         return DocKind(collection, self)
@@ -119,4 +147,7 @@ class State:
 
     def vat_auth_ref(self):
         return self.doc("vat-auth-ref")
+
+    def bunchy(self):
+        return self.doc("BUNCHY")
 
