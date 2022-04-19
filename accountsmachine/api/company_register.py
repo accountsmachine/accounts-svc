@@ -12,11 +12,19 @@ class CompanyRegisterApi():
 
     def __init__(self, config):
 
-        key = config["companies-house-api-key"]
+        try:
+            self.url = config["companies-service-url"]
+        except:
+            self.url = "https://api.company-information.service.gov.uk"
 
+        print(self.url)
+
+        key = config["companies-service-api-key"]
         self.auth = base64.b64encode(
             (key + ":").encode("utf-8")
         ).decode("utf-8")
+
+        print(self.auth)
 
     async def get(self, request):
 
@@ -35,15 +43,16 @@ class CompanyRegisterApi():
 
             async with ClientSession() as session:
 
+                print(self.url)
                 url = "https://api.company-information.service.gov.uk/"
-                
+                print(self.url)
 
                 headers = {
                     "Authorization": "Basic " + self.auth
                 }
 
                 async with session.post(
-                        url + "/company/" + id,
+                        self.url + "/company/" + id,
                         headers=headers
                 ) as resp:
 
@@ -53,7 +62,7 @@ class CompanyRegisterApi():
                     ci = await resp.json()
 
                 async with session.post(
-                        url + "/company/" + id + "/officers",
+                        self.url + "/company/" + id + "/officers",
                         headers=headers
                 ) as resp:
 

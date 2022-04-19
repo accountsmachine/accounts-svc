@@ -25,7 +25,8 @@
     "Xvat-client-secret": "6a52",
 
     "redirect-uri": "https://app.dev.accountsmachine.io/api/vat/receive-token",
-    "companies-house-api-key": "638bedcb-eb9d-4c97-b16d-fd28fc5a5739",
+    "companies-service-api-key": "testtesttest",
+    "companies-service-url": "https://companies-test-service-3xisesr2uq-ew.a.run.app",
 
     "audience": "accounts-machine-dev",
     "algorithms": ["RS256"],
