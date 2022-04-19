@@ -23,7 +23,7 @@
     "vat-client-secret": "secret1-5053-4e74-bbef-33b294b0e7d6",
     "redirect-uri": "http://localhost:8080/api/vat/receive-token",
 
-    "companies-service-api-key": "638bedcb-eb9d-4c97-b16d-fd28fc5a5739",
+    "companies-service-api-key": "testtesttest",
     "companies-service-url": "https://companies-test.dev.accountsmachine.io/",
 
     "audience": "accounts-machine-dev",
