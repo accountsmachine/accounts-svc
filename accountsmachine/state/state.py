@@ -63,13 +63,16 @@ class StateTx:
 
         mthd = getattr(self.state, val)
 
-        obj = mthd()
+        def thing():
+            obj = mthd()
 
-        # Hackery.  Put transaction in the DocKind object.
-        if isinstance(obj, DocKind):
-            obj.transaction = self.tx
+            # Hackery.  Put transaction in the DocKind object.
+            if isinstance(obj, DocKind):
+                obj.transaction = self.tx
 
-        return obj
+            return obj
+
+        return thing
     
 class State:
     def __init__(self, store, user):
