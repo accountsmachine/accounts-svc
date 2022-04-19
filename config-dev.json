@@ -26,7 +26,7 @@
 
     "redirect-uri": "https://app.dev.accountsmachine.io/api/vat/receive-token",
     "companies-service-api-key": "testtesttest",
-    "companies-service-url": "https://companies-test-service-3xisesr2uq-ew.a.run.app",
+    "companies-service-url": "https://companies-test.dev.accountsmachine.io/",
 
     "audience": "accounts-machine-dev",
     "algorithms": ["RS256"],
