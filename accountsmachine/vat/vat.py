@@ -470,4 +470,5 @@ class Vat:
 
         state = State(self.store, uid)
         await state.vat_auth().put(company, auth)
+        await state.vat_auth_ref().delete("ref")
 
