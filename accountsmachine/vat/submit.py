@@ -6,6 +6,7 @@ import uuid
 import json
 import logging
 
+from firebase_admin import firestore
 import gnucash_uk_vat.model as model
 
 from .. ixbrl_process import IxbrlProcess
@@ -83,18 +84,15 @@ class VatSubmission:
                         "VAT due date %s not found in obligations" % cfg["due"]
                     )
 
-                # Handle billing
-                balance = await state.balance().get("balance")
+                # Process VAT data to HTML report and VAT record
+                html = await self.renderer.render(
+                    state, self.renderer, id, "vat"
+                )
 
-                if balance["credits"]["vat"] < 1:
-                        raise web.HTTPPaymentRequired(
-                                text="No VAT credits available"
-                        )
+                i = IxbrlProcess()
+                vat = i.process(html)
 
-                balance["credits"]["vat"] -= 1
-                balance["time"] = datetime.datetime.now().isoformat()
-
-                transaction = {
+                ordtx = {
                     "time": datetime.datetime.now().isoformat(),
                     "type": "filing",
                     "company": company_number,
@@ -116,17 +114,33 @@ class VatSubmission:
 
                 tid = str(uuid.uuid4())
 
-                await state.balance().put("balance", balance)
-                await state.transaction().put(tid, transaction)
+                @firestore.transactional
+                async def update_order(stx, tx, ordtx):
+
+                    # Fetches current balance
+                    bal = await tx.balance().get("balance")
+
+                    if bal["credits"]["vat"] < 1:
+                        return False, "No VAT credits available"
+
+                    bal["credits"]["vat"] -= 1
+                    bal["time"] = datetime.datetime.now().isoformat()
+
+                    ordtx["status"] = "complete"
+                    ordtx["complete"] = True
+
+                    await tx.balance().put("balance", bal)
+                    await tx.transaction().put(tid, ordtx)
+
+                    return True, "OK"
+
+                tx = state.create_transaction()
+                ok, msg = await update_order(tx.tx, tx, ordtx)
+
+                if not ok:
+                    raise RuntimeError(msg)
 
                 # Billing written
-
-                html = await self.renderer.render(
-                    state, self.renderer, id, "vat"
-                )
-
-                i = IxbrlProcess()
-                vat = i.process(html)
 
                 await state.filing_report().put(id, html.encode("utf-8"))
                 await state.filing_data().put(id, vat)

@@ -340,7 +340,7 @@ class Commerce:
                 if bal["credits"][kind] + deltas[kind] > permitted:
                     return False, "That would exceed your maximum permitted"
 
-                if kind not in bal:
+                if kind not in bal["credits"]:
                     bal["credits"][kind] = 0
 
                 bal["credits"][kind] += deltas[kind]
