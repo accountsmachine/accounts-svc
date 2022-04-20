@@ -21,7 +21,8 @@
     "vat-api-url": "https://vat-test.dev.accountsmachine.io",
     "vat-client-id": "id1",
     "vat-client-secret": "secret1-5053-4e74-bbef-33b294b0e7d6",
-    "redirect-uri": "http://localhost:8080/api/vat/receive-token",
+    "OLDredirect-uri": "http://localhost:8080/api/vat/receive-token",
+    "redirect-uri": "http://192.168.0.105:8080/api/vat/receive-token",
 
     "companies-service-api-key": "testtesttest",
     "companies-service-url": "https://companies-test.dev.accountsmachine.io/",
