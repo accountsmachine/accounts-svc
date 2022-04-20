@@ -231,7 +231,6 @@ class Hmrc:
 
     async def submit_vat_return(self, rtn):
 
-        print("SUBMITTIN")
         cmp = await self.state.company().get(self.company_id)
         cli = await self.get_vat_client()
 

@@ -68,16 +68,11 @@ class VatSubmission:
                 logger.debug("VRN is %s", cmp["vrn"])
                 thislog.info("VRN is %s", cmp["vrn"])
 
-                print("CONNECT")
                 cli = Hmrc(self.config, state, company_number)
                 obs = await cli.get_open_obligations()
-                print(obs)
 
-                print("HERE")
-                print(cfg)
                 logger.debug("Looking for obligation period due %s", cfg["due"])
                 thislog.info("Period due %s", cfg["due"])
-                print("HERE")
 
                 obl = None
                 for o in obs:
