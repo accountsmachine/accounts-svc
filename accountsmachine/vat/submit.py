@@ -4,11 +4,13 @@ from io import StringIO
 import asyncio
 import uuid
 import json
+import logging
 
 logger = logging.getLogger("vat.submit")
 logger.setLevel(logging.DEBUG)
 
 import gnucash_uk_vat.model as model
+from . hmrc import Hmrc
 
 class VatSubmission:
 
@@ -61,15 +63,19 @@ class VatSubmission:
 
                 cmp = await state.company().get(company_number)
 
-                h = await self.get_vat_client(self.config, state, company_number)
-
                 logger.debug("VRN is %s", cmp["vrn"])
                 thislog.info("VRN is %s", cmp["vrn"])
 
-                obs = await h.get_open_obligations(cmp["vrn"])
+                print("CONNECT")
+                cli = Hmrc(self.config, state, company_number)
+                obs = await cli.get_open_obligations()
+                print(obs)
 
+                print("HERE")
+                print(cfg)
                 logger.debug("Looking for obligation period due %s", cfg["due"])
                 thislog.info("Period due %s", cfg["due"])
+                print("HERE")
 
                 obl = None
                 for o in obs:
@@ -146,7 +152,7 @@ class VatSubmission:
                     thislog.info("  %s: %s", k, v)
 
                 thislog.info("Submitting VAT return...")
-                await h.submit_vat_return(cmp["vrn"], rtn)
+                await cli.submit_vat_return(rtn)
                 thislog.info("Success.")
 
                 await state.filing_status().put(id, {
