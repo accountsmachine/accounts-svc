@@ -175,7 +175,7 @@ class UserAdmin:
 
         scope = auth["scope"]
 
-        logger.info("OK %s %s", auth["sub"], scope)
+        logger.debug("OK %s %s", auth["sub"], scope)
 
         a = RequestAuth(auth["sub"], scope, self)
         a.email = auth["email"]
