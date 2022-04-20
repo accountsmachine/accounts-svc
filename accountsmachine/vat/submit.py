@@ -6,11 +6,13 @@ import uuid
 import json
 import logging
 
+import gnucash_uk_vat.model as model
+
+from .. ixbrl_process import IxbrlProcess
+from . hmrc import Hmrc
+
 logger = logging.getLogger("vat.submit")
 logger.setLevel(logging.DEBUG)
-
-import gnucash_uk_vat.model as model
-from . hmrc import Hmrc
 
 class VatSubmission:
 

@@ -36,23 +36,33 @@ class Vat:
 
     async def get_status(self, config, state, id, start, end):
         cli = Hmrc(config, state, id)
-        return await cli.get_status(start, end)
+        l, p, o = await cli.get_status(start, end)
+
+        return {
+            "liabilities": [v.to_dict() for v in l],
+            "payments": [v.to_dict() for v in p],
+            "obligations": [v.to_dict() for v in o]
+        }
 
     async def get_liabilities(self, config, state, id, start, end):
         cli = Hmrc(config, state, id)
-        return await cli.get_vat_liabilities(start, end)
+        l = await cli.get_vat_liabilities(start, end)
+        return [v.to_dict() for v in l]
 
     async def get_obligations(self, config, state, id, start, end):
         cli = Hmrc(config, state, id)
-        return await cli.get_obligations(start, end)
+        l = await cli.get_obligations(start, end)
+        return [v.to_dict() for v in l]
 
     async def get_open_obligations(self, config, state, id):
         cli = Hmrc(config, state, id)
-        return await cli.get_open_obligations()
+        l = await cli.get_open_obligations()
+        return [v.to_dict() for v in l]
 
     async def get_payments(self, config, state, id, start, end):
         cli = Hmrc(config, state, id)
-        return await cli.get_payments(start, end)
+        l = await cli.get_payments(start, end)
+        return [v.to_dict() for v in l]
 
     async def submit(self, user, email, config, state, renderer, id):
 

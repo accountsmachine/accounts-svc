@@ -195,53 +195,39 @@ class Hmrc:
         cmp = await self.state.company().get(self.company_id)
         cli = await self.get_vat_client()
 
-        l, p, o = await asyncio.gather(
+        return await asyncio.gather(
             cli.get_vat_liabilities(cmp["vrn"], start, end),
             cli.get_vat_payments(cmp["vrn"], start, end),
             cli.get_obligations(cmp["vrn"], start, end),
         )
-
-        return {
-            "liabilities": [v.to_dict() for v in l],
-            "payments": [v.to_dict() for v in p],
-            "obligations": [v.to_dict() for v in o]
-        }
 
     async def get_liabilities(self, start, end):
 
         cmp = await self.state.company().get(self.company_id)
         cli = await self.get_vat_client()
 
-        l = await cli.get_vat_liabilities(cmp["vrn"], start, end)
-
-        return [v.to_dict() for v in l]
+        return await cli.get_vat_liabilities(cmp["vrn"], start, end)
 
     async def get_obligations(self, start, end):
 
         cmp = await self.state.company().get(self.company_id)
         cli = await self.get_vat_client()
 
-        l = await cli.get_obligations(cmp["vrn"], start, end)
-
-        return [v.to_dict() for v in l]
+        return await cli.get_obligations(cmp["vrn"], start, end)
 
     async def get_open_obligations(self):
 
         cmp = await self.state.company().get(self.company_id)
         cli = await self.get_vat_client()
 
-        l = await cli.get_open_obligations(cmp["vrn"])
-
-        return [v.to_dict() for v in l]
+        return await cli.get_open_obligations(cmp["vrn"])
 
     async def get_payments(self, start, end):
 
         cmp = await self.state.company().get(self.company_id)
         cli = await self.get_vat_client()
 
-        l = await cli.get_vat_payments(cmp["vrn"], start, end)
-
-        return [v.to_dict() for v in l]
+        return await cli.get_vat_payments(cmp["vrn"], start, end)
 
     async def submit_vat_return(self, rtn):
 
