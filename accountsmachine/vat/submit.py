@@ -24,6 +24,26 @@ class VatSubmission:
         self.state = state
         self.renderer = renderer
 
+    async def clear_filing_history(self, id):
+
+        # Clear out any previous filing reports etc.
+        try:
+            await state.filing_report().delete(id)
+        except: pass
+
+        try:
+            await state.filing_data().delete(id)
+        except: pass
+
+        try:
+            await state.filing_status().delete(id)
+        except: pass
+
+    async def set_pending(self, id, cfg):
+
+        cfg["state"] = "pending"
+        await state.filing_config().put(id, cfg)
+
     async def background_submit(self, id):
 
         state = self.state
@@ -33,19 +53,9 @@ class VatSubmission:
         thislog = logging.getLoggerClass()("vat")
         thislog.addHandler(sthislog)
 
+        self.clear_filing_history(id)
+
         try:
-
-            try:
-                await state.filing_report().delete(id)
-            except: pass
-
-            try:
-                await state.filing_data().delete(id)
-            except: pass
-
-            try:
-                await state.filing_status().delete(id)
-            except: pass
 
             try:
 
@@ -53,26 +63,17 @@ class VatSubmission:
 
                 cfg = await state.filing_config().get(id)
 
-                cfg["state"] = "pending"
-                await state.filing_config().put(id, cfg)
-
-                logger.debug("VAT config %s", json.dumps(cfg))
-                thislog.info("VAT config ID: %s", id)
+                self.set_pending(id, cfg)
 
                 try:
                     company_number = cfg["company"]
                 except Exception as e:
                     raise RuntimeError("No company number in configuration")
 
-                cmp = await state.company().get(company_number)
-
-                logger.debug("VRN is %s", cmp["vrn"])
-                thislog.info("VRN is %s", cmp["vrn"])
-
                 cli = Hmrc(self.config, state, company_number)
                 obs = await cli.get_open_obligations()
 
-                logger.debug("Looking for obligation period due %s", cfg["due"])
+                logger.debug("Period due %s", cfg["due"])
                 thislog.info("Period due %s", cfg["due"])
 
                 obl = None
@@ -106,6 +107,7 @@ class VatSubmission:
                         "items": [
                             {
                                 "kind": "vat",
+                                "description": "VAT filing credit",
                                 "quantity": -1,
                             }
                         ]
@@ -172,20 +174,54 @@ class VatSubmission:
 
             except Exception as e:
 
+                # It all went wrong.
                 logger.debug("background_submit: Exception: %s", e)
                 thislog.error("background_submit: Exception: %s", e)
 
                 l = log_stream.getvalue()
 
+                # Put the log in a filing status.
                 await state.filing_status().put(id, {
                     "report": l
                 })
 
+                # The filed report is empty.
                 await state.filing_report().put(id, "".encode("utf-8"))
 
-                cfg = await state.filing_config().get(id)
-                cfg["state"] = "errored"
-                await state.filing_config().put(id, cfg)
+                # Here we're reversing the charged credit as a transaction.
+
+                @firestore.transactional
+                async def update_order(stx, tx, ordtx):
+
+                    # Get current config
+                    cfg = await tx.filing_config().get(id)
+
+                    # Fetches current balance
+                    bal = await tx.balance().get("balance")
+
+                    bal["credits"]["vat"] += 1
+                    bal["time"] = datetime.datetime.now().isoformat()
+
+                    ordtx["status"] = "cancelled"
+                    ordtx["complete"] = False
+                    ordtx["order"] = {
+                        "items": [
+                            {
+                                "kind": "vat",
+                                "description": "VAT filing, resulted in error",
+                                "quantity": 0,
+                            }
+                        ]
+                    }
+
+                    cfg["state"] = "errored"
+
+                    await tx.balance().put("balance", bal)
+                    await tx.transaction().put(tid, ordtx)
+                    await state.filing_config().put(id, cfg)
+
+                tx = state.create_transaction()
+                await update_order(tx.tx, tx, ordtx)
 
                 return
 
