@@ -66,9 +66,9 @@ class CommerceApi():
         request["auth"].verify_scope("filing-config")
         id = request.match_info['id']
 
-        balance = await request["commerce"].complete_order(request["state"], id)
+        await request["commerce"].complete_order(request["state"], id)
 
-        return web.json_response(balance)
+        return web.json_response()
 
     async def get_transactions(self, request):
 

@@ -7,6 +7,7 @@ import uuid
 import datetime
 import math
 import copy
+from firebase_admin import firestore
 
 import stripe
 stripe.api_key = ""
@@ -149,10 +150,13 @@ class Commerce:
 
         return await state.balance().get("balance")
 
-    # Returns potential new balance
-    def verify_order(self, order, balance):
 
-        balance = copy.deepcopy(balance)
+
+
+
+
+    # Validate order for internal integrity
+    def verify_order(self, order):
         
         subtotal = 0
 
@@ -162,25 +166,12 @@ class Commerce:
             count = item["quantity"]
             amount = item["amount"]
 
-            resource = self.values[kind]
-
-            if kind not in ["vat", "accounts", "corptax"]:
+            if kind not in self.values:
                 raise InvalidOrder(
                     text="We don't sell you one of those."
                 )
 
-            if kind not in balance["credits"]:
-                balance["credits"][kind] = 0
-
-            balance["credits"][kind] += count
-
-            # The same resource could be listed multiple times, this works
-            # for that case.
-
-            if balance["credits"][kind] > resource["permitted"]:
-                raise InvalidOrder(
-                    text="That would exceed your maximum permitted"
-                )
+            resource = self.values[kind]
 
             price = math.floor(
                 Commerce.purchase_price(
@@ -198,7 +189,6 @@ class Commerce:
         if subtotal != order["subtotal"]:
             raise InvalidOrder(text="Computed subtotal is wrong")
 
-        # FIXME: Hard-coded VAT rate.
         # This avoids rounding errors.
         if abs(order["vat_rate"] - self.vat_rate) > 0.00005:
             raise InvalidOrder(text="Tax rate is wrong")
@@ -213,12 +203,29 @@ class Commerce:
         if total != order["total"]:
             raise InvalidOrder(text="Total calculation is wrong")
 
-        return balance
+    # Returns potential new balance
+    def get_order_delta(self, order):
+
+        deltas = {}
+        
+        subtotal = 0
+
+        for item in order["items"]:
+
+            kind = item["kind"]
+            count = item["quantity"]
+            amount = item["amount"]
+
+            if kind not in deltas:
+                deltas[kind] = 0
+
+            deltas[kind] += count
+
+        return deltas
 
     async def create_tx(self, state, order, user, email):
 
         profile = await state.user_profile().get("profile")
-        print(profile)
 
         transaction = {
             "type": "order",
@@ -234,7 +241,7 @@ class Commerce:
             "seller_vat_number": self.seller_vat_number,
             "time": datetime.datetime.now().isoformat(),
             "uid": user, "complete": False,
-            "status": "pending",
+            "status": "created",
             "vat_number": profile["billing_vat"],
             "order": order
         }
@@ -243,17 +250,46 @@ class Commerce:
 
     async def create_order(self, state, order, user, email):
 
-        balance = await state.balance().get("balance")
-
         # Need to verify everything from the client side.  Can't trust
         # any of it.
-        balance = self.verify_order(order, balance)
 
-        transaction = await self.create_tx(state, order, user, email)
+        # First, check that the prices in the order are consistent with our
+        # current offer, and that the calculations are internally consistent.
+        self.verify_order(order)
 
+        # This fetches the balance change from the order
+        deltas = self.get_order_delta(order)
+
+        newtx = await self.create_tx(state, order, user, email)
         tid = str(uuid.uuid4())
 
-        await state.transaction().put(tid, transaction)
+        @firestore.transactional
+        async def create_order(stx, tx, deltas, newtx):
+
+            bal = await state.balance().get("balance")
+
+            for kind in deltas:
+
+                permitted = self.values[kind]["permitted"]
+                if bal["credits"][kind] + deltas[kind] > permitted:
+                    return False, "That would exceed your maximum permitted"
+
+                if kind not in bal:
+                    bal["credits"][kind] = 0
+
+                bal["credits"][kind] += deltas[kind]
+
+            # Transaction gets written out, the new balance does not, as it
+            # is not paid for yet.
+            await tx.transaction().put(tid, newtx)
+
+            return True, "OK"
+
+        tx = state.create_transaction()
+        ok, msg = await create_order(tx.tx, tx, deltas, newtx)
+
+        if not ok:
+            raise RuntimeError(msg)
 
         return tid
 
@@ -275,6 +311,7 @@ class Commerce:
         )
 
         transaction["payment_id"] = intent.id
+        transaction["status"] = "pending"
 
         await state.transaction().put(tid, transaction)
 
@@ -285,20 +322,42 @@ class Commerce:
         intent = stripe.PaymentIntent.retrieve(id)
         tid = intent["metadata"]["transaction"]
 
-        balance = await state.balance().get("balance")
-        transaction = await state.transaction().get(tid)
+        # Fetch transaction
+        ordtx = await state.transaction().get(tid)
 
-        # Don't need to validate the order, but this returns the new
-        # balance.
-        balance = self.verify_order(transaction["order"], balance)
+        # This works out the balance change from the order
+        deltas = self.get_order_delta(ordtx["order"])
 
-        transaction["status"] = "complete"
-        transaction["complete"] = True
+        @firestore.transactional
+        async def update_order(stx, tx, ordtx, deltas):
 
-        await state.balance().put("balance", balance)
-        await state.transaction().put(tid, transaction)
+            # Fetches current balance
+            bal = await tx.balance().get("balance")
 
-        return balance
+            for kind in deltas:
+
+                permitted = self.values[kind]["permitted"]
+                if bal["credits"][kind] + deltas[kind] > permitted:
+                    return False, "That would exceed your maximum permitted"
+
+                if kind not in bal:
+                    bal["credits"][kind] = 0
+
+                bal["credits"][kind] += deltas[kind]
+
+            ordtx["status"] = "complete"
+            ordtx["complete"] = True
+
+            await tx.balance().put("balance", bal)
+            await tx.transaction().put(tid, ordtx)
+
+            return True, "OK"
+
+        tx = state.create_transaction()
+        ok, msg = await update_order(tx.tx, tx, ordtx, deltas)
+
+        if not ok:
+            raise RuntimeError(msg)
 
     async def get_transactions(self, state):
 
