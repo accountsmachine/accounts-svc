@@ -160,10 +160,7 @@ class Hmrc:
     async def get_vat_client(self):
 
         try:
-            print("HERE3")
             vauth = await self.auth.get()
-            print("HERE4")
-            print(vauth)
         except Exception as e:
             logger.error(e)
             logger.error("No VAT auth stored")
@@ -194,9 +191,7 @@ class Hmrc:
 
     async def get_status(self, start, end):
 
-        print("HERE")
         cli = await self.get_vat_client()
-        print("HERE2")
 
         return await asyncio.gather(
             cli.get_vat_liabilities(self.vrn, start, end),

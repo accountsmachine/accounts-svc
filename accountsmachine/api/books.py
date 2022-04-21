@@ -17,10 +17,10 @@ class BooksApi:
     async def get_info(self, request):
 
         request["auth"].verify_scope("books")
-        user = request["auth"].user
-        id = request.match_info['id']
+        user = request["state"]
+        cid = request.match_info['id']
 
-        books = Books(request["state"], id)
+        books = Books(user, cid)
 
         try:
             info = await books.get_info()
@@ -32,10 +32,10 @@ class BooksApi:
     async def get_mapping(self, request):
 
         request["auth"].verify_scope("books")
-        user = request["auth"].user
-        id = request.match_info['id']
+        user = request["state"]
+        cid = request.match_info['id']
 
-        books = Books(request["state"], id)
+        books = Books(user, cid)
 
         info = await books.get_mapping()
 
@@ -44,11 +44,11 @@ class BooksApi:
     async def put_mapping(self, request):
 
         request["auth"].verify_scope("books")
-        user = request["auth"].user
-        id = request.match_info['id']
+        user = request["state"]
+        cid = request.match_info['id']
         data = await request.json()
 
-        books = Books(request["state"], id)
+        books = Books(user, cid)
 
         try:
             await books.put_mapping(data)
@@ -61,10 +61,10 @@ class BooksApi:
     async def delete(self, request):
 
         request["auth"].verify_scope("books")
-        user = request["auth"].user
-        id = request.match_info['id']
+        user = request["state"]
+        cid = request.match_info['id']
 
-        books = Books(request["state"], id)
+        books = Books(user, cid)
 
         await books.delete()
 
@@ -73,10 +73,10 @@ class BooksApi:
     async def upload(self, request):
 
         request["auth"].verify_scope("books")
-        user = request["auth"].user
-        id = request.match_info['id']
+        user = request["state"]
+        cid = request.match_info['id']
 
-        books = Books(request["state"], id)
+        books = Books(user, cid)
 
         try:
 
@@ -116,10 +116,10 @@ class BooksApi:
     async def get_all(self, request):
 
         request["auth"].verify_scope("books")
-        user = request["auth"].user
+        user = request["state"]
 
         try:
-            data = await Books.get_all_info(request["state"])
+            data = await Books.get_all_info(user)
             return web.json_response(data)
         except Exception as e:
             logger.debug(e)
@@ -130,10 +130,10 @@ class BooksApi:
     async def get_summary(self, request):
 
         request["auth"].verify_scope("books")
-        user = request["auth"].user
-        id = request.match_info['id']
+        user = request["state"]
+        cid = request.match_info['id']
 
-        books = Books(request["state"], id)
+        books = Books(user, cid)
 
         tmp_file = "tmp." + str(uuid.uuid4()) + ".tmp"
 

@@ -95,25 +95,29 @@ class CollObject:
         
 class User(DocObject):
     def __init__(self, store, uid):
+        self.uid = uid
         self.store = store
         self.doc = store.collection("users").document(uid)
 
     def company(self, cid):
-        return Company(self.store, self.doc, cid)
+        return Company(self, self.store, self.doc, cid)
 
     def filing(self, fid):
-        return Filing(self.store, user.doc, fid)
+        return Filing(self, self.store, user.doc, fid)
 
     def companies(self):
-        return Companies(self.store, self.doc)
+        return Companies(self, self.store, self.doc)
 
 class Companies(CollObject):
-    def __init__(self, store, userdoc):
+    def __init__(self, user, store, userdoc):
+        self.user = user
         self.store = store
         self.coll = userdoc.collection("companies")
 
 class Company(DocObject):
-    def __init__(self, store, userdoc, cid):
+    def __init__(self, user, store, userdoc, cid):
+        self.user = user
+        self.cid = cid
         self.store = store
         self.doc = userdoc.collection("companies").document(cid)
     def vat_auth(self):
@@ -124,11 +128,56 @@ class Company(DocObject):
         return CorptaxAuth(self.store, self.doc)
     def accounts_auth(self):
         return AccountsAuth(self.store, self.doc)
+    def books_mapping(self):
+        return BooksMapping(self.store, self.doc)
+    def books(self):
+        return Books(self, self.store, self.doc)
 
 class VatAuth(DocObject):
     def __init__(self, store, doc):
         self.store = store
         self.doc = doc.collection("auth").document("vat")
+
+class BooksMapping(DocObject):
+    def __init__(self, store, doc):
+        self.store = store
+        self.doc = doc.collection("books").document("mapping")
+
+class Books(DocObject):
+    def __init__(self, company, store, doc):
+        self.company = company
+        self.store = store
+        self.doc = doc.collection("books").document("info")
+    def get_store_id(self):
+        return self.company.user.uid + "/" + self.company.cid + "/books"
+
+    async def get_accounts(self):
+
+        # Get the ID for Google store
+        sid = self.get_store_id()
+
+        obj = await self.store.blobstore.get(sid)
+        return base64.b64decode(obj["blob"])
+
+    async def put_accounts(self, data):
+
+        # Get the ID for Google store
+        sid = self.get_store_id()
+
+        obj = {
+            "blob": base64.b64encode(data).decode("utf-8")
+        }
+
+        return await self.store.blobstore.put(sid, obj)
+
+    async def delete(self):
+        sid = self.get_store_id()
+        try:
+            await self.store.blobstore.delete(sid)
+        except: pass
+        try:
+            await super().delete()
+        except: pass
 
 class VatAuthPlaceholder(DocObject):
     def __init__(self, store, doc):
@@ -146,7 +195,8 @@ class AccountsAuth(DocObject):
         self.doc = doc.collection("auth").document("accounts")
 
 class Filing(DocObject):
-    def __init__(self, store, userdoc, fid):
+    def __init__(self, user, store, userdoc, fid):
+        self.user = user
         self.store = store
         self.doc = userdoc.collection("filings").document(fid)
 

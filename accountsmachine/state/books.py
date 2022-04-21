@@ -5,22 +5,27 @@ import os
 
 from ixbrl_reporter.accounts import get_class
 
-logger = logging.getLogger("books")
+logger = logging.getLogger("state.books")
 logger.setLevel(logging.DEBUG)
 
 class Books:
-    def __init__(self, state, id):
-        self.state = state
-        self.id = id
+
+    def __init__(self, user, cid):
+        self.user = user
+        self.cid = cid
+        self.company = user.company(cid)
+
     async def get_info(self):
-        return await self.state.booksinfo().get(self.id)
+        return await self.company.books().get()
+
     async def put_info(self, data):
-        await self.state.booksinfo().put(self.id, data)
+        await self.company.books().put(data)
+
     async def put(self, data):
-        await self.state.books().put(self.id, data)
+        await self.company.books().put_accounts(data)
+
     async def delete(self):
-        await self.state.booksinfo().delete(self.id)
-        await self.state.books().delete(self.id)
+        await self.company.books().delete()
 
     def default_mapping(self):
         return {
@@ -46,16 +51,28 @@ class Books:
 
     async def get_mapping(self):
         try:
-            return await self.state.books_mapping().get(self.id)
+            return await self.company.books_mapping().get()
         except:
             return self.default_mapping()
 
     async def put_mapping(self, data):
-        await self.state.books_mapping().put(self.id, data)
+        await self.company.books_mapping().put(data)
 
     @staticmethod
-    async def get_all_info(state):
-        return await state.booksinfo().list()
+    async def get_all_info(user):
+
+        cmps = await user.companies().list()
+
+        ret = {}
+
+        for cmp in cmps:
+            try:
+                b = await user.company(cmp).books().get()
+                ret[cmp] = b
+            except:
+                pass
+
+        return ret
 
     async def create_temp_file(self, tmp_file):
 
@@ -68,7 +85,7 @@ class Books:
             def __exit__(self, type, value, traceback):
                 os.remove(self.file)
 
-        books = await self.state.books().get(self.id)
+        books = await self.company.books().get_accounts()
 
         return FileContext(books, tmp_file)
 
@@ -85,7 +102,7 @@ class Books:
             def __exit__(self, type, value, traceback):
                 os.remove(self.file)
 
-        books = await self.state.books().get(self.id)
+        books = await self.company.books().get_accounts()
 
         return AccountsCtxt(books, tmp_file, "piecash")
 
