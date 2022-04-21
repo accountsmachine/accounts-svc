@@ -116,14 +116,13 @@ class VatSubmission:
                 async def update_order(tx, ordtx):
 
                     # Fetches current balance
-                    v = self.user.credits().vat()
+                    v = self.user.credits()
                     v.use_transaction(tx)
-
                     bal = await v.get()
 
-                    bal = bal["balance"]
+                    if "vat" not in bal: bal["vat"] = 0
 
-                    if bal < 1:
+                    if bal["vat"] < 1:
                         return False, "No VAT credits available"
 
                     bal -= 1
@@ -131,7 +130,7 @@ class VatSubmission:
                     ordtx["status"] = "complete"
                     ordtx["complete"] = True
 
-                    await self.user.credits().vat().put({"balance": bal})
+                    await self.user.credits().vat().put(bal)
                     await self.user.transaction(tid).put(ordtx)
 
                     return True, "OK"
