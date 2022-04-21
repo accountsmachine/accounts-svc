@@ -26,7 +26,7 @@ class DocKind:
         }
         return await self.store.put(self.collection, self.id(id), data)
     async def delete(self, id):
-        return await self.store.delete(self.collection, self.id(id))
+        await self.store.delete(self.collection, self.id(id))
 
 class BlobKind:
     def __init__(self, collection, state, blob=False):
@@ -48,7 +48,7 @@ class BlobKind:
         }
         return await self.store.put(self.id(id), obj)
     async def delete(self, id):
-        return await self.store.delete(self.id(id))
+        await self.store.delete(self.id(id))
 
 class StateTx:
     def __init__(self):
@@ -185,6 +185,37 @@ class Company(DocObject):
         return Books(self, self.store, self.doc)
     def logo(self):
         return Logo(self, self.store, self.doc)
+    async def delete(self):
+
+        try:
+            await self.books().delete()
+        except: pass
+
+        try:
+            await self.logo().delete()
+        except: pass
+
+        try:
+            await self.vat_auth().delete()
+        except: pass
+
+        try:
+            await self.vat_auth_placeholder().delete()
+        except: pass
+
+        try:
+            await self.books_mapping().delete()
+        except: pass
+
+        try:
+            await self.corptax_auth().delete()
+        except: pass
+
+        try:
+            await self.accounts_auth().delete()
+        except: pass
+
+        await super().delete()
 
 class VatAuth(DocObject):
     def __init__(self, store, doc):
@@ -246,8 +277,24 @@ class Filing(DocObject):
         }
         return await self.store.blobstore.put(sid, obj)
 
+    async def delete(self):
+        try:
+            await self.signature().delete()
+        except: pass
+        try:
+            await self.status().delete()
+        except: pass
+        try:
+            await self.data().delete()
+        except: pass
+        try:
+            await self.delete_report()
+        except: pass
+        await super().delete()
+        
+
     async def delete_report(self):
-        sid = self.get_store_id()
+        sid = self.get_report_store_id()
         await self.store.blobstore.delete(sid)
 
 class FilingStatus(DocObject):
@@ -364,9 +411,7 @@ class Signature(DocObject):
         try:
             await self.store.blobstore.delete(sid)
         except: pass
-        try:
-            await super().delete()
-        except: pass
+        await super().delete()
 
 class State:
     def __init__(self, store):

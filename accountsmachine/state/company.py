@@ -1,6 +1,8 @@
 
 import logging
 
+from . filing import Filing
+
 logger = logging.getLogger("company")
 logger.setLevel(logging.DEBUG)
 
@@ -22,74 +24,19 @@ class Company:
 
     async def delete(self):
 
-        # FIXME: Broken
-        for fid in await self.user.filing_config().list():
+        filings = self.user.filings()
+        
+        for fid in await filings.list():
 
-            filing = await self.user.filing_config().get(fid)
+            filing = await filings.filing(fid).get()
 
             if "company" in filing and filing["company"] == self.cid:
 
-                try:
-                    await self.user.filing_report().delete(fid)
-                except:
-                    pass
-
-                try:
-                    await self.user.filing_data().delete(fid)
-                except:
-                    pass
-
-                try:
-                    await self.user.filing_status().delete(fid)
-                except:
-                    pass
-
-                try:
-                    await self.user.signature_info().delete(fid)
-                except:
-                    pass
-
-                try:
-                    await self.user.signature().delete(fid)
-                except:
-                    pass
-
-                await self.user.filing_config().delete(fid)
+                await Filing(self.user, fid).delete()
+                
 
         try:
-            await self.user.books().delete(self.cid)
-        except: pass
-
-        try:
-            await self.user.books_mapping().delete(self.cid)
-        except: pass
-
-        try:
-            await self.user.booksinfo().delete(self.cid)
-        except: pass
-
-        try:
-            await self.user.logo().delete(self.cid)
-        except: pass
-
-        try:
-            await self.user.logoinfo().delete(self.cid)
-        except: pass
-
-        try:
-            await self.user.vat_auth().delete(self.cid)
-        except: pass
-
-        try:
-            await self.user.corptax_auth().delete(self.cid)
-        except: pass
-
-        try:
-            await self.user.accounts_auth().delete(self.cid)
-        except: pass
-
-        try:
-            await self.user.company().delete(self.cid)
+            await self.user.company(self.cid).delete()
         except: pass
 
     async def put_logo(self, data, ctype):
