@@ -14,7 +14,9 @@ class DocObject:
             raise KeyError()
         return ref.to_dict()
     async def put(self, obj):
+        print(">>>")
         await self.doc.set(obj)
+        print("<<<")
 #    async def update(self, obj):
 #        await self.doc.set(obj)
     async def delete(self):
@@ -56,33 +58,11 @@ class User(DocObject):
     def transaction(self, tid):
         return Transaction(self, self.store, self.doc, tid)
 
-class Credits(CollObject):
-    def __init__(self, user, store, userdoc):
+class Credits(DocObject):
+    def __init__(self, user, store, doc):
+        super().__init__(store)
         self.user = user
-        self.store = store
-        self.coll = userdoc.collection("credits")
-        self.doc = userdoc
-    def vat(self):
-        return VatCredits(self.store, self.doc)
-    def corptax(self):
-        return CorptaxCredits(self.store, self.doc)
-    def accounts(self):
-        return AccountsCredits(self.store, self.doc)
-
-class VatCredits(DocObject):
-    def __init__(self, store, doc):
-        super().__init__(store)
-        self.doc = doc.collection("credits").document("vat")
-
-class CorptaxCredits(DocObject):
-    def __init__(self, store, doc):
-        super().__init__(store)
-        self.doc = doc.collection("credits").document("corptax")
-
-class AccountsCredits(DocObject):
-    def __init__(self, store, doc):
-        super().__init__(store)
-        self.doc = doc.collection("credits").document("accounts")
+        self.doc = doc.collection("credits").document("balance")
 
 class Companies(CollObject):
     def __init__(self, user, store, userdoc):

@@ -1,4 +1,5 @@
 
+import asyncio
 import json
 import aiohttp
 import glob
@@ -140,25 +141,7 @@ class Commerce:
         return offer
 
     async def get_balance(self, user):
-
-        try:
-            vat = (await user.credits().vat().get())["balance"]
-        except:
-            vat = 0
-
-        try:
-            corptax = (await user.credits().corptax().get())["balance"]
-        except:
-            corptax = 0
-
-        try:
-            accounts = (await user.credits().accounts().get())["balance"]
-        except:
-            accounts = 0
-
-        return {
-            "vat": vat, "corptax": corptax, "accounts": accounts,
-        }
+        return await user.credits().get()
 
     # Validate order for internal integrity
     def verify_order(self, order):
@@ -273,17 +256,9 @@ class Commerce:
 
             bal = {}
 
-            v = user.credits().vat()
-            v.use_transaction(tx)
-            bal["vat"] = (await v.get())["balance"]
-
-            c = user.credits().corptax()
+            c = user.credits()
             c.use_transaction(tx)
-            bal["corptax"] = (await c.get())["balance"]
-
-            a = user.credits().accounts()
-            a.use_transaction(tx)
-            bal["accounts"] = (await a.get())["balance"]
+            bal = await c.get()
 
             for kind in deltas:
 
@@ -337,8 +312,13 @@ class Commerce:
         intent = stripe.PaymentIntent.retrieve(id)
         tid = intent["metadata"]["transaction"]
 
+        txdoc = user.transaction(tid)
+        baldoc = user.credits()
+
         # Fetch transaction
-        ordtx = await user.transaction(tid).get()
+        ordtx = await txdoc.get()
+        ordtx["status"] = "complete"
+        ordtx["complete"] = True
 
         # This works out the balance change from the order
         deltas = self.get_order_delta(ordtx["order"])
@@ -346,24 +326,15 @@ class Commerce:
         @firestore.async_transactional
         async def update_order(tx, ordtx, deltas):
 
-            bal = {}
-
-            v = user.credits().vat()
-            v.use_transaction(tx)
-            bal["vat"] = (await v.get())["balance"]
-
-            c = user.credits().corptax()
+            c = baldoc
             c.use_transaction(tx)
-            bal["corptax"] = (await c.get())["balance"]
-
-            a = user.credits().accounts()
-            a.use_transaction(tx)
-            bal["accounts"] = (await a.get())["balance"]
+            bal = await c.get()
+            print(bal)
 
             for kind in deltas:
 
-                if kind not in bal:
-                    bal[kind] = 0
+#                if kind not in bal:
+#                    bal[kind] = 0
 
                 permitted = self.values[kind]["permitted"]
                 if bal[kind] + deltas[kind] > permitted:
@@ -371,14 +342,10 @@ class Commerce:
 
                 bal[kind] += deltas[kind]
 
-            ordtx["status"] = "complete"
-            ordtx["complete"] = True
-            await user.transaction(tid).put(ordtx)
+            print(bal)
 
-            await user.credits().vat().put({"balance": bal["vat"]})
-            await user.credits().corptax().put({"balance": bal["corptax"]})
-            await user.credits().accounts().put({"balance": bal["accounts"]})
-
+            await txdoc.put(ordtx)
+            await baldoc.put(bal)
             return True, "OK"
 
         tx = user.create_transaction()
