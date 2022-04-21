@@ -16,25 +16,25 @@ class AccountsApi:
     def __init__(self):
         pass
 
-    async def background_submit(self, state, renderer, id, kind):
+    async def background_submit(self, user, renderer, id, kind):
 
         try:
 
             try:
-                await state.filing_report().delete(id)
+                await user.filing(id).delete_report()
             except: pass
 
             try:
-                await state.filing_data().delete(id)
+                await user.filing(id).data().delete()
             except: pass
 
             try:
-                await state.filing_status().delete(id)
+                await user.filing(id).status().delete()
             except: pass
 
             try:
                 html = await renderer.render(
-                    state, renderer, id, kind
+                    user, renderer, id, kind
                 )
 
                 i = IxbrlProcess()
@@ -42,43 +42,43 @@ class AccountsApi:
 
             except Exception as e:
 
-                await state.filing_status().put(id, {
+                await user.filing(id).status().put({
                     "report": str(e)
                 })
 
-                await state.filing_report().put(id, "".encode("utf-8"))
+                await user.filing(id).put_report("".encode("utf-8"))
 
-                cfg = await state.filing_config().get(id)
-                cfg["state"] = "errored"
-                cfg = await state.filing_config().put(id, cfg)
+                cfg = await user.filing(id).get()
+                cfg["user"] = "errored"
+                cfg = await user.filing(id).put(cfg)
 
                 return
 
-            await state.filing_report().put(id, html.encode("utf-8"))
-            await state.filing_data().put(id, vals)
-            await state.filing_status().put(id, {
+            await user.filing(id).put_report(html.encode("utf-8"))
+            await user.filing(id).data().put(vals)
+            await user.filing(id).status().put({
                 "report": """Submitting...
 Validating...
 Connecting made...
 Filing complete."""
             })
 
-            cfg = await state.filing_config().get(id)
-            cfg["state"] = "pending"
-            cfg = await state.filing_config().put(id, cfg)
+            cfg = await user.filing(id).get()
+            cfg["user"] = "pending"
+            cfg = await user.filing(id).put(cfg)
 
             await asyncio.sleep(5)
 
-            cfg = await state.filing_config().get(id)
+            cfg = await user.filing(id).get()
             cfg["state"] = "published"
-            cfg = await state.filing_config().put(id, cfg)
+            cfg = await user.filing(id).put(cfg)
 
         except Exception as e:
 
             logger.debug("submit: Exception: %s", e)
 
             try:
-                await state.filing_status().put(id, {
+                await user.filing(id).status().put({
                     "report": str(e)
                 })
             except: pass
@@ -86,7 +86,6 @@ Filing complete."""
     async def submit(self, request):
 
         request["auth"].verify_scope("accounts")
-        user = request["auth"].user
 
         try:
 
