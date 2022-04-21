@@ -87,8 +87,6 @@ class VatApi():
             "client_id": self.client_id
         })
 
-        print(secret)
-
         return web.json_response({
             "url": url
         })
@@ -99,8 +97,6 @@ class VatApi():
         state = request.query["state"]
 
         uid, company = await self.vat.receive_token(code, state)
-
-        print(uid, company)
 
         try:
 

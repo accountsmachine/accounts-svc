@@ -55,16 +55,13 @@ class VatSubmission:
         try:
 
             try:
-                print("HERE3")
 
                 logger.debug("Submission of VAT config %s", id)
 
                 cfg = await self.user.filing(id).get()
-                print(cfg)
 
                 await self.set_pending(id, cfg)
 
-                print("HERE")
                 try:
                     company_number = cfg["company"]
                 except Exception as e:
@@ -114,7 +111,6 @@ class VatSubmission:
                 }
 
                 tid = str(uuid.uuid4())
-                print("HERE73")
 
                 @firestore.transactional
                 async def update_order(tx, ordtx):
@@ -147,12 +143,10 @@ class VatSubmission:
                     raise RuntimeError(msg)
 
                 # Billing written
-                print("HERE73135")
 
                 await self.user.filing(id).put_report(html.encode("utf-8"))
                 await self.user.filing(id).data().put(vat)
 
-                print("HERE5")
                 rtn = model.Return()
                 rtn.periodKey = obl.periodKey
                 rtn.finalised = True
@@ -166,17 +160,14 @@ class VatSubmission:
                 rtn.totalValueGoodsSuppliedExVAT = vat["TotalValueGoodsSuppliedExVAT"]
                 rtn.totalAcquisitionsExVAT = vat["TotalAcquisitionsExVAT"]
 
-                print("HERE55")
-
                 thislog.info("VAT record:")
                 for k, v in rtn.to_dict().items():
                     thislog.info("  %s: %s", k, v)
 
                 thislog.info("Submitting VAT return...")
-                print("HERE56161")
+
                 await self.cli.submit_vat_return(rtn)
                 thislog.info("Success.")
-                print("HERE56160981")
 
                 await self.user.filing(id).status().put({
                     "report": log_stream.getvalue()

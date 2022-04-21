@@ -360,8 +360,6 @@ class Commerce:
             a.use_transaction(tx)
             bal["accounts"] = (await a.get())["balance"]
 
-            print(bal)
-
             for kind in deltas:
 
                 if kind not in bal:
