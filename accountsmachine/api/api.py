@@ -54,7 +54,7 @@ class Api:
 
         self.commerce = Commerce(self.config)
 
-        self.store = Store(self.config, self.firebase)
+        self.store = Store(self.config)
         self.auth = AuthApi(self.config, self.store, self.firebase)
         self.books = BooksApi()
         self.company = CompanyApi()

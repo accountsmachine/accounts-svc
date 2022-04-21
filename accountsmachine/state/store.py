@@ -31,7 +31,7 @@ class DocCollection:
         }
 
 class DocStore:
-    def __init__(self, config, firebase):
+    def __init__(self, config):
 
         logger.debug("Opening firestore...")
         self.db = firestore.AsyncClient()
@@ -58,7 +58,7 @@ class DocStore:
         return data
 
 class BlobStore:
-    def __init__(self, config, firebase):
+    def __init__(self, config):
 
         logger.debug("Opening blobstore...")
         self.db = storage.Client.from_service_account_json(
@@ -85,10 +85,10 @@ class BlobStore:
         blob.delete()
 
 class Store:
-    def __init__(self, config, firebase):
+    def __init__(self, config):
 
         logger.debug("Opening stores...")
-        self.docstore = DocStore(config, firebase)
-        self.blobstore = BlobStore(config, firebase)
+        self.docstore = DocStore(config)
+        self.blobstore = BlobStore(config)
         logger.debug("Opened")
 
