@@ -169,5 +169,5 @@ class UserAdmin:
         return await user.get()
 
     async def put_profile(self, user, profile):
-        return await user.put("profile", profile)
+        return await user.put(profile)
 

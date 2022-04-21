@@ -345,7 +345,7 @@ class Signature(DocObject):
         self.filing = filing
         self.doc = doc.collection("signature").document("info")
     def get_store_id(self):
-        return self.filing.user.uid + "/c/" + self.filing.fid + "/signature"
+        return self.filing.user.uid + "/f/" + self.filing.fid + "/signature"
 
     async def get_image(self):
         sid = self.get_store_id()

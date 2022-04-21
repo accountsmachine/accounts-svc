@@ -49,8 +49,8 @@ class CorptaxApi():
                 await user.filing(id).put_report("".encode("utf-8"))
 
                 cfg = await user.filing(id).get()
-                cfg["user"] = "errored"
-                cfg = await user.filing(id).put(cfg)
+                cfg["state"] = "errored"
+                await user.filing(id).put(cfg)
 
                 return
 
@@ -64,8 +64,8 @@ Filing complete."""
             })
 
             cfg = await user.filing(id).get()
-            cfg["user"] = "pending"
-            cfg = await user.filing(id).put(cfg)
+            cfg["state"] = "pending"
+            await user.filing(id).put(cfg)
 
             await asyncio.sleep(5)
 

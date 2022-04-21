@@ -49,7 +49,7 @@ class AccountsApi:
                 await user.filing(id).put_report("".encode("utf-8"))
 
                 cfg = await user.filing(id).get()
-                cfg["user"] = "errored"
+                cfg["state"] = "errored"
                 cfg = await user.filing(id).put(cfg)
 
                 return
@@ -64,7 +64,7 @@ Filing complete."""
             })
 
             cfg = await user.filing(id).get()
-            cfg["user"] = "pending"
+            cfg["state"] = "pending"
             cfg = await user.filing(id).put(cfg)
 
             await asyncio.sleep(5)
