@@ -14,9 +14,7 @@ class DocObject:
             raise KeyError()
         return ref.to_dict()
     async def put(self, obj):
-        print(">>>")
         await self.doc.set(obj)
-        print("<<<")
 #    async def update(self, obj):
 #        await self.doc.set(obj)
     async def delete(self):

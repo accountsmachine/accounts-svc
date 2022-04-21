@@ -257,7 +257,7 @@ class Commerce:
             bal = {}
 
             c = user.credits()
-            c.use_transaction(tx)
+#            c.use_transaction(tx)
             bal = await c.get()
 
             for kind in deltas:
@@ -327,22 +327,20 @@ class Commerce:
         async def update_order(tx, ordtx, deltas):
 
             c = baldoc
-            c.use_transaction(tx)
+            # FIXME: Cause 409 error?!
+#            c.use_transaction(tx)
             bal = await c.get()
-            print(bal)
 
             for kind in deltas:
 
-#                if kind not in bal:
-#                    bal[kind] = 0
+                if kind not in bal:
+                    bal[kind] = 0
 
                 permitted = self.values[kind]["permitted"]
                 if bal[kind] + deltas[kind] > permitted:
                     return False, "That would exceed your maximum permitted"
 
                 bal[kind] += deltas[kind]
-
-            print(bal)
 
             await txdoc.put(ordtx)
             await baldoc.put(bal)

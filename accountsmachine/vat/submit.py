@@ -117,7 +117,7 @@ class VatSubmission:
 
                     # Fetches current balance
                     v = self.user.credits()
-                    v.use_transaction(tx)
+#                    v.use_transaction(tx)
                     bal = await v.get()
 
                     if "vat" not in bal: bal["vat"] = 0
@@ -125,12 +125,12 @@ class VatSubmission:
                     if bal["vat"] < 1:
                         return False, "No VAT credits available"
 
-                    bal -= 1
+                    bal["vat"] -= 1
 
                     ordtx["status"] = "complete"
                     ordtx["complete"] = True
 
-                    await self.user.credits().vat().put(bal)
+                    await self.user.credits().put(bal)
                     await self.user.transaction(tid).put(ordtx)
 
                     return True, "OK"
@@ -198,17 +198,16 @@ class VatSubmission:
 
                     # Get current config
                     filcfg = await self.user.filing(id)
-                    filcfg.use_transaction(tx)
+#                    filcfg.use_transaction(tx)
                     cfg = await filcfg.get()
 
-                    v = self.user.credits().vat()
-                    v.use_transaction(tx)
+                    v = self.user.credits()
+#                    v.use_transaction(tx)
                     bal = await v.get()
-                    bal = bal["balance"]
 
                     # Fetches current balance
 
-                    bal += 1
+                    bal["vat"] += 1
 
                     ordtx["status"] = "cancelled"
                     ordtx["complete"] = False
@@ -224,8 +223,8 @@ class VatSubmission:
 
                     cfg["state"] = "errored"
 
-                    await self.user.balance().put("balance", bal)
-                    await self.user.transaction().put(tid, ordtx)
+                    await self.user.credits().put(bal)
+                    await self.user.transaction(tid).put(ordtx)
                     await self.user.filing(id).put(cfg)
 
                 tx = self.user.create_transaction()
@@ -253,9 +252,9 @@ class VatSubmission:
 
         # Quick credit check before committing to background task
         try:
-            balance = await self.user.credits().vat().get()
-            balance = balance["balance"]
-        except:
+            balance = (await self.user.credits().get())["vat"]
+        except Exception as e:
+            logger.debug(e)
             balance = 0
 
         if balance < 1:
