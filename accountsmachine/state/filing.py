@@ -8,7 +8,7 @@ class Filing():
 
     def __init__(self, user, fid):
         self.user = user
-        self.fid = fcid
+        self.fid = fid
 
     async def get(self):
         return await self.user.filing(self.fid).get()

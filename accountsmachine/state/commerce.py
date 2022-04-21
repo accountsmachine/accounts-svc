@@ -48,14 +48,7 @@ class InvalidOrder(Exception):
 #
 # Balance:
 # {
-#     uid: "ROElfkN481YZAxmO6U6eMzvmXGt2",
-#     time: "2022-03-24T11:03:57.41116",
-#     email: "mark@accountsmachine.io",
-#     credits: {
-#         vat: 0,
-#         accounts: 0,
-#         corptax: 0,
-#     }
+#     balance: 4,
 # }
 
 class Commerce:
@@ -98,17 +91,17 @@ class Commerce:
     def purchase_price(base, units, discount=0.98):
         return base * units * (discount ** (units - 1))
 
-    async def get_offer(self, state):
+    async def get_offer(self, user):
 
-        balance = await state.balance().get("balance")
+        balance = await self.get_balance(user)
 
         opts = copy.deepcopy(self.values)
 
         kinds = opts.keys()
 
         for kind in opts:
-            if kind in balance["credits"]:
-                opts[kind]["permitted"] -= balance["credits"][kind]
+            if kind in balance:
+                opts[kind]["permitted"] -= balance[kind]
                 opts[kind]["permitted"] = max(opts[kind]["permitted"], 0)
 
         # If you already have the max, we can't sell you more.
@@ -146,14 +139,26 @@ class Commerce:
 
         return offer
 
-    async def get_balance(self, state):
+    async def get_balance(self, user):
 
-        return await state.balance().get("balance")
+        try:
+            vat = (await user.credits().vat().get())["balance"]
+        except:
+            vat = 0
 
+        try:
+            corptax = (await user.credits().corptax().get())["balance"]
+        except:
+            corptax = 0
 
+        try:
+            accounts = (await user.credits().accounts().get())["balance"]
+        except:
+            accounts = 0
 
-
-
+        return {
+            "vat": vat, "corptax": corptax, "accounts": accounts,
+        }
 
     # Validate order for internal integrity
     def verify_order(self, order):
@@ -223,9 +228,9 @@ class Commerce:
 
         return deltas
 
-    async def create_tx(self, state, order, user, email):
+    async def create_tx(self, user, order, uid, email):
 
-        profile = await state.user_profile().get("profile")
+        profile = await user.get()
 
         transaction = {
             "type": "order",
@@ -240,7 +245,7 @@ class Commerce:
             "seller_name": self.seller_name,
             "seller_vat_number": self.seller_vat_number,
             "time": datetime.datetime.now().isoformat(),
-            "uid": user, "complete": False,
+            "uid": uid, "complete": False,
             "status": "created",
             "vat_number": profile["billing_vat"],
             "order": order
@@ -248,7 +253,7 @@ class Commerce:
 
         return transaction
 
-    async def create_order(self, state, order, user, email):
+    async def create_order(self, user, order, uid, email):
 
         # Need to verify everything from the client side.  Can't trust
         # any of it.
@@ -260,42 +265,52 @@ class Commerce:
         # This fetches the balance change from the order
         deltas = self.get_order_delta(order)
 
-        newtx = await self.create_tx(state, order, user, email)
+        newtx = await self.create_tx(user, order, uid, email)
         tid = str(uuid.uuid4())
 
         @firestore.transactional
-        async def create_order(stx, tx, deltas, newtx):
+        async def create_order(tx, deltas, newtx):
 
-            bal = await state.balance().get("balance")
+            bal = {}
+
+            v = user.credits().vat()
+            v.use_transaction(tx)
+            bal["vat"] = (await v.get())["balance"]
+
+            c = user.credits().corptax()
+            c.use_transaction(tx)
+            bal["corptax"] = (await c.get())["balance"]
+
+            a = user.credits().accounts()
+            a.use_transaction(tx)
+            bal["accounts"] = (await a.get())["balance"]
 
             for kind in deltas:
 
-                permitted = self.values[kind]["permitted"]
-                if bal["credits"][kind] + deltas[kind] > permitted:
-                    return False, "That would exceed your maximum permitted"
-
                 if kind not in bal:
-                    bal["credits"][kind] = 0
+                    bal[kind] = 0
 
-                bal["credits"][kind] += deltas[kind]
+                permitted = self.values[kind]["permitted"]
+                if bal[kind] + deltas[kind] > permitted:
+                    return False, "That would exceed your maximum permitted"
 
             # Transaction gets written out, the new balance does not, as it
             # is not paid for yet.
-            await tx.transaction().put(tid, newtx)
+            await user.transaction(tid).put(newtx)
 
             return True, "OK"
 
-        tx = state.create_transaction()
-        ok, msg = await create_order(tx.tx, tx, deltas, newtx)
+        tx = user.create_transaction()
+        ok, msg = await create_order(tx, deltas, newtx)
 
         if not ok:
             raise RuntimeError(msg)
 
         return tid
 
-    async def create_payment(self, state, tid, user, email):
+    async def create_payment(self, user, tid, uid, email):
 
-        transaction = await state.transaction().get(tid)
+        transaction = await user.transaction(tid).get()
         order = transaction["order"]
 
         intent = stripe.PaymentIntent.create(
@@ -305,7 +320,7 @@ class Commerce:
             description="Accounts Machine credit purchase",
             metadata={
                 "transaction": tid,
-                "uid": user,
+                "uid": uid,
             },
             automatic_payment_methods={ 'enabled': True },
         )
@@ -313,67 +328,82 @@ class Commerce:
         transaction["payment_id"] = intent.id
         transaction["status"] = "pending"
 
-        await state.transaction().put(tid, transaction)
+        await user.transaction(tid).put(transaction)
 
         return intent["client_secret"]
 
-    async def complete_order(self, state, id):
+    async def complete_order(self, user, id):
 
         intent = stripe.PaymentIntent.retrieve(id)
         tid = intent["metadata"]["transaction"]
 
         # Fetch transaction
-        ordtx = await state.transaction().get(tid)
+        ordtx = await user.transaction(tid).get()
 
         # This works out the balance change from the order
         deltas = self.get_order_delta(ordtx["order"])
 
         @firestore.transactional
-        async def update_order(stx, tx, ordtx, deltas):
+        async def update_order(tx, ordtx, deltas):
 
-            # Fetches current balance
-            bal = await tx.balance().get("balance")
+            bal = {}
+
+            v = user.credits().vat()
+            v.use_transaction(tx)
+            bal["vat"] = (await v.get())["balance"]
+
+            c = user.credits().corptax()
+            c.use_transaction(tx)
+            bal["corptax"] = (await c.get())["balance"]
+
+            a = user.credits().accounts()
+            a.use_transaction(tx)
+            bal["accounts"] = (await a.get())["balance"]
+
+            print(bal)
 
             for kind in deltas:
 
+                if kind not in bal:
+                    bal[kind] = 0
+
                 permitted = self.values[kind]["permitted"]
-                if bal["credits"][kind] + deltas[kind] > permitted:
+                if bal[kind] + deltas[kind] > permitted:
                     return False, "That would exceed your maximum permitted"
 
-                if kind not in bal["credits"]:
-                    bal["credits"][kind] = 0
-
-                bal["credits"][kind] += deltas[kind]
+                bal[kind] += deltas[kind]
 
             ordtx["status"] = "complete"
             ordtx["complete"] = True
+            await user.transaction(tid).put(ordtx)
 
-            await tx.balance().put("balance", bal)
-            await tx.transaction().put(tid, ordtx)
+            await user.credits().vat().put({"balance": bal["vat"]})
+            await user.credits().corptax().put({"balance": bal["corptax"]})
+            await user.credits().accounts().put({"balance": bal["accounts"]})
 
             return True, "OK"
 
-        tx = state.create_transaction()
-        ok, msg = await update_order(tx.tx, tx, ordtx, deltas)
+        tx = user.create_transaction()
+        ok, msg = await update_order(tx, ordtx, deltas)
 
         if not ok:
             raise RuntimeError(msg)
 
-    async def get_transactions(self, state):
+    async def get_transactions(self, user):
 
-        ss = await state.transaction().list()
+        ss = await user.transactions().list()
         return ss
 
-    async def get_transaction(self, state, id):
+    async def get_transaction(self, user, tid):
         try:
-            tx = await state.transaction().get(id)
+            tx = await user.transaction(tid).get()
             return tx
         except Exception as e:
-            logger.debug("get_all: %s", e)
+            logger.debug("get_transaction: %s", e)
             return RuntimeError(
                 body=str(e), content_type="text/plain"
             )
 
-    async def get_payment_key(self, state):
+    async def get_payment_key(self, user):
         return self.stripe_public
 

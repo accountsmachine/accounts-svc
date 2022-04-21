@@ -77,11 +77,6 @@ class UserAdmin:
             "billing_vat": "",
             "billing_email": email,
             "billing_tel": "",
-            "credits": {
-                "vat": 0,
-                "corptax": 0,
-                "accounts": 0,
-            },
         }
 
         scope = [
@@ -96,6 +91,10 @@ class UserAdmin:
         try:
 
             await user.put(profile)
+
+            await user.credits().vat().put({ "balance": 0 })
+            await user.credits().corptax().put({ "balance": 0 })
+            await user.credits().accounts().put({ "balance": 0 })
 
             firebase_admin.auth.create_user(
                 uid=uid, email=email,

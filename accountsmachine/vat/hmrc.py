@@ -201,35 +201,30 @@ class Hmrc:
 
     async def get_liabilities(self, start, end):
 
-        cmp = await self.state.company().get(self.company_id)
         cli = await self.get_vat_client()
 
         return await cli.get_vat_liabilities(self.vrn, start, end)
 
     async def get_obligations(self, start, end):
 
-        cmp = await self.state.company().get(self.company_id)
         cli = await self.get_vat_client()
 
         return await cli.get_obligations(self.vrn, start, end)
 
     async def get_open_obligations(self):
 
-        cmp = await self.state.company().get(self.company_id)
         cli = await self.get_vat_client()
 
         return await cli.get_open_obligations(self.vrn)
 
     async def get_payments(self, start, end):
 
-        cmp = await self.state.company().get(self.company_id)
         cli = await self.get_vat_client()
 
         return await cli.get_vat_payments(self.vrn, start, end)
 
     async def submit_vat_return(self, rtn):
 
-        cmp = await self.state.company().get(self.company_id)
         cli = await self.get_vat_client()
 
         await cli.submit_vat_return(self.vrn, rtn)

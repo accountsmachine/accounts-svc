@@ -76,8 +76,11 @@ class StateTx:
         return thing
 
 class DocObject:
+    def __init__(self, store, tx=None):
+        self.store = store
+        self.tx = tx
     async def get(self):
-        ref = await self.doc.get()
+        ref = await self.doc.get(transaction=self.tx)
         if not ref.exists:
             raise KeyError()
         return ref.to_dict()
@@ -87,6 +90,11 @@ class DocObject:
 #        await self.doc.set(obj)
     async def delete(self):
         await self.doc.delete()
+    def create_transaction(self):
+        return self.store.docstore.db.transaction()
+    def use_transaction(self, tx):
+        pass
+#        self.tx = tx
 
 class CollObject:
     async def list(self):
@@ -95,30 +103,98 @@ class CollObject:
         
 class User(DocObject):
     def __init__(self, store, uid):
+        super().__init__(store)
         self.uid = uid
-        self.store = store
         self.doc = store.collection("users").document(uid)
+
+    def companies(self):
+        return Companies(self, self.store, self.doc)
 
     def company(self, cid):
         return Company(self, self.store, self.doc, cid)
 
-    def filing(self, fid):
-        return Filing(self, self.store, user.doc, fid)
+    def filings(self):
+        return Filings(self, self.store, self.doc)
 
-    def companies(self):
-        return Companies(self, self.store, self.doc)
+    def filing(self, fid):
+        return Filing(self, self.store, self.doc, fid)
+
+    def credits(self):
+        return Credits(self, self.store, self.doc)
+
+    def transactions(self):
+        return Transactions(self, self.store, self.doc)
+
+    def transaction(self, tid):
+        return Transaction(self, self.store, self.doc, tid)
+
+class Credits(CollObject):
+    def __init__(self, user, store, userdoc):
+        self.user = user
+        self.store = store
+        self.coll = userdoc.collection("credits")
+        self.doc = userdoc
+    def vat(self):
+        return VatCredits(self.store, self.doc)
+    def corptax(self):
+        return CorptaxCredits(self.store, self.doc)
+    def accounts(self):
+        return AccountsCredits(self.store, self.doc)
+
+class VatCredits(DocObject):
+    def __init__(self, store, doc):
+        super().__init__(store)
+        self.doc = doc.collection("credits").document("vat")
+
+class CorptaxCredits(DocObject):
+    def __init__(self, store, doc):
+        super().__init__(store)
+        self.doc = doc.collection("credits").document("corptax")
+
+class AccountsCredits(DocObject):
+    def __init__(self, store, doc):
+        super().__init__(store)
+        self.doc = doc.collection("credits").document("accounts")
 
 class Companies(CollObject):
     def __init__(self, user, store, userdoc):
         self.user = user
         self.store = store
         self.coll = userdoc.collection("companies")
+        self.doc = userdoc
+    def company(self, cid):
+        return Company(self.user, self.store, self.doc, cid)
+
+class Transactions(CollObject):
+    def __init__(self, user, store, userdoc):
+        self.user = user
+        self.store = store
+        self.coll = userdoc.collection("transactions")
+        self.doc = userdoc
+    def transaction(self, tid):
+        return Transaction(self.user, self.store, self.doc, tid)
+
+class Transaction(DocObject):
+    def __init__(self, user, store, userdoc, tid):
+        super().__init__(store)
+        self.user = user
+        self.tid = tid
+        self.doc = userdoc.collection("transactions").document(tid)
+
+class Filings(CollObject):
+    def __init__(self, user, store, userdoc):
+        self.user = user
+        self.store = store
+        self.coll = userdoc.collection("filings")
+        self.doc = userdoc
+    def filing(self, fid):
+        return Filing(self.user, self.store, self.doc, fid)
 
 class Company(DocObject):
     def __init__(self, user, store, userdoc, cid):
+        super().__init__(store)
         self.user = user
         self.cid = cid
-        self.store = store
         self.doc = userdoc.collection("companies").document(cid)
     def vat_auth(self):
         return VatAuth(self.store, self.doc)
@@ -135,18 +211,18 @@ class Company(DocObject):
 
 class VatAuth(DocObject):
     def __init__(self, store, doc):
-        self.store = store
+        super().__init__(store)
         self.doc = doc.collection("auth").document("vat")
 
 class BooksMapping(DocObject):
     def __init__(self, store, doc):
-        self.store = store
+        super().__init__(store)
         self.doc = doc.collection("books").document("mapping")
 
 class Books(DocObject):
     def __init__(self, company, store, doc):
+        super().__init__(store)
         self.company = company
-        self.store = store
         self.doc = doc.collection("books").document("info")
     def get_store_id(self):
         return self.company.user.uid + "/" + self.company.cid + "/books"
@@ -181,23 +257,23 @@ class Books(DocObject):
 
 class VatAuthPlaceholder(DocObject):
     def __init__(self, store, doc):
-        self.store = store
+        super().__init__(store)
         self.doc = doc.collection("auth").document("vat-placeholder")
 
 class CorptaxAuth(DocObject):
     def __init__(self, store, doc):
-        self.store = store
+        super().__init__(store)
         self.doc = doc.collection("auth").document("corptax")
 
 class AccountsAuth(DocObject):
     def __init__(self, store, doc):
-        self.store = store
+        super().__init__(store)
         self.doc = doc.collection("auth").document("accounts")
 
 class Filing(DocObject):
     def __init__(self, user, store, userdoc, fid):
+        super().__init__(store)
         self.user = user
-        self.store = store
         self.doc = userdoc.collection("filings").document(fid)
 
 class State:
