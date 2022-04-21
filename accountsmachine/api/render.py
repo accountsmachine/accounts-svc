@@ -72,12 +72,12 @@ class RendererApi:
         res = j.evaluate_snippet("config", svr, import_callback=self.load)
         return json.loads(res)
 
-    async def logo(self, state, company_number):
+    async def logo(self, user, cid):
 
         try:
             try:
-                img = await state.logo().get(company_number)
-                info = await state.logoinfo().get(company_number)
+                info = await user.company(cid).logo().get()
+                img = await user.company(cid).logo().get_image()
                 ct = info["content-type"]
             except:
                 img = self.white_pixel_png
@@ -93,12 +93,12 @@ class RendererApi:
             raise RuntimeError("Could not load company logo.")
 
 
-    async def signature(self, state, id):
+    async def signature(self, user, fid):
 
         try:
             try:
-                img = await state.signature().get(id)
-                info = await state.signature_info().get(id)
+                info = await user.filing(fid).signature().get()
+                img = await user.filing(fid).signature().get_image()
                 ct = info["content-type"]
             except:
                 img = self.white_pixel_png
@@ -151,31 +151,31 @@ class RendererApi:
         obj = self.process_jsonnet(kind, config)
         return self.process_to_html(obj)
 
-    async def render(self, state, renderer, id, kind):
+    async def render(self, user, renderer, id, kind):
 
         try:
 
-            cfg = await state.filing_config().get(id)
+            cfg = await user.filing(id).get()
 
             try:
-                company_number = cfg["company"]
+                cid = cfg["company"]
             except Exception as e:
                 raise RuntimeError("No company number in configuration")
 
-            cmp = await state.company().get(company_number)
+            cmp = await user.company(cid).get()
 
             cfg = {
                 "report": cfg,
                 "metadata": cmp,
             }
 
-            books = Books(state, company_number)
+            books = Books(user, cid)
         
             tmp_file = "tmp." + str(uuid.uuid4()) + ".dat"
 
             mappings = await books.get_mapping()
-            logo = await self.logo(state, company_number)
-            sig = await self.signature(state, id)
+            logo = await self.logo(user, cid)
+            sig = await self.signature(user, id)
 
             today = datetime.datetime.now().date().isoformat()
 
@@ -204,15 +204,15 @@ class RendererApi:
     async def to_html(self, request):
 
         request["auth"].verify_scope("render")
-        user = request["auth"].user
+        user = request["state"]
 
         try:
 
             id = request.match_info['id']
 
-            cfg = await request["state"].filing_config().get(id)
+            cfg = await user.filing(id).get()
 
-            html = await self.render(request["state"], self, id, cfg["kind"])
+            html = await self.render(user, self, id, cfg["kind"])
 
             return web.Response(text=html, content_type="text/html")
 

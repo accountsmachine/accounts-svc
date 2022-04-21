@@ -70,10 +70,15 @@ class Vat:
         l = await cli.get_payments(start, end)
         return [v.to_dict() for v in l]
 
-    async def submit(self, uid, email, config, user, renderer, cid):
+    async def submit(self, uid, email, config, user, renderer, id):
 
-        vs = VatSubmission(uid, email, config, user, renderer)
-        await vs.submit(cid)
+        cfg = await user.filing(id).get()
+        cid = cfg["company"]
+
+        cli = await self.get_hmrc_client(config, user, cid)
+
+        vs = VatSubmission(cli, uid, email, user, renderer)
+        await vs.submit(id)
 
     async def get_auth_ref(self, uid, user, cid):
 

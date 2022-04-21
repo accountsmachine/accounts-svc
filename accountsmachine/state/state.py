@@ -165,31 +165,6 @@ class Companies(CollObject):
     def company(self, cid):
         return Company(self.user, self.store, self.doc, cid)
 
-class Transactions(CollObject):
-    def __init__(self, user, store, userdoc):
-        self.user = user
-        self.store = store
-        self.coll = userdoc.collection("transactions")
-        self.doc = userdoc
-    def transaction(self, tid):
-        return Transaction(self.user, self.store, self.doc, tid)
-
-class Transaction(DocObject):
-    def __init__(self, user, store, userdoc, tid):
-        super().__init__(store)
-        self.user = user
-        self.tid = tid
-        self.doc = userdoc.collection("transactions").document(tid)
-
-class Filings(CollObject):
-    def __init__(self, user, store, userdoc):
-        self.user = user
-        self.store = store
-        self.coll = userdoc.collection("filings")
-        self.doc = userdoc
-    def filing(self, fid):
-        return Filing(self.user, self.store, self.doc, fid)
-
 class Company(DocObject):
     def __init__(self, user, store, userdoc, cid):
         super().__init__(store)
@@ -214,47 +189,6 @@ class VatAuth(DocObject):
         super().__init__(store)
         self.doc = doc.collection("auth").document("vat")
 
-class BooksMapping(DocObject):
-    def __init__(self, store, doc):
-        super().__init__(store)
-        self.doc = doc.collection("books").document("mapping")
-
-class Books(DocObject):
-    def __init__(self, company, store, doc):
-        super().__init__(store)
-        self.company = company
-        self.doc = doc.collection("books").document("info")
-    def get_store_id(self):
-        return self.company.user.uid + "/" + self.company.cid + "/books"
-
-    async def get_accounts(self):
-
-        # Get the ID for Google store
-        sid = self.get_store_id()
-
-        obj = await self.store.blobstore.get(sid)
-        return base64.b64decode(obj["blob"])
-
-    async def put_accounts(self, data):
-
-        # Get the ID for Google store
-        sid = self.get_store_id()
-
-        obj = {
-            "blob": base64.b64encode(data).decode("utf-8")
-        }
-
-        return await self.store.blobstore.put(sid, obj)
-
-    async def delete(self):
-        sid = self.get_store_id()
-        try:
-            await self.store.blobstore.delete(sid)
-        except: pass
-        try:
-            await super().delete()
-        except: pass
-
 class VatAuthPlaceholder(DocObject):
     def __init__(self, store, doc):
         super().__init__(store)
@@ -270,11 +204,106 @@ class AccountsAuth(DocObject):
         super().__init__(store)
         self.doc = doc.collection("auth").document("accounts")
 
+class Filings(CollObject):
+    def __init__(self, user, store, userdoc):
+        self.user = user
+        self.store = store
+        self.coll = userdoc.collection("filings")
+        self.doc = userdoc
+    def filing(self, fid):
+        return Filing(self.user, self.store, self.doc, fid)
+
 class Filing(DocObject):
     def __init__(self, user, store, userdoc, fid):
         super().__init__(store)
         self.user = user
         self.doc = userdoc.collection("filings").document(fid)
+        self.fid = fid
+
+    def get_report_store_id(self):
+        return self.user.uid + "/f/" + self.fid + "/report"
+
+    def status(self):
+        return FilingStatus(self.store, self.doc)
+
+    def data(self):
+        return FilingData(self.store, self.doc)
+
+    async def get_report(self):
+        sid = self.get_report_store_id()
+        obj = await self.store.blobstore.get(sid)
+        return base64.b64decode(obj["blob"])
+
+    async def put_report(self, data):
+        sid = self.get_report_store_id()
+        obj = {
+            "blob": base64.b64encode(data).decode("utf-8")
+        }
+        return await self.store.blobstore.put(sid, obj)
+
+    async def delete_report(self):
+        sid = self.get_store_id()
+        await self.store.blobstore.delete(sid)
+
+class FilingStatus(DocObject):
+    def __init__(self, store, doc):
+        super().__init__(store)
+        self.doc = doc.collection("output").document("status")
+
+class FilingData(DocObject):
+    def __init__(self, store, doc):
+        super().__init__(store)
+        self.doc = doc.collection("output").document("data")
+
+class Transactions(CollObject):
+    def __init__(self, user, store, userdoc):
+        self.user = user
+        self.store = store
+        self.coll = userdoc.collection("transactions")
+        self.doc = userdoc
+    def transaction(self, tid):
+        return Transaction(self.user, self.store, self.doc, tid)
+
+class Transaction(DocObject):
+    def __init__(self, user, store, userdoc, tid):
+        super().__init__(store)
+        self.user = user
+        self.tid = tid
+        self.doc = userdoc.collection("transactions").document(tid)
+
+class BooksMapping(DocObject):
+    def __init__(self, store, doc):
+        super().__init__(store)
+        self.doc = doc.collection("books").document("mapping")
+
+class Books(DocObject):
+    def __init__(self, company, store, doc):
+        super().__init__(store)
+        self.company = company
+        self.doc = doc.collection("books").document("info")
+    def get_store_id(self):
+        return self.company.user.uid + "/c/" + self.company.cid + "/books"
+
+    async def get_accounts(self):
+        sid = self.get_store_id()
+        obj = await self.store.blobstore.get(sid)
+        return base64.b64decode(obj["blob"])
+
+    async def put_accounts(self, data):
+        sid = self.get_store_id()
+        obj = {
+            "blob": base64.b64encode(data).decode("utf-8")
+        }
+        return await self.store.blobstore.put(sid, obj)
+
+    async def delete(self):
+        sid = self.get_store_id()
+        try:
+            await self.store.blobstore.delete(sid)
+        except: pass
+        try:
+            await super().delete()
+        except: pass
 
 class State:
     def __init__(self, store):

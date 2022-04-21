@@ -24,51 +24,43 @@ class Filing():
 
         # FIXME: BROKEN
         try:
-            await self.state.filing_report().delete(self.id)
+            await self.user.filing(self.fid).delete()
         except: pass
 
         try:
-            await self.state.filing_data().delete(self.id)
+            await self.user.signature_info().delete(self.fid)
         except: pass
 
         try:
-            await self.state.filing_status().delete(self.id)
+            await self.user.signature().delete(self.fid)
         except: pass
 
-        try:
-            await self.state.signature_info().delete(self.id)
-        except: pass
-
-        try:
-            await self.state.signature().delete(self.id)
-        except: pass
-
-        await self.state.filing_config().delete(self.id)
+        await self.user.filing(self.fid).delete()
 
     async def put_signature(self, img, ctype):
 
-        await self.state.signature().put(self.id, img)
-        await self.state.signature_info().put(self.id, {
+        await self.user.signature().put(self.fid, img)
+        await self.user.signature_info().put(self.fid, {
             "content-type": ctype,
         })
 
     async def get_signature(self):
 
-        info = await self.state.signature_info().get(self.id)
+        info = await self.user.signature_info().get(self.fid)
         ctype = info["content-type"]
 
-        img = await self.state.signature().get(self.id)
+        img = await self.user.signature().get(self.fid)
 
         return img, ctype
 
     async def get_report(self):
-        return await self.state.filing_report().get(self.id)
+        return await self.user.filing(self.fid).get_report()
 
     async def get_data(self):
-        return await self.state.filing_data().get(self.id)
+        return await self.user.filing(self.fid).data().get()
 
     async def get_status(self):
-        return await self.state.filing_status().get(self.id)
+        return await self.user.filing(self.fid).status().get()
 
     async def set_state(self, state):
 

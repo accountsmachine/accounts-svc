@@ -10,68 +10,67 @@ from firebase_admin import firestore
 import gnucash_uk_vat.model as model
 
 from .. ixbrl_process import IxbrlProcess
-from . hmrc import Hmrc
 
 logger = logging.getLogger("vat.submit")
 logger.setLevel(logging.DEBUG)
 
 class VatSubmission:
 
-    def __init__(self, user, email, config, state, renderer):
-        self.user = user
+    def __init__(self, cli, uid, email, user, renderer):
+        self.cli = cli
+        self.uid = uid
         self.email = email
-        self.config = config
-        self.state = state
+        self.user = user
         self.renderer = renderer
 
     async def clear_filing_history(self, id):
 
         # Clear out any previous filing reports etc.
         try:
-            await state.filing_report().delete(id)
+            await self.user.filing(id).delete_report()
         except: pass
 
         try:
-            await state.filing_data().delete(id)
+            await self.user.filing(id).data().delete()
         except: pass
 
         try:
-            await state.filing_status().delete(id)
+            await self.user.filing(id).status().delete()
         except: pass
 
     async def set_pending(self, id, cfg):
 
         cfg["state"] = "pending"
-        await state.filing_config().put(id, cfg)
+        await self.user.filing(id).put(cfg)
 
     async def background_submit(self, id):
-
-        state = self.state
 
         log_stream = StringIO()
         sthislog = logging.StreamHandler(log_stream)
         thislog = logging.getLoggerClass()("vat")
         thislog.addHandler(sthislog)
 
-        self.clear_filing_history(id)
+        await self.clear_filing_history(id)
 
         try:
 
             try:
+                print("HERE3")
 
                 logger.debug("Submission of VAT config %s", id)
 
-                cfg = await state.filing_config().get(id)
+                cfg = await self.user.filing(id).get()
+                print(cfg)
 
-                self.set_pending(id, cfg)
+                await self.set_pending(id, cfg)
 
+                print("HERE")
                 try:
                     company_number = cfg["company"]
                 except Exception as e:
                     raise RuntimeError("No company number in configuration")
 
-                cli = Hmrc(self.config, state, company_number)
-                obs = await cli.get_open_obligations()
+                obs = await self.cli.get_open_obligations()
 
                 logger.debug("Period due %s", cfg["due"])
                 thislog.info("Period due %s", cfg["due"])
@@ -87,7 +86,7 @@ class VatSubmission:
 
                 # Process VAT data to HTML report and VAT record
                 html = await self.renderer.render(
-                    state, self.renderer, id, "vat"
+                    self.user, self.renderer, id, "vat"
                 )
 
                 i = IxbrlProcess()
@@ -101,7 +100,7 @@ class VatSubmission:
                     "filing": cfg["label"],
                     "id": id,
                     "email": self.email,
-                    "uid": self.user,
+                    "uid": self.uid,
                     "valid": True,
                     "order": {
                         "items": [
@@ -115,38 +114,45 @@ class VatSubmission:
                 }
 
                 tid = str(uuid.uuid4())
+                print("HERE73")
 
                 @firestore.transactional
-                async def update_order(stx, tx, ordtx):
+                async def update_order(tx, ordtx):
 
                     # Fetches current balance
-                    bal = await tx.balance().get("balance")
+                    v = self.user.credits().vat()
+                    v.use_transaction(tx)
 
-                    if bal["credits"]["vat"] < 1:
+                    bal = await v.get()
+
+                    bal = bal["balance"]
+
+                    if bal < 1:
                         return False, "No VAT credits available"
 
-                    bal["credits"]["vat"] -= 1
-                    bal["time"] = datetime.datetime.now().isoformat()
+                    bal -= 1
 
                     ordtx["status"] = "complete"
                     ordtx["complete"] = True
 
-                    await tx.balance().put("balance", bal)
-                    await tx.transaction().put(tid, ordtx)
+                    await self.user.credits().vat().put({"balance": bal})
+                    await self.user.transaction(tid).put(ordtx)
 
                     return True, "OK"
 
-                tx = state.create_transaction()
-                ok, msg = await update_order(tx.tx, tx, ordtx)
+                tx = self.user.create_transaction()
+                ok, msg = await update_order(tx, ordtx)
 
                 if not ok:
                     raise RuntimeError(msg)
 
                 # Billing written
+                print("HERE73135")
 
-                await state.filing_report().put(id, html.encode("utf-8"))
-                await state.filing_data().put(id, vat)
+                await self.user.filing(id).put_report(html.encode("utf-8"))
+                await self.user.filing(id).data().put(vat)
 
+                print("HERE5")
                 rtn = model.Return()
                 rtn.periodKey = obl.periodKey
                 rtn.finalised = True
@@ -160,15 +166,19 @@ class VatSubmission:
                 rtn.totalValueGoodsSuppliedExVAT = vat["TotalValueGoodsSuppliedExVAT"]
                 rtn.totalAcquisitionsExVAT = vat["TotalAcquisitionsExVAT"]
 
+                print("HERE55")
+
                 thislog.info("VAT record:")
                 for k, v in rtn.to_dict().items():
                     thislog.info("  %s: %s", k, v)
 
                 thislog.info("Submitting VAT return...")
-                await cli.submit_vat_return(rtn)
+                print("HERE56161")
+                await self.cli.submit_vat_return(rtn)
                 thislog.info("Success.")
+                print("HERE56160981")
 
-                await state.filing_status().put(id, {
+                await self.user.filing(id).status().put({
                     "report": log_stream.getvalue()
                 })
 
@@ -181,20 +191,20 @@ class VatSubmission:
                 l = log_stream.getvalue()
 
                 # Put the log in a filing status.
-                await state.filing_status().put(id, {
+                await self.user.filing(id).status().put({
                     "report": l
                 })
 
                 # The filed report is empty.
-                await state.filing_report().put(id, "".encode("utf-8"))
+                await self.user.filing(id).put_report("".encode("utf-8"))
 
                 # Here we're reversing the charged credit as a transaction.
 
                 @firestore.transactional
-                async def update_order(stx, tx, ordtx):
+                async def update_order(tx, ordtx):
 
                     # Get current config
-                    cfg = await tx.filing_config().get(id)
+                    cfg = await tx.filing(id).get()
 
                     # Fetches current balance
                     bal = await tx.balance().get("balance")
@@ -218,38 +228,42 @@ class VatSubmission:
 
                     await tx.balance().put("balance", bal)
                     await tx.transaction().put(tid, ordtx)
-                    await state.filing_config().put(id, cfg)
+                    await self.user.filing(id).put(cfg)
 
-                tx = state.create_transaction()
-                await update_order(tx.tx, tx, ordtx)
+                tx = self.user.create_transaction()
+                await update_order(tx, ordtx)
 
                 return
 
-            cfg = await state.filing_config().get(id)
+            cfg = await self.user.filing(id).get()
             cfg["state"] = "published"
-            await state.filing_config().put(id, cfg)
+            await self.user.filing(id).put(cfg)
 
         except Exception as e:
 
             logger.debug("background_submit: Exception: %s", e)
 
             try:
-                await state.filing_status().put(id, {
+                await self.user.filing(id).status().put({
                     "report": str(e)
                 })
             except: pass
 
     async def submit(self, id):
 
-        rec = self.state.filing_config().get(id)
+        rec = await self.user.filing(id).get()
 
         # Quick credit check before committing to background task
-        balance = await self.state.balance().get("balance")
+        try:
+            balance = await self.user.credits().vat().get()
+            balance = balance["balance"]
+        except:
+            balance = 0
 
-        if balance["credits"]["vat"] < 1:
-                raise RuntimeError("No VAT credits available")
+        if balance < 1:
+            raise RuntimeError("No VAT credits available")
 
         asyncio.create_task(
-                self.background_submit(id)
+            self.background_submit(id)
         )
 
