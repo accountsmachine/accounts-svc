@@ -268,7 +268,7 @@ class Commerce:
         newtx = await self.create_tx(user, order, uid, email)
         tid = str(uuid.uuid4())
 
-        @firestore.transactional
+        @firestore.async_transactional
         async def create_order(tx, deltas, newtx):
 
             bal = {}
@@ -343,7 +343,7 @@ class Commerce:
         # This works out the balance change from the order
         deltas = self.get_order_delta(ordtx["order"])
 
-        @firestore.transactional
+        @firestore.async_transactional
         async def update_order(tx, ordtx, deltas):
 
             bal = {}

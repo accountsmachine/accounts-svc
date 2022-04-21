@@ -22,8 +22,7 @@ class DocObject:
     def create_transaction(self):
         return self.store.docstore.db.transaction()
     def use_transaction(self, tx):
-        pass
-#        self.tx = tx
+        self.tx = tx
 
 class CollObject:
     async def list(self):

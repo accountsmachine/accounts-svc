@@ -112,7 +112,7 @@ class VatSubmission:
 
                 tid = str(uuid.uuid4())
 
-                @firestore.transactional
+                @firestore.async_transactional
                 async def update_order(tx, ordtx):
 
                     # Fetches current balance
@@ -175,6 +175,9 @@ class VatSubmission:
 
             except Exception as e:
 
+
+                # FIXME!!! Things don't reverse correcrly.
+
                 # It all went wrong.
                 logger.debug("background_submit: Exception: %s", e)
                 thislog.error("background_submit: Exception: %s", e)
@@ -191,17 +194,22 @@ class VatSubmission:
 
                 # Here we're reversing the charged credit as a transaction.
 
-                @firestore.transactional
+                @firestore.async_transactional
                 async def update_order(tx, ordtx):
 
                     # Get current config
-                    cfg = await tx.filing(id).get()
+                    filcfg = await self.user.filing(id)
+                    filcfg.use_transaction(tx)
+                    cfg = await filcfg.get()
+
+                    v = self.user.credits().vat()
+                    v.use_transaction(tx)
+                    bal = await v.get()
+                    bal = bal["balance"]
 
                     # Fetches current balance
-                    bal = await tx.balance().get("balance")
 
-                    bal["credits"]["vat"] += 1
-                    bal["time"] = datetime.datetime.now().isoformat()
+                    bal += 1
 
                     ordtx["status"] = "cancelled"
                     ordtx["complete"] = False
@@ -217,8 +225,8 @@ class VatSubmission:
 
                     cfg["state"] = "errored"
 
-                    await tx.balance().put("balance", bal)
-                    await tx.transaction().put(tid, ordtx)
+                    await self.user.balance().put("balance", bal)
+                    await self.user.transaction().put(tid, ordtx)
                     await self.user.filing(id).put(cfg)
 
                 tx = self.user.create_transaction()

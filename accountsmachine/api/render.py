@@ -19,7 +19,7 @@ from .. ixbrl_process import IxbrlProcess
 from .. state.books import Books
 
 logger = logging.getLogger("api.render")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 class RendererApi:
 
@@ -218,7 +218,7 @@ class RendererApi:
 
         except Exception as e:
 
-            logger.debug("render: Exception: (%s) %s", type(e), e)
+            logger.error("render: Exception: (%s) %s", type(e), e)
             return web.HTTPInternalServerError(
                 body=str(e), content_type="text/plain"
             )
