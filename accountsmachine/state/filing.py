@@ -21,35 +21,21 @@ class Filing():
         return await user.filings().list()
 
     async def delete(self):
-
-        # FIXME: BROKEN
-        try:
-            await self.user.filing(self.fid).delete()
-        except: pass
-
-        try:
-            await self.user.signature_info().delete(self.fid)
-        except: pass
-
-        try:
-            await self.user.signature().delete(self.fid)
-        except: pass
-
         await self.user.filing(self.fid).delete()
 
     async def put_signature(self, img, ctype):
 
-        await self.user.signature().put(self.fid, img)
-        await self.user.signature_info().put(self.fid, {
+        await self.user.filing(self.fid).signature().put_image(img)
+        await self.user.filing(self.fid).signature().put({
             "content-type": ctype,
         })
 
     async def get_signature(self):
 
-        info = await self.user.signature_info().get(self.fid)
+        info = await self.user.filing(self.fid).signature().get()
         ctype = info["content-type"]
 
-        img = await self.user.signature().get(self.fid)
+        img = await self.user.filing(self.fid).signature().get_image()
 
         return img, ctype
 

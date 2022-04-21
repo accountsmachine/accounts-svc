@@ -231,6 +231,9 @@ class Filing(DocObject):
     def data(self):
         return FilingData(self.store, self.doc)
 
+    def signature(self):
+        return Signature(self, self.store, self.doc)
+
     async def get_report(self):
         sid = self.get_report_store_id()
         obj = await self.store.blobstore.get(sid)
