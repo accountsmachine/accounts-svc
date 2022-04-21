@@ -77,6 +77,11 @@ class UserAdmin:
             "billing_vat": "",
             "billing_email": email,
             "billing_tel": "",
+            "credits": {
+                "vat": 0,
+                "corptax": 0,
+                "accounts": 0,
+            },
         }
 
         scope = [
@@ -85,28 +90,12 @@ class UserAdmin:
             "accounts", "commerce", "user"
         ]
 
-        # Initial balance
-        balance = {
-            "time": datetime.datetime.utcnow().isoformat(),
-            "email": email,
-            "credits": {
-                "vat": 0,
-                "corptax": 0,
-                "accounts": 0,
-            }
-        }
-
-        state = State(self.store, uid)
+        state = State(self.store)
+        user = state.user(uid)
 
         try:
 
-            await state.user_profile().put(
-                "profile", profile
-            )
-
-            await state.balance().put(
-                "balance", balance
-            )
+            await user.put(profile)
 
             firebase_admin.auth.create_user(
                 uid=uid, email=email,
@@ -129,19 +118,14 @@ class UserAdmin:
 
             # Tidy up, back-track
             try:
-                await state.user_profile().delete("profile")
+                await user.delete()
             except Exception as f:
                 logger.info("Exception: %s", f)
 
             try:
-                await state.balance().delete("balance")
-            except Exception as f:
-                logger.info("Exception: %s", f)
-                
-            try:
                 firebase_admin.auth.delete_user(uid)
             except Exception as f:
-                logger.info("Exception (delete_user): %s", f)
+                logger.info("Exception (register_user): %s", f)
 
             raise e
 
@@ -182,11 +166,9 @@ class UserAdmin:
 
         return a
 
-    async def get_profile(self, state):
+    async def get_profile(self, user):
+        return await user.get()
 
-        return await state.user_profile().get("profile")
-
-
-    async def put_profile(self, state, profile):
-        return await state.user_profile().put("profile", profile)
+    async def put_profile(self, user, profile):
+        return await user.put("profile", profile)
 

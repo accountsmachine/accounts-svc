@@ -53,6 +53,7 @@ class BlobKind:
 class StateTx:
     def __init__(self):
         pass
+
     def get_tx(self, val):
         return self.tx
         
@@ -73,11 +74,92 @@ class StateTx:
             return obj
 
         return thing
-    
-class State:
-    def __init__(self, store, user):
+
+class DocObject:
+    async def get(self):
+        ref = await self.doc.get()
+        if not ref.exists:
+            raise KeyError()
+        return ref.to_dict()
+    async def put(self, obj):
+        await self.doc.set(obj)
+#    async def update(self, obj):
+#        await self.doc.set(obj)
+    async def delete(self):
+        await self.doc.delete()
+
+class CollObject:
+    async def list(self):
+        all = await self.coll.get()
+        return {v.id: v.to_dict() for v in all}
+        
+class User(DocObject):
+    def __init__(self, store, uid):
         self.store = store
-        self.user = user
+        self.doc = store.collection("users").document(uid)
+
+    def company(self, cid):
+        return Company(self.store, self.doc, cid)
+
+    def filing(self, fid):
+        return Filing(self.store, user.doc, fid)
+
+    def companies(self):
+        return Companies(self.store, self.doc)
+
+class Companies(CollObject):
+    def __init__(self, store, userdoc):
+        self.store = store
+        self.coll = userdoc.collection("companies")
+
+class Company(DocObject):
+    def __init__(self, store, userdoc, cid):
+        self.store = store
+        self.doc = userdoc.collection("companies").document(cid)
+    def vat_auth(self):
+        return VatAuth(self.store, self.doc)
+    def vat_auth_placeholder(self):
+        return VatAuthPlaceholder(self.store, self.doc)
+    def corptax_auth(self):
+        return CorptaxAuth(self.store, self.doc)
+    def accounts_auth(self):
+        return AccountsAuth(self.store, self.doc)
+
+class VatAuth(DocObject):
+    def __init__(self, store, doc):
+        self.store = store
+        self.doc = doc.collection("auth").document("vat")
+
+class VatAuthPlaceholder(DocObject):
+    def __init__(self, store, doc):
+        self.store = store
+        self.doc = doc.collection("auth").document("vat-placeholder")
+
+class CorptaxAuth(DocObject):
+    def __init__(self, store, doc):
+        self.store = store
+        self.doc = doc.collection("auth").document("corptax")
+
+class AccountsAuth(DocObject):
+    def __init__(self, store, doc):
+        self.store = store
+        self.doc = doc.collection("auth").document("accounts")
+
+class Filing(DocObject):
+    def __init__(self, store, userdoc, fid):
+        self.store = store
+        self.doc = userdoc.collection("filings").document(fid)
+
+class State:
+    def __init__(self, store):
+        self.store = store
+
+    def user(self, uid):
+        return User(self.store, uid)
+
+
+
+
 
     def create_transaction(self):
         t = StateTx()
@@ -85,72 +167,71 @@ class State:
         t.tx = self.store.docstore.db.transaction()
         return t
 
-    def doc(self, collection):
-        return DocKind(collection, self)
+    # def doc(self, collection):
+    #     return DocKind(collection, self)
 
-    def blob(self, collection):
-        return BlobKind(collection, self)
+    # def blob(self, collection):
+    #     return BlobKind(collection, self)
 
-    def company(self):
-        return self.doc("company")
 
-    def subscription(self):
-        return self.doc("subscription")
 
-    def filing_config(self):
-        return self.doc("filing")
 
-    def books(self):
-        return self.blob("books")
+    # def company(self):
+    #     return self.doc("company")
 
-    def booksinfo(self):
-        return self.doc("booksinfo")
+    # def subscription(self):
+    #     return self.doc("subscription")
 
-    def balance(self):
-        return self.doc("balance")
+    # def filing_config(self):
+    #     return self.doc("filing")
 
-    def transaction(self):
-        return self.doc("transaction")
+    # def books(self):
+    #     return self.blob("books")
 
-    def logo(self):
-        return self.blob("logo")
+    # def booksinfo(self):
+    #     return self.doc("booksinfo")
 
-    def signature(self):
-        return self.blob("signature")
+    # def balance(self):
+    #     return self.doc("balance")
 
-    def signature_info(self):
-        return self.doc("signature-info")
+    # def transaction(self):
+    #     return self.doc("transaction")
 
-    def logoinfo(self):
-        return self.doc("logoinfo")
+    # def logo(self):
+    #     return self.blob("logo")
 
-    def vat_auth(self):
-        return self.doc("vat-auth")
+    # def signature(self):
+    #     return self.blob("signature")
 
-    def corptax_auth(self):
-        return self.doc("corptax-auth")
+    # def signature_info(self):
+    #     return self.doc("signature-info")
 
-    def accounts_auth(self):
-        return self.doc("accounts-auth")
+    # def logoinfo(self):
+    #     return self.doc("logoinfo")
 
-    def filing_report(self):
-        return self.blob("filing-report")
+    # def vat_auth(self):
+    #     return self.doc("vat-auth")
 
-    def filing_data(self):
-        return self.doc("filing-data")
+    # def corptax_auth(self):
+    #     return self.doc("corptax-auth")
 
-    def filing_status(self):
-        return self.doc("filing-status")
+    # def accounts_auth(self):
+    #     return self.doc("accounts-auth")
 
-    def user_profile(self):
-        return self.doc("user-profile")
+    # def filing_report(self):
+    #     return self.blob("filing-report")
 
-    def books_mapping(self):
-        return self.doc("books-mapping")
+    # def filing_data(self):
+    #     return self.doc("filing-data")
 
-    def vat_auth_ref(self):
-        return self.doc("vat-auth-ref")
+    # def filing_status(self):
+    #     return self.doc("filing-status")
 
-    def bunchy(self):
-        return self.doc("BUNCHY")
+    # def user_profile(self):
+    #     return self.doc("user-profile")
 
+    # def books_mapping(self):
+    #     return self.doc("books-mapping")
+
+    # def vat_auth_ref(self):
+    #     return self.doc("vat-auth-ref")

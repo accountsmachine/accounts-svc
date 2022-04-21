@@ -21,10 +21,10 @@ class Vat:
         self.redirect_uri = config["redirect-uri"]
         self.store = store
 
-    async def compute(self, state, renderer, id):
+    async def compute(self, user, renderer, id):
 
         try:
-            html = await renderer.render(state, renderer, id, "vat")
+            html = await renderer.render(user, renderer, id, "vat")
         except Exception as e:
             html = ""
             logger.error(e)
@@ -34,8 +34,14 @@ class Vat:
 
         return vat
 
-    async def get_status(self, config, state, id, start, end):
-        cli = Hmrc(config, state, id)
+    async def get_hmrc_client(self, config, user, cid):
+        auth = user.company(cid).vat_auth()
+        cmp = await user.company(cid).get()
+        vrn = cmp["vrn"]
+        return Hmrc(config, auth, vrn)
+
+    async def get_status(self, config, user, cid, start, end):
+        cli = await self.get_hmrc_client(config, user, cid)
         l, p, o = await cli.get_status(start, end)
 
         return {
@@ -44,64 +50,65 @@ class Vat:
             "obligations": [v.to_dict() for v in o]
         }
 
-    async def get_liabilities(self, config, state, id, start, end):
-        cli = Hmrc(config, state, id)
+    async def get_liabilities(self, config, user, cid, start, end):
+        cli = await self.get_hmrc_client(config, user, cid)
         l = await cli.get_vat_liabilities(start, end)
         return [v.to_dict() for v in l]
 
-    async def get_obligations(self, config, state, id, start, end):
-        cli = Hmrc(config, state, id)
+    async def get_obligations(self, config, user, cid, start, end):
+        cli = await self.get_hmrc_client(config, user, cid)
         l = await cli.get_obligations(start, end)
         return [v.to_dict() for v in l]
 
-    async def get_open_obligations(self, config, state, id):
-        cli = Hmrc(config, state, id)
+    async def get_open_obligations(self, config, user, cid):
+        cli = await self.get_hmrc_client(config, user, cid)
         l = await cli.get_open_obligations()
         return [v.to_dict() for v in l]
 
-    async def get_payments(self, config, state, id, start, end):
-        cli = Hmrc(config, state, id)
+    async def get_payments(self, config, user, cid, start, end):
+        cli = await self.get_hmrc_client(config, user, cid)
         l = await cli.get_payments(start, end)
         return [v.to_dict() for v in l]
 
-    async def submit(self, user, email, config, state, renderer, id):
+    async def submit(self, uid, email, config, user, renderer, cid):
 
-        vs = VatSubmission(user, email, config, state, renderer)
-        await vs.submit(id)
+        vs = VatSubmission(uid, email, config, user, renderer)
+        await vs.submit(cid)
 
-    async def get_auth_ref(self, uid, state, cmp):
+    async def get_auth_ref(self, uid, user, cid):
 
         secret = secrets.token_hex(32)
 
         token = {
             "secret": secret,
-            "company": cmp,
+            "company": cid,
             "time": int(time.time()),
         }
         
-        await state.vat_auth_ref().put("ref", token)
+        await user.company(cid).vat_auth_placeholder().put(token)
 
-        return uid + ":" + secret
+        return uid + ":" + cid + ":" + secret
 
     async def receive_token(self, code, state):
 
         # Don't trust the inputs. uid may not be valid
-        uid, secret = state.split(":", 1)
+        uid, cid, secret = state.split(":", 2)
 
-        state = State(self.store, uid)
+        user = State(self.store).user(uid)
 
-        token = await state.vat_auth_ref().get("ref")
+        token = await user.company(cid).vat_auth_placeholder().get()
 
         if secret != token["secret"]:
             raise RuntimeError("Token not valid")
 
-        company = token["company"]
+        if cid != token["company"]:
+            raise RuntimeError("Token not valid")
 
-        return uid, company
+        return uid, cid
 
     async def store_auth(self, uid, company, auth):
 
-        state = State(self.store, uid)
-        await state.vat_auth().put(company, auth)
-        await state.vat_auth_ref().delete("ref")
+        cmp = State(self.store).user(uid).company(company)
+        await cmp.vat_auth().put(auth)
+        await cmp.vat_auth_placeholder().delete()
 

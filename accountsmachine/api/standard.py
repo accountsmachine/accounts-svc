@@ -6,7 +6,6 @@ from aiohttp import web
 def get_all(self, scope, cls):
     async def handler(self, request):
         request["auth"].verify_scope(scope)
-        user = request["auth"].user
 
         try:
             i = await cls.get_all(request["state"])

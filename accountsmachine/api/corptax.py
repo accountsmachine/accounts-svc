@@ -110,17 +110,14 @@ Filing complete."""
     async def authorize(self, request):
 
         request["auth"].verify_scope("corptax")
-        user = request["auth"].user
+        user = request["state"]
 
         try:
 
             id = request.match_info['id']
 
-            if ".." in id:
-                raise RuntimeError("Invalid id")
-
             config = await request.json()
-            await request["state"].corptax_auth().put(id, config)
+            await user.company(id).corptax_auth().put(config)
             return web.Response()
 
         except Exception as e:
@@ -133,16 +130,13 @@ Filing complete."""
     async def deauthorize(self, request):
 
         request["auth"].verify_scope("corptax")
-        user = request["auth"].user
+        user = request["state"]
 
         try:
 
             id = request.match_info['id']
 
-            if ".." in id:
-                raise RuntimeError("Invalid id")
-
-            await request["state"].corptax_auth().delete(id)
+            await user.company(id).corptax_auth().delete()
             return web.Response()
 
         except Exception as e:

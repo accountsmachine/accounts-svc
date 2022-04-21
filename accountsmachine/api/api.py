@@ -37,7 +37,11 @@ class DataPass:
         if "auth" in request:
 
             # State provides a higher-level view, and knows the calling user
-            request["state"] = State(request.app["store"], request["auth"].user)
+            request["state"] = State(
+                request.app["store"]
+            ).user(
+                request["auth"].user
+            )
 
         request["config"] = request.app["config"]
         request["renderer"] = request.app["renderer"]

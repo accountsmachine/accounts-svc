@@ -152,15 +152,18 @@ class AuthEndpoint(auth.Auth):
 
 class Hmrc:
 
-    def __init__(self, config, state, company_id):
+    def __init__(self, config, auth, vrn):
         self.config = config
-        self.state = state
-        self.company_id = company_id
+        self.auth = auth
+        self.vrn = vrn
 
     async def get_vat_client(self):
 
         try:
-            vauth = await self.state.vat_auth().get(self.company_id)
+            print("HERE3")
+            vauth = await self.auth.get()
+            print("HERE4")
+            print(vauth)
         except Exception as e:
             logger.error(e)
             logger.error("No VAT auth stored")
@@ -182,23 +185,23 @@ class Hmrc:
         if  auth.auth["access_token"] != old_token:
 
             try:
-                await self.state.vat_auth().put(company_number, auth.auth)
+                await self.auth.put(auth.auth)
             except:
-                await self.state.vat_auth().delete(company_number)
-
+                await self.auth.delete()
                 raise RuntimeError("Failure to store refreshed token")
 
         return h
 
     async def get_status(self, start, end):
 
-        cmp = await self.state.company().get(self.company_id)
+        print("HERE")
         cli = await self.get_vat_client()
+        print("HERE2")
 
         return await asyncio.gather(
-            cli.get_vat_liabilities(cmp["vrn"], start, end),
-            cli.get_vat_payments(cmp["vrn"], start, end),
-            cli.get_obligations(cmp["vrn"], start, end),
+            cli.get_vat_liabilities(self.vrn, start, end),
+            cli.get_vat_payments(self.vrn, start, end),
+            cli.get_obligations(self.vrn, start, end),
         )
 
     async def get_liabilities(self, start, end):
@@ -206,33 +209,33 @@ class Hmrc:
         cmp = await self.state.company().get(self.company_id)
         cli = await self.get_vat_client()
 
-        return await cli.get_vat_liabilities(cmp["vrn"], start, end)
+        return await cli.get_vat_liabilities(self.vrn, start, end)
 
     async def get_obligations(self, start, end):
 
         cmp = await self.state.company().get(self.company_id)
         cli = await self.get_vat_client()
 
-        return await cli.get_obligations(cmp["vrn"], start, end)
+        return await cli.get_obligations(self.vrn, start, end)
 
     async def get_open_obligations(self):
 
         cmp = await self.state.company().get(self.company_id)
         cli = await self.get_vat_client()
 
-        return await cli.get_open_obligations(cmp["vrn"])
+        return await cli.get_open_obligations(self.vrn)
 
     async def get_payments(self, start, end):
 
         cmp = await self.state.company().get(self.company_id)
         cli = await self.get_vat_client()
 
-        return await cli.get_vat_payments(cmp["vrn"], start, end)
+        return await cli.get_vat_payments(self.vrn, start, end)
 
     async def submit_vat_return(self, rtn):
 
         cmp = await self.state.company().get(self.company_id)
         cli = await self.get_vat_client()
 
-        await cli.submit_vat_return(cmp["vrn"], rtn)
+        await cli.submit_vat_return(self.vrn, rtn)
 

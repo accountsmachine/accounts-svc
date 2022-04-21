@@ -344,14 +344,12 @@ class VatApi():
     async def deauthorize(self, request):
 
         request["auth"].verify_scope("vat")
-        user = request["auth"].user
-
-        state = request["state"]
+        user = request["state"]
 
         try:
 
             id = request.match_info['id']
-            await state.vat_auth().delete(id)
+            await user.company(id).vat_auth().delete()
 
             return web.Response()
 

@@ -6,21 +6,23 @@ logger.setLevel(logging.DEBUG)
 
 class Filing():
 
-    def __init__(self, state, id):
-        self.state = state
-        self.id = id
+    def __init__(self, user, fid):
+        self.user = user
+        self.fid = fcid
 
     async def get(self):
-        return await self.state.filing_config().get(self.id)
+        return await self.user.filing(self.fid).get()
+
     async def put(self, data):
-        await self.state.filing_config().put(self.id, data)
+        await self.user.filing(self.fid).put(data)
 
     @staticmethod
-    async def get_all(state):
-        return await state.filing_config().list()
+    async def get_all(user):
+        return await user.filings().list()
 
     async def delete(self):
 
+        # FIXME: BROKEN
         try:
             await self.state.filing_report().delete(self.id)
         except: pass

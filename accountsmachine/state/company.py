@@ -5,20 +5,24 @@ logger = logging.getLogger("company")
 logger.setLevel(logging.DEBUG)
 
 class Company:
-    def __init__(self, state, id):
-        self.state = state
-        self.id = id
+
+    def __init__(self, user, cid):
+        self.user = user
+        self.cid = cid
+
     async def get(self):
-        return await self.state.company().get(self.id)
+        return await self.user.company(self.cid).get()
+
     async def put(self, data):
-        await self.state.company().put(self.id, data)
+        await self.user.company(self.cid).put(data)
 
     @staticmethod
-    async def get_all(state):
-        return await state.company().list()
+    async def get_all(user):
+        return await user.companies().list()
 
     async def delete(self):
 
+        # FIXME: Broken
         for fid in await self.state.filing_config().list():
 
             filing = await self.state.filing_config().get(fid)

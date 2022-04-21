@@ -92,3 +92,5 @@ class Store:
         self.blobstore = BlobStore(config)
         logger.debug("Opened")
 
+    def collection(self, id):
+        return self.docstore.db.collection(id)
