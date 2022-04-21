@@ -23,92 +23,93 @@ class Company:
     async def delete(self):
 
         # FIXME: Broken
-        for fid in await self.state.filing_config().list():
+        for fid in await self.user.filing_config().list():
 
-            filing = await self.state.filing_config().get(fid)
+            filing = await self.user.filing_config().get(fid)
 
-            if "company" in filing and filing["company"] == self.id:
+            if "company" in filing and filing["company"] == self.cid:
 
                 try:
-                    await self.state.filing_report().delete(fid)
+                    await self.user.filing_report().delete(fid)
                 except:
                     pass
 
                 try:
-                    await self.state.filing_data().delete(fid)
+                    await self.user.filing_data().delete(fid)
                 except:
                     pass
 
                 try:
-                    await self.state.filing_status().delete(fid)
+                    await self.user.filing_status().delete(fid)
                 except:
                     pass
 
                 try:
-                    await self.state.signature_info().delete(fid)
+                    await self.user.signature_info().delete(fid)
                 except:
                     pass
 
                 try:
-                    await self.state.signature().delete(fid)
+                    await self.user.signature().delete(fid)
                 except:
                     pass
 
-                await self.state.filing_config().delete(fid)
+                await self.user.filing_config().delete(fid)
 
         try:
-            await self.state.books().delete(self.id)
+            await self.user.books().delete(self.cid)
         except: pass
 
         try:
-            await self.state.books_mapping().delete(self.id)
+            await self.user.books_mapping().delete(self.cid)
         except: pass
 
         try:
-            await self.state.booksinfo().delete(self.id)
+            await self.user.booksinfo().delete(self.cid)
         except: pass
 
         try:
-            await self.state.logo().delete(self.id)
+            await self.user.logo().delete(self.cid)
         except: pass
 
         try:
-            await self.state.logoinfo().delete(self.id)
+            await self.user.logoinfo().delete(self.cid)
         except: pass
 
         try:
-            await self.state.vat_auth().delete(self.id)
+            await self.user.vat_auth().delete(self.cid)
         except: pass
 
         try:
-            await self.state.corptax_auth().delete(self.id)
+            await self.user.corptax_auth().delete(self.cid)
         except: pass
 
         try:
-            await self.state.accounts_auth().delete(self.id)
+            await self.user.accounts_auth().delete(self.cid)
         except: pass
 
         try:
-            await self.state.company().delete(self.id)
+            await self.user.company().delete(self.cid)
         except: pass
 
     async def put_logo(self, data, ctype):
-        await self.state.logo().put(self.id, data)
-        await self.state.logoinfo().put(self.id, {
+
+        await self.user.company(self.cid).logo().put_image(data)
+        await self.user.company(self.cid).logo().put({
             "content-type": ctype,
         })
 
     async def get_logo_type(self):
         try:
-            info = await self.state.logoinfo().get(self.id)
+            info = await self.user.company(self.cid).logo().get()
             return info["content-type"]
-        except:
+        except Exception as e:
             raise KeyError
             
 
     async def get_logo(self):
         try:
-            logo = await self.state.logo().get(self.id)
+            logo = await self.user.company(self.cid).logo().get_image()
             return logo
-        except:
+        except Exception as e:
             raise KeyError

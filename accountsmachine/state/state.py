@@ -183,6 +183,8 @@ class Company(DocObject):
         return BooksMapping(self.store, self.doc)
     def books(self):
         return Books(self, self.store, self.doc)
+    def logo(self):
+        return Logo(self, self.store, self.doc)
 
 class VatAuth(DocObject):
     def __init__(self, store, doc):
@@ -290,6 +292,64 @@ class Books(DocObject):
         return base64.b64decode(obj["blob"])
 
     async def put_accounts(self, data):
+        sid = self.get_store_id()
+        obj = {
+            "blob": base64.b64encode(data).decode("utf-8")
+        }
+        return await self.store.blobstore.put(sid, obj)
+
+    async def delete(self):
+        sid = self.get_store_id()
+        try:
+            await self.store.blobstore.delete(sid)
+        except: pass
+        try:
+            await super().delete()
+        except: pass
+
+class Logo(DocObject):
+    def __init__(self, company, store, doc):
+        super().__init__(store)
+        self.company = company
+        self.doc = doc.collection("logo").document("info")
+    def get_store_id(self):
+        return self.company.user.uid + "/c/" + self.company.cid + "/logo"
+
+    async def get_image(self):
+        sid = self.get_store_id()
+        obj = await self.store.blobstore.get(sid)
+        return base64.b64decode(obj["blob"])
+
+    async def put_image(self, data):
+        sid = self.get_store_id()
+        obj = {
+            "blob": base64.b64encode(data).decode("utf-8")
+        }
+        return await self.store.blobstore.put(sid, obj)
+
+    async def delete(self):
+        sid = self.get_store_id()
+        try:
+            await self.store.blobstore.delete(sid)
+        except: pass
+        try:
+            await super().delete()
+        except: pass
+
+class Signature(DocObject):
+    def __init__(self, filing, store, doc):
+        super().__init__(store)
+        self.filing = filing
+        self.doc = doc.collection("signature").document("info")
+    def get_store_id(self):
+        return self.filing.user.uid + "/c/" + self.filing.fid + "/signature"
+
+    async def get_image(self):
+        sid = self.get_store_id()
+        obj = await self.store.blobstore.get(sid)
+        return base64.b64decode(obj["blob"])
+
+    async def put_image(self, data):
         sid = self.get_store_id()
         obj = {
             "blob": base64.b64encode(data).decode("utf-8")
