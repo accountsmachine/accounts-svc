@@ -47,8 +47,8 @@ class User(DocObject):
     def filing(self, fid):
         return Filing(self, self.store, self.doc, fid)
 
-    def credits(self):
-        return Credits(self, self.store, self.doc)
+    def credits(self, id=None):
+        return Credits(self, self.store, self.doc, id)
 
     def transactions(self):
         return Transactions(self, self.store, self.doc)
@@ -57,10 +57,14 @@ class User(DocObject):
         return Transaction(self, self.store, self.doc, tid)
 
 class Credits(DocObject):
-    def __init__(self, user, store, doc):
+    def __init__(self, user, store, doc, id):
         super().__init__(store)
         self.user = user
-        self.doc = doc.collection("credits").document("balance")
+        if id == None:
+            id = "balance"
+            self.doc = doc.collection("credits").document(id)
+        else:
+            self.doc = self.store.docstore.db.collection("users").document(id)
 
 class Companies(CollObject):
     def __init__(self, user, store, userdoc):

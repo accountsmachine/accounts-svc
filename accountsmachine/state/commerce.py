@@ -257,7 +257,7 @@ class Commerce:
             bal = {}
 
             c = user.credits()
-#            c.use_transaction(tx)
+            c.use_transaction(tx)
             bal = await c.get()
 
             for kind in deltas:
@@ -312,42 +312,41 @@ class Commerce:
         intent = stripe.PaymentIntent.retrieve(id)
         tid = intent["metadata"]["transaction"]
 
-        txdoc = user.transaction(tid)
-        baldoc = user.credits()
+        # FIXME: Get 409 Too much contention when doing this transactionally
 
-        # Fetch transaction
-        ordtx = await txdoc.get()
-        ordtx["status"] = "complete"
-        ordtx["complete"] = True
+#        @firestore.async_transactional
+        async def update_order(tx):
 
-        # This works out the balance change from the order
-        deltas = self.get_order_delta(ordtx["order"])
+            # Fetch transaction
+            ordtxdoc = user.transaction(tid)
+#            ordtxdoc.use_transaction(tx)
+            ordtx = await ordtxdoc.get()
 
-        @firestore.async_transactional
-        async def update_order(tx, ordtx, deltas):
+            ordtx["status"] = "complete"
+            ordtx["complete"] = True
 
-            c = baldoc
-            # FIXME: Cause 409 error?!
-#            c.use_transaction(tx)
-            bal = await c.get()
+            # This works out the balance change from the order
+            deltas = self.get_order_delta(ordtx["order"])
+
+            cdoc = user.credits()
+            cdoc.use_transaction(tx)
+            bal = await cdoc.get()
 
             for kind in deltas:
 
                 if kind not in bal:
                     bal[kind] = 0
 
-                permitted = self.values[kind]["permitted"]
-                if bal[kind] + deltas[kind] > permitted:
-                    return False, "That would exceed your maximum permitted"
-
                 bal[kind] += deltas[kind]
 
-            await txdoc.put(ordtx)
-            await baldoc.put(bal)
+            await user.transaction(tid).put(ordtx)
+            await user.credits().put(bal)
+
             return True, "OK"
 
-        tx = user.create_transaction()
-        ok, msg = await update_order(tx, ordtx, deltas)
+#        tx = user.create_transaction()
+        tx = None
+        ok, msg = await update_order(tx)
 
         if not ok:
             raise RuntimeError(msg)
