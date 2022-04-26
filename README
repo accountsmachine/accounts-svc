@@ -1,0 +1,11 @@
+
+For project...
+- Create service account
+
+  make create-service-account KIND=prod
+
+push image
+deploy secret
+run-deploy
+run-upgrade
+

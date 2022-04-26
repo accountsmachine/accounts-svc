@@ -26,6 +26,12 @@ REPO=${REPO_${KIND}}
 
 CONTAINER=${REPO}/${NAME}
 
+PROJECT=accounts-machine-${KIND}
+SERVICE_ACCOUNT=accounts-svc
+SERVICE_ACCOUNT_FULL=${SERVICE_ACCOUNT}@${PROJECT}.iam.gserviceaccount.com
+CONFIG=${PROJECT}
+ACCOUNT=mark@accountsmachine.io
+
 repo:
 	echo ${CONTAINER}
 
@@ -51,15 +57,25 @@ create-secret-dev: KIND=dev
 create-secret-dev: create-secret
 
 SECRET=accounts-svc-config
-USER=accounts-svc@accounts-machine-dev.iam.gserviceaccount.com
+
+GCLOUD_OPTS=\
+    --configuration=${CONFIG} \
+    --project=${PROJECT}
+
+create-service-account:
+	gcloud ${GCLOUD_OPTS} iam service-accounts create \
+	    --description 'Accounts service' \
+	    --display-name 'Accounts service' \
+	    accounts-svc
 
 create-secret:
-	-gcloud secrets delete --quiet accounts-svc-config
-	gcloud secrets create ${SECRET} \
+	-gcloud ${GCLOUD_OPTS} secrets delete --quiet accounts-svc-config
+	gcloud ${GCLOUD_OPTS} secrets create ${SECRET} \
 	    --data-file=config-${KIND}.json
-	gcloud secrets get-iam-policy ${SECRET} > secret-policy.tmp
-	cat secret-policy.json >> secret-policy.tmp
-	gcloud secrets set-iam-policy ${SECRET} secret-policy.tmp
+	gcloud ${GCLOUD_OPTS} secrets get-iam-policy ${SECRET} \
+	    > secret-policy.tmp
+	sed 's/@@SERVICEACCOUNT@@/${SERVICE_ACCOUNT_FULL}/' secret-policy.json >> secret-policy.tmp
+	gcloud ${GCLOUD_OPTS} secrets set-iam-policy ${SECRET} secret-policy.tmp
 
 delete-secret:
 	gcloud secrets delete --quiet accounts-svc-config
@@ -99,13 +115,38 @@ clean:
 	rm -rf wheels/
 
 SERVICE=accounts-svc
-PROJECT=accounts-machine-dev
 REGION=europe-west1
 TAG=v$(subst .,-,${VERSION})
 
-deploy:
+run-list:
+	gcloud \
+	    --configuration=${CONFIG} \
+	    --project ${PROJECT} \
+	    run services list
+
+gcloud-setup:
+	-gcloud config configurations delete ${CONFIG}
+	gcloud config configurations create ${CONFIG} \
+	    --account ${ACCOUNT} --project ${PROJECT}
+	gcloud --configuration=${CONFIG} auth login 
+
+run-deploy:
+	gcloud \
+	    ${GCLOUD_OPTS} \
+	    run deploy ${SERVICE} \
+	    --image=${CONTAINER}:${VERSION} \
+	    --allow-unauthenticated \
+	    --service-account=accounts-svc@${PROJECT}.iam.gserviceaccount.com \
+	    --concurrency=80 \
+	    --cpu=1 \
+	    --memory=128Mi \
+	    --min-instances=0 \
+	    --max-instances=1 \
+	    --set-secrets=/secrets/accounts-svc-config=accounts-svc-config:latest \
+	    --region=${REGION}
+
+run-upgrade:
 	gcloud run services update ${SERVICE} \
 	    --project ${PROJECT} --region ${REGION} \
 	    --image ${CONTAINER}:${VERSION} \
 	    --tag ${TAG}
-
