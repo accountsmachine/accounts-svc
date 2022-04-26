@@ -16,6 +16,8 @@ stripe.api_key = ""
 logger = logging.getLogger("api.commerce")
 logger.setLevel(logging.DEBUG)
 
+logging.getLogger("stripe").setLevel(logging.INFO)
+
 class InvalidOrder(Exception):
     pass
 
@@ -309,47 +311,42 @@ class Commerce:
 
     async def complete_order(self, user, id):
 
+        # Card has been charged, this transaction really should not fail.
+        # FIXME: Webhook would be a better way to achieve this.
+
         intent = stripe.PaymentIntent.retrieve(id)
         tid = intent["metadata"]["transaction"]
 
+        # Fetch transaction outside of the transaction
+        ordtxdoc = user.transaction(tid)
+        ordtx = await ordtxdoc.get()
+
+        ordtx["status"] = "complete"
+        ordtx["complete"] = True
+
+        # This works out the balance change from the order
+        deltas = self.get_order_delta(ordtx["order"])
+
         # FIXME: Get 409 Too much contention when doing this transactionally
+        # FIXME: Get 409 error, this SHOULD be done in the transaction
+        cdoc = user.credits()
+#        cdoc.use_transaction(tx)
+        bal = await cdoc.get()
 
-#        @firestore.async_transactional
+        for kind in deltas:
+            if kind not in bal:
+                bal[kind] = 0
+            bal[kind] += deltas[kind]
+
+        @firestore.async_transactional
         async def update_order(tx):
-
-            # Fetch transaction
-            ordtxdoc = user.transaction(tid)
-#            ordtxdoc.use_transaction(tx)
-            ordtx = await ordtxdoc.get()
-
-            ordtx["status"] = "complete"
-            ordtx["complete"] = True
-
-            # This works out the balance change from the order
-            deltas = self.get_order_delta(ordtx["order"])
-
-            cdoc = user.credits()
-            cdoc.use_transaction(tx)
-            bal = await cdoc.get()
-
-            for kind in deltas:
-
-                if kind not in bal:
-                    bal[kind] = 0
-
-                bal[kind] += deltas[kind]
 
             await user.transaction(tid).put(ordtx)
             await user.credits().put(bal)
 
-            return True, "OK"
-
-#        tx = user.create_transaction()
-        tx = None
-        ok, msg = await update_order(tx)
-
-        if not ok:
-            raise RuntimeError(msg)
+        tx = user.create_transaction()
+#        tx = None
+        await update_order(tx)
 
     async def get_transactions(self, user):
 
