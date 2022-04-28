@@ -23,3 +23,6 @@ deploy secret
 run-deploy
 run-upgrade
 
+NOTE!!! Must have <app-name>.firebaseapp.com in API key HTTP referers for
+email verification links to work.
+
