@@ -149,9 +149,10 @@ run-deploy:
 run-domain:
 	gcloud \
 	    ${GCLOUD_OPTS} \
-	    run domain-mappings create \
+	    beta run domain-mappings create \
 	        --service=${SERVICE} \
-		--domain=${DOMAIN}
+		--domain=${DOMAIN} \
+	        --region=${REGION}
 
 run-upgrade:
 	gcloud run services update ${SERVICE} \
