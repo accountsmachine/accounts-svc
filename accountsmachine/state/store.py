@@ -61,9 +61,7 @@ class BlobStore:
     def __init__(self, config):
 
         logger.debug("Opening blobstore...")
-        self.db = storage.Client.from_service_account_json(
-            config["svc-account-key"]
-        )
+        self.db = storage.Client()
 
         self.bucket = self.db.bucket(config["bucket"])
         logger.debug("Opened")
