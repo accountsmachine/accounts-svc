@@ -1,4 +1,18 @@
 
+Firebase
+- Enable auth
+  - Email/password login
+  - Authed domain is app.stage.accountsmachine.io or whatever.
+  - Delete localhost (except for on dev, we use localhost).
+  - Mess with templates settings
+- APIs and credentials, firebase has created an app key, put the key
+  in environment...ts in the web app.
+- Configure OAUTH consent screen (not needed?).
+
+console.cloud.google.com
+- Point app.stage.accountsmachine.io or whatever to ghs.googlehosted.com
+- Point api.stage.accountsmachine.io or whatever to ghs.googlehosted.com
+
 For project...
 - Create service account
 

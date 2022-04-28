@@ -1,5 +1,5 @@
 
-VERSION=0.9.3
+VERSION=0.9.5
 
 JSONNET_REPO=git@github.com:cybermaggedon/ixbrl-reporter-jsonnet
 #REPORTER_REPO=https://github.com/cybermaggedon/ixbrl-reporter
@@ -117,6 +117,7 @@ clean:
 SERVICE=accounts-svc
 REGION=europe-west1
 TAG=v$(subst .,-,${VERSION})
+DOMAIN=api.${KIND}.accountsmachine.io
 
 run-list:
 	gcloud \
@@ -136,14 +137,21 @@ run-deploy:
 	    run deploy ${SERVICE} \
 	    --image=${CONTAINER}:${VERSION} \
 	    --allow-unauthenticated \
-	    --service-account=accounts-svc@${PROJECT}.iam.gserviceaccount.com \
+	    --service-account=${SERVICE_ACCOUNT_FULL} \
 	    --concurrency=80 \
 	    --cpu=1 \
-	    --memory=128Mi \
+	    --memory=256Mi \
 	    --min-instances=0 \
 	    --max-instances=1 \
 	    --set-secrets=/secrets/accounts-svc-config=accounts-svc-config:latest \
 	    --region=${REGION}
+
+run-domain:
+	gcloud \
+	    ${GCLOUD_OPTS} \
+	    run domain-mappings create \
+	        --service=${SERVICE} \
+		--domain=${DOMAIN}
 
 run-upgrade:
 	gcloud run services update ${SERVICE} \
