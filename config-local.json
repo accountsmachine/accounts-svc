@@ -6,7 +6,6 @@
 
     "project": "accounts-machine-dev",
     "bucket": "accounts-machine-dev",
-    "svc-account-key": "private.json",
 
     "stripe-public": "pk_test_51Khz14ImWys2SCctYBeX8uqlDHma6bHjO6mig7oHpaVTENa71keRcTiE1vDEpQewPc7UJWMX31CTJU6B2ycamnZa00PuWMDZPX",
     "stripe-secret": "sk_test_51Khz14ImWys2SCctFJHlNKlUQEmspamspbKOU15uBwMYC6ja0vMvKUDyDkWPehenoDoEht7dNztLatVlQ5ud5Fxp009e5MfCDE",
@@ -21,7 +20,6 @@
     "vat-api-url": "https://vat-test.dev.accountsmachine.io",
     "vat-client-id": "id1",
     "vat-client-secret": "secret1-5053-4e74-bbef-33b294b0e7d6",
-    "OLDredirect-uri": "http://localhost:8080/api/vat/receive-token",
     "redirect-uri": "http://192.168.0.105:8080/api/vat/receive-token",
 
     "companies-service-api-key": "testtesttest",
