@@ -20,13 +20,8 @@
     "vat-api-url": "https://test-api.service.hmrc.gov.uk",
     "vat-client-id": "cyA5UbJFwCwSozwN7F7OTJEoSpf5",
     "vat-client-secret": "6a52bea9-a328-49fc-a3ef-69c3095d6b6b",
-
-    "Xvat-auth-url": "https://vat-test.dev.accountsmachine.io",
-    "Xvat-api-url": "https://vat-test.dev.accountsmachine.io",
-    "Xvat-client-id": "cyA5",
-    "Xvat-client-secret": "6a52",
-
     "redirect-uri": "https://app.dev.accountsmachine.io/api/vat/receive-token",
+
     "companies-service-api-key": "testtesttest",
     "companies-service-url": "https://companies-test.dev.accountsmachine.io/",
 
