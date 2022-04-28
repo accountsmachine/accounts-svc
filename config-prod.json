@@ -11,8 +11,8 @@
     "stripe-secret": "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",
 
     "seller-name": "accountsmachine.io",
-    "seller-vat-number": "GB123456789",
-    "vat-rate": 20,
+    "seller-vat-number": "---",
+    "vat-rate": 0,
 
     "jsonnet-base": "ixbrl-reporter-jsonnet/",
     "config-base": "base/",
