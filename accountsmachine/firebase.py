@@ -9,6 +9,7 @@ logger.setLevel(logging.DEBUG)
 
 class Firebase:
     def __init__(self, config):
+
         self.project = config["project"]
 
         logger.debug("Initialise firebase...")
@@ -20,7 +21,13 @@ class Firebase:
         
 #        firebase_admin.initialize_app(cred)
 
-        firebase_admin.initialize_app()
+        logger.info("Initialising on project %s", self.project)
+
+        options = {
+            "projectId": self.project
+        }
+
+        firebase_admin.initialize_app(options=options)
 
         logger.debug("Initialised")
 

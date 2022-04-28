@@ -34,7 +34,7 @@ class DocStore:
     def __init__(self, config):
 
         logger.debug("Opening firestore...")
-        self.db = firestore.AsyncClient()
+        self.db = firestore.AsyncClient(project=config["project"])
         logger.debug("Opened")
 
     def collection(self, coll):
@@ -61,7 +61,7 @@ class BlobStore:
     def __init__(self, config):
 
         logger.debug("Opening blobstore...")
-        self.db = storage.Client()
+        self.db = storage.Client(project=config["project"])
 
         self.bucket = self.db.bucket(config["bucket"])
         logger.debug("Opened")

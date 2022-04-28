@@ -90,14 +90,17 @@ class UserAdmin:
 
         try:
 
+            logger.info("Creating user profile...")
             await user.put(profile)
 
+            logger.info("Setting balance...")
             await user.credits().put({
                 "vat": 0,
                 "corptax": 0,
                 "accounts": 0,
             })
 
+            logger.info("Create user auth...")
             firebase_admin.auth.create_user(
                 uid=uid, email=email,
                 phone_number=phone_number,
@@ -106,9 +109,12 @@ class UserAdmin:
                 disabled=False
             )
 
+            logger.info("Custom claim...")
             firebase_admin.auth.set_custom_user_claims(
                 uid, { "scope": scope, "application-id": app_id }
             )
+
+            logger.info("User creation complete.")
 
             return uid
 
