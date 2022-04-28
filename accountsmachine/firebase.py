@@ -13,11 +13,14 @@ class Firebase:
 
         logger.debug("Initialise firebase...")
 
-        cred = credentials.Certificate(
-            config["svc-account-key"]
-        )
+        # With creds
+#        cred = credentials.Certificate(
+#            config["svc-account-key"]
+#        )
         
-        firebase_admin.initialize_app(cred)
+#        firebase_admin.initialize_app(cred)
+
+        firebase_admin.initialize_app()
 
         logger.debug("Initialised")
 
