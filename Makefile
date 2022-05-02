@@ -56,6 +56,24 @@ push-prod: push
 create-secret-dev: KIND=dev
 create-secret-dev: create-secret
 
+everything-dev:
+	rm -rf wheels && make wheels
+	make container-dev
+	make push-dev
+	make run-upgrade KIND=dev
+
+everything-stage:
+	rm -rf wheels && make wheels
+	make container-stage
+	make push-stage
+	make run-upgrade KIND=stage
+
+everything-prod:
+	rm -rf wheels && make wheels
+	make container-prod
+	make push-prod
+	make run-upgrade KIND=prod
+
 SECRET=accounts-svc-config
 
 GCLOUD_OPTS=\
