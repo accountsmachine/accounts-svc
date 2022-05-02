@@ -2,7 +2,7 @@
 
     "port": 8080,
 
-    "restrict-user-domain": "accountsmachine.io",
+    "restrict-user-domains": ["accountsmachine.io", "frocks.org.uk"],
 
     "project": "accounts-machine-dev",
     "bucket": "accounts-machine-dev",

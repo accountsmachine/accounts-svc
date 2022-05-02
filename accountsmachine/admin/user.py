@@ -12,6 +12,16 @@ from .. state import State
 logger = logging.getLogger("admin.user")
 logger.setLevel(logging.INFO)
 
+def check_domain(email, domains):
+    try:
+        user_domain = email.split("@", 1)[1]
+    except:
+        logger.info("Badly formed email address")
+        raise RuntimeError("Badly formed email address")
+    if not user_domain in domains:
+        logger.info("User registered email with wrong domain")
+        raise RuntimeError("Bad domain")
+
 class AuthHeaderFailure(Exception):
     pass
 
@@ -43,9 +53,11 @@ class UserAdmin:
     def __init__(self, config, store):
 
         try:
-            self.domain = config["restrict-user-domain"]
+            self.domains = set(config["restrict-user-domains"])
+            logger.info("Restricted user domains: %s", str(self.domains))
         except:
-            self.domain = None
+            self.domains = None
+            logger.info("No user domain restriction")
 
         self.store = store
 
@@ -57,10 +69,8 @@ class UserAdmin:
             self, email, phone_number, display_name, password, app_id
     ):
         
-        if self.domain:
-            if not email.endswith("@" + self.domain):
-                logger.info("User registered email with wrong domain")
-                raise RuntimeError("Bad domain")
+        if self.domains:
+            check_domain(email, self.domains)
 
         uid = str(uuid.uuid4())
 
@@ -153,9 +163,10 @@ class UserAdmin:
         if not auth["email_verified"]:
             raise EmailNotVerified()
         
-        if self.domain:
-            email = auth["email"]
-            if not email.endswith("@" + self.domain):
+        if self.domains:
+            try:
+                check_domain(auth["email"], self.domains)
+            except:
                 raise BadDomain()
 
         # This shouldn't happen. I believe it's possible for an attacker

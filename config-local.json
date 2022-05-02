@@ -2,7 +2,7 @@
 
     "port": 8081,
 
-    "restrict-user-domain": "accountsmachine.io",
+    "restrict-user-domains": ["accountsmachine.io", "gmail.com"],
 
     "project": "accounts-machine-dev",
     "bucket": "accounts-machine-dev",
