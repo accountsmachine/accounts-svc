@@ -26,3 +26,7 @@ run-upgrade
 NOTE!!! Must have <app-name>.firebaseapp.com in API key HTTP referers for
 email verification links to work.
 
+Add users to storage buckets, both object creator and object viewer
+permissions.
+
+
