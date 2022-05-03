@@ -2,7 +2,7 @@
 
     "port": 8080,
 
-    "restrict-user-domains": ["accountsmachine.io"],
+    "DISABLED-restrict-user-domains": ["accountsmachine.io"],
 
     "project": "accounts-machine-prod",
     "bucket": "accounts-machine-prod",
