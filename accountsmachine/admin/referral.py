@@ -18,6 +18,14 @@ class JoinUpCredits:
             "accounts": self.accounts,
         }
 
+    @staticmethod
+    def from_dict(d):
+        return JoinUpCredits(
+            vat=d["vat"],
+            corptax=d["corptax"],
+            accounts=d["accounts"],
+        )
+
 class Discount:
     def __init__(self, vat=0, corptax=0, accounts=0):
         self.vat = vat
@@ -30,6 +38,14 @@ class Discount:
             "accounts": self.accounts,
         }
 
+    @staticmethod
+    def from_dict(d):
+        return Discount(
+            vat=d["vat"],
+            corptax=d["corptax"],
+            accounts=d["accounts"],
+        )
+
 class Referrer:
     def __init__(self, name, id):
         self.name = name
@@ -39,6 +55,13 @@ class Referrer:
             "id": self.id,
             "name": self.name,
         }
+
+    @staticmethod
+    def from_dict(d):
+        return Referrer(
+            id=d["id"],
+            name=d["name"],
+        )
 
 class Offer:
 
@@ -76,10 +99,10 @@ class Offer:
             datetime.datetime.utcnow() + datetime.timedelta(days=self.expiry)
         )
 
-        return AllocatedPackage(self.id, self.referrer, expiry,
+        return Package(self.id, self.referrer, expiry,
                                 self.join_up_credits, self.discount)
 
-class AllocatedPackage:
+class Package:
 
     def __init__(self, id, referrer, expiry, join_up_credits = None,
                  discount = None):
@@ -109,6 +132,16 @@ class AllocatedPackage:
             "discount": self.discount.to_dict(),
         }
 
+    @staticmethod
+    def from_dict(d):
+        return Package(
+            id=d["id"],
+            referrer=Referrer.from_dict(d["referrer"]),
+            expiry=datetime.datetime.fromisoformat(d["expiry"]),
+            join_up_credits=JoinUpCredits.from_dict(d["join-up-credits"]),
+            discount=Discount.from_dict(d["discount"])
+        )
+
 class Referrals:
 
     def __init__(self):
@@ -134,16 +167,25 @@ class Referrals:
 
                 expiry_days=712,
 
+            ),
+
+            'STANDARD': Offer(
+
+                id="STANDARD",
+
+                join_up_credits = JoinUpCredits(),
+                discount = Discount(),
+
+                referrer = Referrer(
+                    name='Standard package',
+                    id='7b6ef04a-03ee-41c2-89a2-df16c1221b2e'
+                ),
+
+                expiry_days=712,
+
             )
 
         }
-
-#        pkg = self.get_package("LAUNCHPAD")
-#        print(json.dumps(pkg.to_dict()))
-
-#        all = pkg.allocate()
-#        print(json.dumps(all.to_dict()))
-        
 
     def get_offer(self, ref):
 
@@ -162,6 +204,5 @@ class Referrals:
         return None
 
     def default_package(self):
-#        return Offer(id="STANDARD")
-        return self.get_package("LAUNCHPAD")
+        return self.get_package("STANDARD")
 

@@ -9,6 +9,8 @@ import datetime
 import math
 import copy
 
+from .. commerce.commerce import InvalidOrder
+
 logger = logging.getLogger("api.commerce")
 logger.setLevel(logging.DEBUG)
 
@@ -43,9 +45,12 @@ class CommerceApi():
 
         order = await request.json()
 
-        tid = await request["commerce"].create_order(
-            request["state"], order, user, email
-        )
+        try:
+            tid = await request["commerce"].create_order(
+                request["state"], order, user, email
+            )
+        except InvalidOrder as e:
+            raise web.HTTPBadRequest(text=str(e))
 
         return web.json_response(tid)
 

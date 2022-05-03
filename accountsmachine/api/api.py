@@ -24,7 +24,7 @@ from . status import StatusApi
 from . corptax import CorptaxApi
 from . accounts import AccountsApi
 from . commerce import CommerceApi
-from .. state import Commerce
+from .. commerce.commerce import Commerce
 
 logger = logging.getLogger("api")
 logger.setLevel(logging.DEBUG)

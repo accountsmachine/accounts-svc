@@ -10,6 +10,8 @@ import math
 import copy
 from firebase_admin import firestore
 
+from .. admin.referral import Package
+
 import stripe
 stripe.api_key = ""
 
@@ -75,7 +77,7 @@ class Commerce:
                 "min_purchase": 1,
             },
             "corptax": {
-                "description": "Corporation tax filing",
+                "description": "Corp. tax filing",
                 "permitted": 4,
                 "price": 1450,
                 "discount": 0.995,
@@ -97,6 +99,8 @@ class Commerce:
     async def get_offer(self, user):
 
         balance = await self.get_balance(user)
+        package = await user.currentpackage().get()
+        package = Package.from_dict(package)
 
         opts = copy.deepcopy(self.values)
 
@@ -112,15 +116,22 @@ class Commerce:
             v: opts[v] for v in opts if opts[v]["permitted"] > 0
         }
 
+        package_discount = None
+
+        if package:
+            if package.expiry > datetime.datetime.utcnow():
+                if package.discount:
+                    package_discount = package.discount
+
         for kind in opts:
 
             res = opts[kind]
 
             offer = []
-
             for v in [0, *range(
                     res["min_purchase"], res["permitted"] + 1
             )]:
+
                 price = math.floor(
                     Commerce.purchase_price(
                         res["price"], v, res["discount"]
@@ -129,11 +140,20 @@ class Commerce:
 
                 discount = (res["price"] * v) - price
 
+                if package_discount and getattr(package_discount, kind):
+                    adj = round(price * getattr(package_discount, kind))
+                    discount += adj
+                    price -= adj
+
                 offer.append({
                     "price": price, "discount": discount, "quantity": v
                 })
 
             res["offer"] = offer
+
+            if package_discount and getattr(package_discount, kind):
+                discp = str(int(100 * getattr(package_discount, kind))) + "%"
+                res["adjustment"] = package.id + " " + discp
 
         offer = {
             "offer": opts,
@@ -146,7 +166,13 @@ class Commerce:
         return await user.credits().get()
 
     # Validate order for internal integrity
-    def verify_order(self, order):
+    def verify_order(self, order, package):
+
+        pkg_discount = None
+        if package:
+            if package.expiry > datetime.datetime.utcnow():
+                if package.discount:
+                    pkg_discount = package.discount
         
         subtotal = 0
 
@@ -155,11 +181,10 @@ class Commerce:
             kind = item["kind"]
             count = item["quantity"]
             amount = item["amount"]
+            disc = item["discount"]
 
             if kind not in self.values:
-                raise InvalidOrder(
-                    text="We don't sell you one of those."
-                )
+                raise InvalidOrder("We don't sell you one of those.")
 
             resource = self.values[kind]
 
@@ -169,29 +194,39 @@ class Commerce:
                 )
             )
 
+            discount = (resource["price"] * count) - price
+
+            adj = 0
+            if pkg_discount:
+                if getattr(pkg_discount, kind):
+                    adj = round(getattr(pkg_discount, kind) * price)
+                    price -= adj
+                    discount += adj
+
             if amount != price:
-                raise InvalidOrder(
-                    text="Wrong price"
-                )
+                raise InvalidOrder("Wrong price")
+
+            if disc != discount:
+                raise InvalidOrder("Wrong discount")
 
             subtotal += amount
 
         if subtotal != order["subtotal"]:
-            raise InvalidOrder(text="Computed subtotal is wrong")
+            raise InvalidOrder("Computed subtotal is wrong")
 
         # This avoids rounding errors.
         if abs(order["vat_rate"] - self.vat_rate) > 0.00005:
-            raise InvalidOrder(text="Tax rate is wrong")
+            raise InvalidOrder("Tax rate is wrong")
 
         vat = round(subtotal * order["vat_rate"])
 
         if vat != order["vat"]:
-            raise InvalidOrder(text="VAT calculation is wrong")
+            raise InvalidOrder("VAT calculation is wrong")
 
         total = subtotal + vat
 
         if total != order["total"]:
-            raise InvalidOrder(text="Total calculation is wrong")
+            raise InvalidOrder("Total calculation is wrong")
 
     # Returns potential new balance
     def get_order_delta(self, order):
@@ -243,9 +278,13 @@ class Commerce:
         # Need to verify everything from the client side.  Can't trust
         # any of it.
 
+        # Get user package
+        package = await user.currentpackage().get()
+        package = Package.from_dict(package)
+
         # First, check that the prices in the order are consistent with our
         # current offer, and that the calculations are internally consistent.
-        self.verify_order(order)
+        self.verify_order(order, package)
 
         # This fetches the balance change from the order
         deltas = self.get_order_delta(order)
