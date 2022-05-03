@@ -1,5 +1,9 @@
 
 import base64
+import logging
+
+logger = logging.getLogger("state.state")
+logger.setLevel(logging.INFO)
 
 # Security target: Make sure the caller can't change the uid in other people's
 # data in order to take over.
@@ -56,11 +60,85 @@ class User(DocObject):
     def transaction(self, tid):
         return Transaction(self, self.store, self.doc, tid)
 
+    def packages(self):
+        return Packages(self, self.store, self.doc)
+
     def package(self, id):
         return Package(self, self.store, self.doc, id)
 
     def currentpackage(self):
         return CurrentPackage(self, self.store, self.doc)
+
+    async def delete(self):
+
+        logger.info("Deleting user %s", self.uid)
+
+        # Delete companies
+        try:
+            ids = await self.companies().list()
+            ids = ids.keys()
+
+            for id in ids:
+                try:
+                    logger.info("Deleting company %s", id)
+                    await self.company(id).delete()
+                except: pass
+        except:
+            pass
+
+        # Delete filings
+        try:
+            ids = await self.filings().list()
+            ids = ids.keys()
+
+            for id in ids:
+                try:
+                    logger.info("Deleting filing %s", id)
+                    await self.filing(id).delete()
+                except: pass
+        except:
+            pass
+
+        # Delete transactions
+        try:
+            ids = await self.transactions().list()
+            ids = ids.keys()
+
+            for id in ids:
+                try:
+                    logger.info("Deleting tx %s", id)
+                    await self.transaction(id).delete()
+                except: pass
+        except:
+            pass
+
+        try:
+            logger.info("Deleting current package")
+            await self.currentpackage().delete()
+        except: pass
+
+        # Delete packages
+        try:
+            ids = await self.packages().list()
+            ids = ids.keys()
+
+            for id in ids:
+                try:
+                    logger.info("Deleting package %s", id)
+                    await self.package(id).delete()
+                except Exception as e:
+                    print(e)
+
+        except Exception as e:
+            print(e)
+
+        try:
+            logger.info("Deleting credits")
+            await self.credits().delete()
+        except: pass
+
+        logger.info("Deleting user object")
+        await super().delete()
 
 class Credits(DocObject):
     def __init__(self, user, store, doc, id):
@@ -329,13 +407,22 @@ class Signature(DocObject):
         except: pass
         await super().delete()
 
+class Packages(CollObject):
+    def __init__(self, user, store, userdoc):
+        self.user = user
+        self.store = store
+        self.coll = userdoc.collection("packages")
+        self.doc = userdoc
+    def package(self, id):
+        return Package(self.user, self.store, self.doc, id)
+
 # Don't really use the package records, just a history.
 class Package(DocObject):
     def __init__(self, user, store, userdoc, id):
         super().__init__(store)
         self.user = user
         self.id = id
-        self.doc = userdoc.collection("package").document(id)
+        self.doc = userdoc.collection("packages").document(id)
 
 # Package IDs are uppercase.  There is a special 'current' package.
 class CurrentPackage(DocObject):
@@ -343,7 +430,7 @@ class CurrentPackage(DocObject):
         super().__init__(store)
         self.user = user
         self.id = id
-        self.doc = userdoc.collection("package").document("current")
+        self.doc = userdoc.collection("packages").document("current")
 
 class State:
     def __init__(self, store):

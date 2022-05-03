@@ -163,7 +163,7 @@ class Api:
 
         self.app.add_routes([web.get("/company-reg/{id}", self.creg.get)])
 
-        self.app.add_routes([web.get("/user-account/delete",
+        self.app.add_routes([web.post("/user-account/delete",
                                      self.auth.delete_user)])
         self.app.add_routes([web.post("/user-account/register",
                                      self.auth.register_user)])

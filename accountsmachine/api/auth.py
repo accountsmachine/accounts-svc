@@ -103,19 +103,24 @@ class AuthApi:
             user = await request.json()
 
             if "X-Application-ID" not in request.headers:
-                return HTTPUnauthorized()
+                return web.HTTPUnauthorized()
 
             # App-id isn't a feature which is used, currently, it's here in
             # case we want to do API as a service later.
             if request.headers["X-Application-ID"] != self.app_id:
-                return HTTPUnauthorized()
+                return web.HTTPUnauthorized()
+
+            try:
+                ref = user["ref"]
+            except:
+                ref = None
 
             # Security feature: Passing parameters by name, because don't want
             # to accidentally put password in the wrong field.
             uid = await self.user_admin.register_user(
                 email=user["email"], phone_number=user["phone_number"],
                 display_name=user["display_name"], password=user["password"],
-                app_id=self.app_id
+                app_id=self.app_id, ref=ref,
             )
 
             return web.Response()
@@ -135,8 +140,7 @@ class AuthApi:
 
         try:
 
-            await self.user_admin.delete_user(user)
-
+            await self.user_admin.delete_user(request["state"], user)
             return web.Response()
 
         except Exception as e:

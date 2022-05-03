@@ -65,9 +65,20 @@ class UserAdmin:
 
         self.referrals = Referrals()
 
-    async def delete_user(self, user):
+    async def delete_user(self, user, uid):
 
-        raise RuntimeError("Not implemented")
+        logger.info("Deleting user %s", uid)
+        print(user)
+        print(uid)
+
+        # This takes care of everything in the store
+        # FIXME: But not blobs???  Actually I think it does.
+        await user.delete()
+
+        try:
+            firebase_admin.auth.delete_user(uid)
+        except Exception as f:
+            logger.info("Exception (delete_user): %s", f)
 
     async def register_user(
             self, email, phone_number, display_name, password, app_id,
