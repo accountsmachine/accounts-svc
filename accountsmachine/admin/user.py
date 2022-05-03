@@ -121,6 +121,38 @@ class UserAdmin:
         state = State(self.store)
         user = state.user(uid)
 
+        # Transaction ID for the free transaction credit
+        txid = str(uuid.uuid4())
+
+        credtx = {
+            "time": datetime.datetime.now().isoformat(),
+            "type": "credit",
+            "description": "Credit receipt for ref " + pkg.id,
+            "id": txid,
+            "email": email,
+            "uid": uid,
+            "valid": True,
+            "order": {
+                "items": [
+                    {
+                        "kind": "vat",
+                        "description": "VAT return",
+                        "quantity": pkg.join_up_credits.vat,
+                    },
+                    {
+                        "kind": "corptax",
+                        "description": "Corp. tax filing",
+                        "quantity": pkg.join_up_credits.corptax,
+                    },
+                    {
+                        "kind": "accounts",
+                        "description": "Accounts filing",
+                        "quantity": pkg.join_up_credits.accounts,
+                    }
+                ]
+            }
+        }
+
         try:
 
             logger.info("Creating user profile...")
@@ -132,6 +164,10 @@ class UserAdmin:
                 "corptax": pkg.join_up_credits.corptax,
                 "accounts": pkg.join_up_credits.accounts,
             })
+
+            if pkg.join_up_credits.vat != 0 or pkg.join_up_credits.corptax != 0 or pkg.join_up_credits.accounts != 0:
+                logger.info("Credit transaction...")
+                await user.transaction(txid).put(credtx)
 
             logger.info("Setting package...")
             await user.package(pkg.id).put(pkg.to_dict())
@@ -169,6 +205,12 @@ class UserAdmin:
             # Tidy up, back-track
             try:
                 await user.package(pkg.id).delete()
+            except Exception as f:
+                logger.info("Exception: %s", f)
+
+            # Delete transaction
+            try:
+                await user.transaction(txid).delete()
             except Exception as f:
                 logger.info("Exception: %s", f)
 
