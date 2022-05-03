@@ -9,6 +9,8 @@ import firebase_admin.auth
 
 from .. state import State
 
+from . referral import Referrals
+
 logger = logging.getLogger("admin.user")
 logger.setLevel(logging.INFO)
 
@@ -61,18 +63,28 @@ class UserAdmin:
 
         self.store = store
 
+        self.referrals = Referrals()
+
     async def delete_user(self, user):
 
         raise RuntimeError("Not implemented")
 
     async def register_user(
-            self, email, phone_number, display_name, password, app_id
+            self, email, phone_number, display_name, password, app_id,
+            ref=None,
     ):
         
         if self.domains:
             check_domain(email, self.domains)
 
         uid = str(uuid.uuid4())
+
+        if ref != None:
+            pkg = self.referrals.get_package(ref)
+            if pkg == None:
+                raise RuntimeError("Referral code '%s' is not valid" % ref)
+        else:
+            pkg = self.referrals.default_package()
 
         # This is a new user.
         profile = {
@@ -110,6 +122,10 @@ class UserAdmin:
                 "accounts": 0,
             })
 
+            logger.info("Setting package...")
+            await user.package(pkg.id).put(pkg.to_dict())
+            await user.currentpackage().put(pkg.to_dict())
+
             logger.info("Create user auth...")
             firebase_admin.auth.create_user(
                 uid=uid, email=email,
@@ -132,6 +148,24 @@ class UserAdmin:
 
             # Need to attempt to back-track on all of the above setup
             logger.info("User create failed for %s", uid)
+
+            # Tidy up, back-track
+            try:
+                await user.currentpackage().delete()
+            except Exception as f:
+                logger.info("Exception: %s", f)
+
+            # Tidy up, back-track
+            try:
+                await user.package(pkg.id).delete()
+            except Exception as f:
+                logger.info("Exception: %s", f)
+
+            # Tidy up, back-track
+            try:
+                await user.credits().delete()
+            except Exception as f:
+                logger.info("Exception: %s", f)
 
             # Tidy up, back-track
             try:

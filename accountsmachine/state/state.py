@@ -56,6 +56,12 @@ class User(DocObject):
     def transaction(self, tid):
         return Transaction(self, self.store, self.doc, tid)
 
+    def package(self, id):
+        return Package(self, self.store, self.doc, id)
+
+    def currentpackage(self):
+        return CurrentPackage(self, self.store, self.doc)
+
 class Credits(DocObject):
     def __init__(self, user, store, doc, id):
         super().__init__(store)
@@ -322,6 +328,22 @@ class Signature(DocObject):
             await self.store.blobstore.delete(sid)
         except: pass
         await super().delete()
+
+# Don't really use the package records, just a history.
+class Package(DocObject):
+    def __init__(self, user, store, userdoc, id):
+        super().__init__(store)
+        self.user = user
+        self.id = id
+        self.doc = userdoc.collection("package").document(id)
+
+# Package IDs are uppercase.  There is a special 'current' package.
+class CurrentPackage(DocObject):
+    def __init__(self, user, store, userdoc):
+        super().__init__(store)
+        self.user = user
+        self.id = id
+        self.doc = userdoc.collection("package").document("current")
 
 class State:
     def __init__(self, store):
