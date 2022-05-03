@@ -117,9 +117,9 @@ class UserAdmin:
 
             logger.info("Setting balance...")
             await user.credits().put({
-                "vat": 0,
-                "corptax": 0,
-                "accounts": 0,
+                "vat": pkg.join_up_credits.vat,
+                "corptax": pkg.join_up_credits.corptax,
+                "accounts": pkg.join_up_credits.accounts,
             })
 
             logger.info("Setting package...")
