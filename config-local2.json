@@ -6,10 +6,12 @@
 
     "project": "accounts-machine-dev",
     "bucket": "accounts-machine-dev",
-    "svc-account-key": "private.json",
 
     "stripe-public": "pk_test_51Khz14ImWys2SCctYBeX8uqlDHma6bHjO6mig7oHpaVTENa71keRcTiE1vDEpQewPc7UJWMX31CTJU6B2ycamnZa00PuWMDZPX",
     "stripe-secret": "sk_test_51Khz14ImWys2SCctFJHlNKlUQEmspamspbKOU15uBwMYC6ja0vMvKUDyDkWPehenoDoEht7dNztLatVlQ5ud5Fxp009e5MfCDE",
+    "seller-name": "accountsmachine.io",
+    "seller-vat-number": "GB123456789",
+    "vat-rate": 20,
 
     "jsonnet-base": "ixbrl-reporter-jsonnet/",
     "config-base": "base/",
@@ -18,16 +20,13 @@
     "vat-api-url": "http://localhost:8090",
     "vat-client-id": "id1",
     "vat-client-secret": "secret1-5053-4e74-bbef-33b294b0e7d6",
-    "redirect-uri": "http://localhost:8080/api/vat/receive-token",
+    "redirect-uri": "http://192.168.0.105:8080/api/vat/receive-token",
 
-    "companies-house-api-key": "638bedcb-eb9d-4c97-b16d-fd28fc5a5739",
+    "companies-service-api-key": "testtesttest",
+    "companies-service-url": "https://companies-test.dev.accountsmachine.io/",
 
     "audience": "accounts-machine-dev",
     "algorithms": ["RS256"],
-
-    "jwt-keys": [
-	"pubkey1.pem", "pubkey2.pem"
-    ],
 
     "application-id": "378b4f4c-ee3f-4645-b513-e2d7775e1a05"
 

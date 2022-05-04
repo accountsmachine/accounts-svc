@@ -170,6 +170,8 @@ class RendererApi:
             }
 
             books = Books(user, cid)
+
+            info = await books.get_info()
         
             tmp_file = "tmp." + str(uuid.uuid4()) + ".dat"
 
@@ -179,9 +181,21 @@ class RendererApi:
 
             today = datetime.datetime.now().date().isoformat()
 
+            bkind = info["kind"]
+            if bkind == "gnucash-sqlite":
+                bkind = "piecash"
+            elif bkind == "csv":
+                pass
+            else:
+                raise RuntimeError(
+                    "Can't render account books kind '%s'" % bkind
+                )
+
+            logger.info("Accounting books kind is %s", info["kind"])
+
             with await books.create_temp_file(tmp_file) as f:
                 cfg["report"]["structure"]["accounts_file"] = tmp_file
-                cfg["report"]["structure"]["accounts_kind"] = "piecash"
+                cfg["report"]["structure"]["accounts_kind"] = bkind
                 cfg["report"]["logo"] = logo
                 cfg["report"]["signature"] = sig
                 cfg["report"]["today"] = today
