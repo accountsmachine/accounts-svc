@@ -80,6 +80,10 @@ class BooksApi:
 
         try:
 
+            blob = None
+            kind = None
+            size = None
+
             reader = await request.multipart()
 
             while True:
@@ -89,7 +93,7 @@ class BooksApi:
 
                 if field.name == "books":
 
-                    payload = bytes()
+                    blob = bytes()
 
                     size = 0
                     while True:
@@ -97,13 +101,32 @@ class BooksApi:
                         if not chunk:
                             break
                         size += len(chunk)
-                        payload += chunk
+                        blob += chunk
 
-                    await books.put(payload)
-                    await books.put_info({
-                        "time": datetime.datetime.utcnow().isoformat(),
-                        "length": size
-                    })
+                if field.name == "kind":
+                    kind = ""
+                    while True:
+                        chunk = await field.read_chunk()
+                        if not chunk:
+                            break
+                        kind += chunk.decode("utf-8")
+
+            if blob == None or kind == None:
+                return web.HTTPBadRequest(
+                    body="Need 'books' and 'kind' fields"
+                )
+
+            await books.put(blob)
+            await books.put_info({
+                "time": datetime.datetime.utcnow().isoformat(),
+                "length": size,
+                "kind": kind,
+            })
+
+            try:
+                await books.validate(blob, kind)
+            except Exception as e:
+                return web.HTTPBadRequest(body=str(e))
 
             return web.Response()
 
@@ -137,8 +160,14 @@ class BooksApi:
 
         tmp_file = "tmp." + str(uuid.uuid4()) + ".tmp"
 
-        with await books.open_accounts(tmp_file) as accts:
-            s = books.summarise(accts)
+        try:
+            with await books.open_accounts(tmp_file) as accts:
+                s = books.summarise(accts)
+        except Exception as e:
+            logger.error(e)
+            return web.HTTPInternalServerError(
+                body=str(e), content_type="text/plain"
+            )
 
         return web.json_response(s)
 

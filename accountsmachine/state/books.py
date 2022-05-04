@@ -74,6 +74,16 @@ class Books:
 
         return ret
 
+    async def validate(self, blob, kind):
+
+        if kind == "gnucash-sqlite":
+            return
+
+        if kind == "csv":
+            return
+
+        raise RuntimeError("Format '%s' not recognised" % kind)
+
     async def create_temp_file(self, tmp_file):
 
         class FileContext:
@@ -102,9 +112,19 @@ class Books:
             def __exit__(self, type, value, traceback):
                 os.remove(self.file)
 
+        info = await self.get_info()
+
         books = await self.company.books().get_accounts()
 
-        return AccountsCtxt(books, tmp_file, "piecash")
+        kind = info["kind"]
+
+        if kind == "gnucash-sqlite":
+            return AccountsCtxt(books, tmp_file, "piecash")
+
+        if kind == "csv":
+            return AccountsCtxt(books, tmp_file, "csv")
+
+        raise RuntimeError("Cannot process accounting books kind '%s'" % kind)
 
     def summarise(self, accts):
 
