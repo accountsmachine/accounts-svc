@@ -8,8 +8,8 @@ import firebase_admin
 import firebase_admin.auth
 
 from .. state import State
-
 from . referral import Referrals
+from .. audit.audit import Audit
 
 logger = logging.getLogger("admin.user")
 logger.setLevel(logging.INFO)
@@ -68,8 +68,9 @@ class UserAdmin:
     async def delete_user(self, user, uid):
 
         logger.info("Deleting user %s", uid)
-        print(user)
-        print(uid)
+
+        rec = Audit.event_record("user-delete", uid)
+        Audit.write(self.store, rec)
 
         # This takes care of everything in the store
         # FIXME: But not blobs???  Actually I think it does.
@@ -120,6 +121,9 @@ class UserAdmin:
 
         state = State(self.store)
         user = state.user(uid)
+
+        rec = Audit.event_record("user-register", uid, email)
+        Audit.write(self.store, rec)
 
         # Transaction ID for the free transaction credit
         txid = str(uuid.uuid4())
