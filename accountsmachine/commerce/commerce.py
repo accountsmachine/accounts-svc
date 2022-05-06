@@ -11,6 +11,7 @@ import copy
 from firebase_admin import firestore
 
 from .. admin.referral import Package
+from .. audit.audit import Audit
 
 import stripe
 stripe.api_key = ""
@@ -319,6 +320,9 @@ class Commerce:
         tx = user.create_transaction()
         ok, msg = await create_order(tx, deltas, newtx)
 
+        rec = Audit.transaction_record(newtx)
+        await Audit.write(user.store, rec, id=tid)
+
         if not ok:
             raise RuntimeError(msg)
 
@@ -345,6 +349,9 @@ class Commerce:
         transaction["status"] = "pending"
 
         await user.transaction(tid).put(transaction)
+
+        rec = Audit.transaction_record(transaction)
+        await Audit.write(user.store, rec, id=tid)
 
         return intent["client_secret"]
 
@@ -384,8 +391,10 @@ class Commerce:
             await user.credits().put(bal)
 
         tx = user.create_transaction()
-#        tx = None
         await update_order(tx)
+
+        rec = Audit.transaction_record(ordtx)
+        await Audit.write(user.store, rec, id=tid)
 
     async def get_transactions(self, user):
 

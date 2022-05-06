@@ -70,7 +70,7 @@ class UserAdmin:
         logger.info("Deleting user %s", uid)
 
         rec = Audit.event_record("user-delete", uid)
-        Audit.write(self.store, rec)
+        await Audit.write(self.store, rec)
 
         # This takes care of everything in the store
         # FIXME: But not blobs???  Actually I think it does.
@@ -121,9 +121,6 @@ class UserAdmin:
 
         state = State(self.store)
         user = state.user(uid)
-
-        rec = Audit.event_record("user-register", uid, email)
-        Audit.write(self.store, rec)
 
         # Transaction ID for the free transaction credit
         txid = str(uuid.uuid4())
@@ -190,6 +187,9 @@ class UserAdmin:
             firebase_admin.auth.set_custom_user_claims(
                 uid, { "scope": scope, "application-id": app_id }
             )
+
+            rec = Audit.event_record("user-register", uid, email, ref=ref)
+            await Audit.write(self.store, rec)
 
             logger.info("User creation complete.")
 

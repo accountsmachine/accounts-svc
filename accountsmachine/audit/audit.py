@@ -22,7 +22,7 @@ class Audit:
         }
 
     @staticmethod
-    def event_record(type, uid, email=None):
+    def event_record(type, uid, email=None, ref=None):
         rec = {
             "time": datetime.datetime.utcnow().isoformat(),
             "type": type,
@@ -30,10 +30,12 @@ class Audit:
         }
 
         if email: rec["email"] = email
+        if ref: rec["ref"] = ref
 
         return rec
 
     @staticmethod
-    def write(store, rec):
-        State(store).record(str(uuid.uuid4())).put(rec)
+    async def write(store, rec, id=None):
+        if id == None: id = str(uuid.uuid4())
+        await State(store).log(id).put(rec)
 

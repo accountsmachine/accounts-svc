@@ -11,6 +11,8 @@ import gnucash_uk_vat.model as model
 
 from .. ixbrl_process import IxbrlProcess
 
+from .. audit.audit import Audit
+
 logger = logging.getLogger("vat.submit")
 logger.setLevel(logging.DEBUG)
 
@@ -141,6 +143,9 @@ class VatSubmission:
                 if not ok:
                     raise RuntimeError(msg)
 
+                rec = Audit.transaction_record(ordtx)
+                await Audit.write(self.user.store, rec, id=tid)
+
                 # Billing written
 
                 await self.user.filing(id).put_report(html.encode("utf-8"))
@@ -229,6 +234,9 @@ class VatSubmission:
 
                 tx = self.user.create_transaction()
                 await update_order(tx, ordtx)
+
+                rec = Audit.transaction_record(ordtx)
+                await Audit.write(self.user.store, rec, id=tid)
 
                 return
 

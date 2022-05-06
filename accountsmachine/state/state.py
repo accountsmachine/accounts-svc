@@ -432,11 +432,11 @@ class CurrentPackage(DocObject):
         self.id = id
         self.doc = userdoc.collection("packages").document("current")
 
-class Record(DocObject):
+class Log(DocObject):
     def __init__(self, store, id):
         super().__init__(store)
         self.id = id
-        self.doc = store.collection("auditx").document(id)
+        self.doc = store.collection("log").document(id)
 
 class State:
     def __init__(self, store):
@@ -445,6 +445,6 @@ class State:
     def user(self, uid):
         return User(self.store, uid)
 
-    def record(self, id):
-        return Record(self.store, id)
+    def log(self, id):
+        return Log(self.store, id)
 
