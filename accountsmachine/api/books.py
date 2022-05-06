@@ -1,6 +1,6 @@
 
 from aiohttp import web
-import datetime
+from datetime import datetime, timezone
 import logging
 import os
 import uuid
@@ -26,6 +26,8 @@ class BooksApi:
             info = await books.get_info()
         except:
             return web.HTTPNotFound()
+
+        info["time"] = info["time"].isoformat()
 
         return web.json_response(info)
 
@@ -118,7 +120,7 @@ class BooksApi:
 
             await books.put(blob)
             await books.put_info({
-                "time": datetime.datetime.utcnow().isoformat(),
+                "time": datetime.now(timezone.utc),
                 "length": size,
                 "kind": kind,
             })
@@ -143,6 +145,10 @@ class BooksApi:
 
         try:
             data = await Books.get_all_info(user)
+
+            for k in data.keys():
+                data[k]["time"] = data[k]["time"].isoformat()
+
             return web.json_response(data)
         except Exception as e:
             logger.debug(e)

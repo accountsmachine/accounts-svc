@@ -1,5 +1,5 @@
 
-import datetime
+from datetime import datetime, timezone
 import logging
 import uuid
 import time
@@ -101,7 +101,7 @@ class UserAdmin:
         # This is a new user.
         profile = {
             "version": "v1",
-            "creation": datetime.datetime.utcnow().isoformat(),
+            "creation": datetime.now(timezone.utc),
             "billing_name": "",
             "billing_address": [],
             "billing_city": "",
@@ -126,7 +126,7 @@ class UserAdmin:
         txid = str(uuid.uuid4())
 
         credtx = {
-            "time": datetime.datetime.now().isoformat(),
+            "time": datetime.now(timezone.utc),
             "type": "credit",
             "description": "Credit receipt for ref " + pkg.id,
             "id": txid,

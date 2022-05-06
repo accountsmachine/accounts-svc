@@ -5,7 +5,7 @@ import aiohttp
 import glob
 import logging
 import uuid
-import datetime
+from datetime import timezone
 import math
 import copy
 
@@ -81,6 +81,10 @@ class CommerceApi():
 
         try:
             ss = await request["commerce"].get_transactions(request["state"])
+
+            for k in ss.keys():
+                ss[k]["time"] = ss[k]["time"].astimezone(timezone.utc).replace(tzinfo=None).isoformat()
+
             return web.json_response(ss)
         except Exception as e:
             logger.debug("get_all: %s", e)
@@ -95,6 +99,7 @@ class CommerceApi():
 
         try:
             tx = await request["commerce"].get_transaction(request["state"], id)
+            tx["time"] = tx["time"].astimezone(timezone.utc).replace(tzinfo=None).isoformat()
             return web.json_response(tx)
         except Exception as e:
             logger.debug("get_all: %s", e)

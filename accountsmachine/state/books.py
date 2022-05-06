@@ -1,5 +1,5 @@
 
-import datetime
+from datetime import datetime, date, timezone
 import logging
 import os
 
@@ -128,8 +128,8 @@ class Books:
 
     def summarise(self, accts):
 
-        start = datetime.date(1970, 1, 1)
-        end = datetime.datetime.utcnow().date()
+        start = date(1970, 1, 1)
+        end = datetime.now(timezone.utc).date()
 
         alist = accts.get_accounts()
 

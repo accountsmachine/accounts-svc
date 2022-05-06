@@ -156,6 +156,8 @@ class AuthApi:
 
         prof = await self.user_admin.get_profile(request["state"])
 
+        prof["creation"] = prof["creation"].isoformat()
+
         return web.json_response(prof)
 
     async def put_profile(self, request):

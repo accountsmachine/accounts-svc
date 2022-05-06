@@ -1,5 +1,5 @@
 
-import datetime
+from datetime import datetime, timezone
 from io import StringIO
 import asyncio
 import uuid
@@ -92,7 +92,7 @@ class VatSubmission:
                 vat = i.process(html)
 
                 ordtx = {
-                    "time": datetime.datetime.now().isoformat(),
+                    "time": datetime.now(timezone.utc),
                     "type": "filing",
                     "company": company_number,
                     "kind": "vat",

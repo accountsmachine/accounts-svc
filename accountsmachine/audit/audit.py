@@ -2,7 +2,7 @@
 import uuid
 import base64
 import logging
-import datetime
+from datetime import datetime, timezone
 
 from .. state import State
 
@@ -24,7 +24,7 @@ class Audit:
     @staticmethod
     def event_record(type, uid, email=None, ref=None):
         rec = {
-            "time": datetime.datetime.utcnow().isoformat(),
+            "time": datetime.now(timezone.utc),
             "type": type,
             "uid": uid,
         }

@@ -1,5 +1,5 @@
 
-import datetime
+from datetime import datetime, timezone, timedelta
 import logging
 import json
 
@@ -96,7 +96,7 @@ class Offer:
     def allocate(self):
         
         expiry = (
-            datetime.datetime.utcnow() + datetime.timedelta(days=self.expiry)
+            datetime.now(timezone.utc) + timedelta(days=self.expiry)
         )
 
         return Package(self.id, self.referrer, expiry,
@@ -126,7 +126,7 @@ class Package:
     def to_dict(self):
         return {
             "id": self.id,
-            "expiry": self.expiry.isoformat(),
+            "expiry": self.expiry,
             "referrer": self.referrer.to_dict(),
             "join-up-credits": self.join_up_credits.to_dict(),
             "discount": self.discount.to_dict(),
@@ -137,7 +137,7 @@ class Package:
         return Package(
             id=d["id"],
             referrer=Referrer.from_dict(d["referrer"]),
-            expiry=datetime.datetime.fromisoformat(d["expiry"]),
+            expiry=d["expiry"],
             join_up_credits=JoinUpCredits.from_dict(d["join-up-credits"]),
             discount=Discount.from_dict(d["discount"])
         )

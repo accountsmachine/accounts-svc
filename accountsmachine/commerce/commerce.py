@@ -5,7 +5,7 @@ import aiohttp
 import glob
 import logging
 import uuid
-import datetime
+from datetime import datetime, timezone
 import math
 import copy
 from firebase_admin import firestore
@@ -120,7 +120,7 @@ class Commerce:
         package_discount = None
 
         if package:
-            if package.expiry > datetime.datetime.utcnow():
+            if package.expiry > datetime.now(timezone.utc):
                 if package.discount:
                     package_discount = package.discount
 
@@ -171,7 +171,7 @@ class Commerce:
 
         pkg_discount = None
         if package:
-            if package.expiry > datetime.datetime.utcnow():
+            if package.expiry > datetime.now(timezone.utc):
                 if package.discount:
                     pkg_discount = package.discount
         
@@ -265,7 +265,7 @@ class Commerce:
             "tel": profile["billing_tel"],
             "seller_name": self.seller_name,
             "seller_vat_number": self.seller_vat_number,
-            "time": datetime.datetime.now().isoformat(),
+            "time": datetime.now(timezone.utc),
             "uid": uid, "complete": False,
             "status": "created",
             "vat_number": profile["billing_vat"],
