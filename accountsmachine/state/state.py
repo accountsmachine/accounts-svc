@@ -432,9 +432,19 @@ class CurrentPackage(DocObject):
         self.id = id
         self.doc = userdoc.collection("packages").document("current")
 
+class Record(DocObject):
+    def __init__(self, store, id):
+        super().__init__(store)
+        self.id = id
+        self.doc = store.collection("auditx").document(id)
+
 class State:
     def __init__(self, store):
         self.store = store
 
     def user(self, uid):
         return User(self.store, uid)
+
+    def record(self, id):
+        return Record(self.store, id)
+

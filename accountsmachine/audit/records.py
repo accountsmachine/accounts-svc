@@ -21,7 +21,7 @@ class RecordObject:
     def signup_record(time, uid, email, ref=None):
         rec = {
             "time": tx["time"],
-            "type": "signup",
+            "type": "user-signup",
             "email": tx["email"],
             "uid": tx["uid"],
         }
@@ -30,10 +30,10 @@ class RecordObject:
 
         return rec
 
-    def signup_record(time, uid, email, ref=None):
+    def user_delete_record(time, uid, email, ref=None):
         rec = {
             "time": tx["time"],
-            "type": "signup",
+            "type": "user-delete",
             "email": tx["email"],
             "uid": tx["uid"],
         }
