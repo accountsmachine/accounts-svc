@@ -122,12 +122,12 @@ class VatEndpoint(hmrc.Vat):
                 client_ip = xff[0]
 
         # Return headers
-        return {
+        hdrs = {
             'Gov-Client-Connection-Method': 'WEB_APP_VIA_SERVER',
             'Gov-Client-Browser-Do-Not-Track': dnt,
             'Gov-Client-Browser-JS-User-Agent': ua,
             'Gov-Client-Device-ID': dev_id,
-            'Gov-Client-Multi-Factor': mfa,
+#            'Gov-Client-Multi-Factor': mfa,
             'Gov-Client-Public-IP': client_ip,
             'Gov-Client-Public-IP-Timestamp': now,
 #            'Gov-Client-Public-Port': client_port,
@@ -135,13 +135,23 @@ class VatEndpoint(hmrc.Vat):
             'Gov-Client-Timezone': self.config.get("identity.device.tz"),
             'Gov-Client-User-IDs': user_ids,
             'Gov-Client-Window-Size': window,
-            'Gov-Vendor-Forwarded': hops,
-            'Gov-Vendor-License-IDs': '',
+#            'Gov-Vendor-Forwarded': hops,
+#            'Gov-Vendor-License-IDs': '',
             'Gov-Vendor-Product-Name': quote_plus(product),
 #            'Gov-Vendor-Public-IP': my_ip,
             'Gov-Vendor-Version': versions,
             'Authorization': 'Bearer %s' % self.auth.get("access_token"),
         }
+
+        # print("")
+        # print("")
+        # print("")
+        # for k, v in hdrs.items():
+        #     print("   ", k)
+        #     print("       ", v)
+        # print("")
+
+        return hdrs
 
 class AuthEndpoint(auth.Auth):
     def __init__(self, auth):
