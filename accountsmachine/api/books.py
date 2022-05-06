@@ -6,6 +6,7 @@ import os
 import uuid
 
 from .. state import Books
+from .. date import to_isoformat
 
 from ixbrl_reporter.accounts import get_class
 
@@ -27,7 +28,7 @@ class BooksApi:
         except:
             return web.HTTPNotFound()
 
-        info["time"] = info["time"].isoformat()
+        info["time"] = to_isoformat(info["time"])
 
         return web.json_response(info)
 
@@ -147,7 +148,7 @@ class BooksApi:
             data = await Books.get_all_info(user)
 
             for k in data.keys():
-                data[k]["time"] = data[k]["time"].isoformat()
+                data[k]["time"] = to_isoformat(data[k]["time"])
 
             return web.json_response(data)
         except Exception as e:

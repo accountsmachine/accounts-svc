@@ -5,6 +5,7 @@ import logging
 import copy
 
 from .. admin.user import UserAdmin, EmailNotVerified, AuthHeaderFailure, BadDomain
+from .. date import to_isoformat
 
 logger = logging.getLogger("api.auth")
 logger.setLevel(logging.INFO)
@@ -156,7 +157,7 @@ class AuthApi:
 
         prof = await self.user_admin.get_profile(request["state"])
 
-        prof["creation"] = prof["creation"].isoformat()
+        prof["creation"] = to_isoformat(prof["creation"])
 
         return web.json_response(prof)
 
