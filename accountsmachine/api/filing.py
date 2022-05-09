@@ -138,7 +138,7 @@ class FilingApi():
             if ".." in id:
                 raise RuntimeError("Invalid id")
 
-            cfg = await request["state"].filing_config().get(id)
+            cfg = await request["state"].filing(id).get()
 
             if "state" in cfg:
                 if cfg["state"] in ["errored", "pending"]:
@@ -148,7 +148,7 @@ class FilingApi():
             else:
                 raise RuntimeError("Not OK")
 
-            cfg = await request["state"].filing_config().put(id, cfg)
+            cfg = await request["state"].filing(id).put(cfg)
 
             return web.Response()
 
