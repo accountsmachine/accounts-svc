@@ -1,5 +1,5 @@
 
-VERSION=0.12.0
+VERSION=0.12.1
 
 JSONNET_REPO=git@github.com:cybermaggedon/ixbrl-reporter-jsonnet
 #REPORTER_REPO=https://github.com/cybermaggedon/ixbrl-reporter
