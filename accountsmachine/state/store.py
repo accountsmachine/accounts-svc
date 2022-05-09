@@ -4,9 +4,13 @@ import logging
 
 from google.cloud import storage
 from firebase_admin import firestore
+from google import auth
 
 logger = logging.getLogger("store")
 logger.setLevel(logging.DEBUG)
+
+# Get application default creds
+cred, proj = auth.default()
 
 class DocCollection:
     def __init__(self, db, collection):
@@ -34,7 +38,11 @@ class DocStore:
     def __init__(self, config):
 
         logger.debug("Opening firestore...")
-        self.db = firestore.AsyncClient(project=config["project"])
+
+        self.db = firestore.AsyncClient(
+            project=config["project"],
+            credentials=cred
+        )
         logger.debug("Opened")
 
     def collection(self, coll):
@@ -61,7 +69,11 @@ class BlobStore:
     def __init__(self, config):
 
         logger.debug("Opening blobstore...")
-        self.db = storage.Client(project=config["project"])
+
+        self.db = storage.Client(
+            project=config["project"],
+            credentials=cred
+        )
 
         self.bucket = self.db.bucket(config["bucket"])
         logger.debug("Opened")
