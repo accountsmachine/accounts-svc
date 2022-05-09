@@ -202,7 +202,7 @@ class VatSubmission:
                 async def update_order(tx, ordtx):
 
                     # Get current config
-                    filcfg = await self.user.filing(id)
+                    filcfg = self.user.filing(id)
 #                    filcfg.use_transaction(tx)
                     cfg = await filcfg.get()
 
