@@ -1,9 +1,0 @@
-
-curl -X POST -H "content-type: application/x-www-form-urlencoded" --data \
-"client_secret=6a52bea9-a328-49fc-a3ef-69c3095d6b6b\
-&client_id=cyA5UbJFwCwSozwN7F7OTJEoSpf5\
-&grant_type=client_credentials\
-&scope=read:vat" \
-https://test-api.service.hmrc.gov.uk/oauth/token
-
-
