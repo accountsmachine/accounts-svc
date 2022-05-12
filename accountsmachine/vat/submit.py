@@ -58,6 +58,8 @@ class VatSubmission:
 
             try:
 
+                tid = None
+
                 logger.debug("Submission of VAT config %s", id)
 
                 cfg = await self.user.filing(id).get()
@@ -214,6 +216,12 @@ class VatSubmission:
 
                     bal["vat"] += 1
 
+
+                    await self.user.credits().put(bal)
+                    await self.user.transaction(tid).put(ordtx)
+
+                if tid:
+
                     ordtx["status"] = "cancelled"
                     ordtx["complete"] = False
                     ordtx["order"] = {
@@ -226,17 +234,15 @@ class VatSubmission:
                         ]
                     }
 
-                    cfg["state"] = "errored"
+                    tx = self.user.create_transaction()
+                    await update_order(tx, ordtx)
 
-                    await self.user.credits().put(bal)
-                    await self.user.transaction(tid).put(ordtx)
-                    await self.user.filing(id).put(cfg)
+                    rec = Audit.transaction_record(ordtx)
+                    await Audit.write(self.user.store, rec, id=tid)
 
-                tx = self.user.create_transaction()
-                await update_order(tx, ordtx)
-
-                rec = Audit.transaction_record(ordtx)
-                await Audit.write(self.user.store, rec, id=tid)
+                # Change filing state to errored
+                cfg["state"] = "errored"
+                await self.user.filing(id).put(cfg)
 
                 return
 
