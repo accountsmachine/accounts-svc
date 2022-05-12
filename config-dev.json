@@ -6,7 +6,6 @@
 
     "project": "accounts-machine-dev",
     "bucket": "accounts-machine-dev",
-
     "service-account-key": "/keys/accounts-svc-key",
 
     "stripe-public": "pk_test_51Khz14ImWys2SCctYBeX8uqlDHma6bHjO6mig7oHpaVTENa71keRcTiE1vDEpQewPc7UJWMX31CTJU6B2ycamnZa00PuWMDZPX",

@@ -6,6 +6,7 @@
 
     "project": "accounts-machine-prod",
     "bucket": "accounts-machine-prod",
+    "service-account-key": "/keys/accounts-svc-key",
 
     "stripe-public": "pk_live_51Khz14ImWys2SCcth5VNfVxszQ9hsB6w0rLYThzovLrxuzKj3IR0ANKc28m7T1GSO4oqJ8gnanOYGei2FmeWc6Zh00odLdAKgX",
     "stripe-secret": "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",

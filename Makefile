@@ -204,4 +204,5 @@ run-upgrade:
 	gcloud run services update ${SERVICE} \
 	    --project ${PROJECT} --region ${REGION} \
 	    --image ${CONTAINER}:${VERSION} \
+	    --set-secrets=/configs/accounts-svc-config=accounts-svc-config:latest,/keys/accounts-svc-key=accounts-svc-key:latest \
 	    --update-labels version=${TAG}
