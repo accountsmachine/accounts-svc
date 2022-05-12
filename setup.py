@@ -1,11 +1,14 @@
 import setuptools
+import os
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
+version = os.getenv("PACKAGE_VERSION")
+
 setuptools.setup(
     name="accounts-svc",
-    version="0.0.1",
+    version=version,
     author="Cybermaggedon",
     author_email="mark@accountsmachine.io",
     description="accountsmachine.io back-end service",
@@ -19,7 +22,7 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.6',
-    download_url = "https://github.com/accountsmachine/accounts-svc.git/archive/refs/tags/v0.0.1.tar.gz",
+    download_url = "https://github.com/accountsmachine/accounts-svc.git/archive/refs/tags/v" + version + ".tar.gz",
     install_requires=[
         'py-dmidecode',
         'gnucash-uk-vat',

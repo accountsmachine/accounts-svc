@@ -10,6 +10,14 @@ logger.setLevel(logging.DEBUG)
 import gnucash_uk_vat.hmrc as hmrc
 import gnucash_uk_vat.auth as auth
 
+from importlib import metadata
+try:
+    version = metadata.version("accounts-svc")
+except:
+    version = "local"
+
+logger.info("accounts-svc version is: %s", version)
+
 # Like VAT, but talks to configuration endpoints
 class VatEndpoint(hmrc.Vat):
     def __init__(self, config, auth):
@@ -104,8 +112,9 @@ class VatEndpoint(hmrc.Vat):
             urlencode({v[0]: v[1]}) for v in hops
         ])
 
+
         versions = [
-            ("accounts-svc", "1.0.0"),
+            ("accounts-svc", version),
             ("accounts-web", self.config.get("client.version")),
         ]
 
