@@ -31,7 +31,7 @@ ADD base /usr/local/am/base/
 ADD wheels/* /root/wheels/
 RUN pip3 install /root/wheels/accounts_svc-* && rm -rf /root/wheels
 
-RUN ln -s /secrets/accounts-svc-config /usr/local/am/config.json 
+RUN ln -s /configs/accounts-svc-config /usr/local/am/config.json 
 
 WORKDIR /usr/local/am
 

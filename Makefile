@@ -189,8 +189,7 @@ run-deploy:
 	    --memory=256Mi \
 	    --min-instances=0 \
 	    --max-instances=1 \
-	    --set-secrets=/secrets/accounts-svc-config=accounts-svc-config:latest \
-	    --set-secrets=/secrets/accounts-svc-key=accounts-svc-key:latest \
+	    --set-secrets=/configs/accounts-svc-config=accounts-svc-config:latest,/keys/accounts-svc-key=accounts-svc-key:latest \
 	    --region=${REGION}
 
 run-domain:
