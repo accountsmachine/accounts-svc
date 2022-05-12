@@ -1,5 +1,5 @@
 
-VERSION=0.12.4
+VERSION=$(shell git describe | sed 's/^v//')
 
 JSONNET_REPO=git@github.com:cybermaggedon/ixbrl-reporter-jsonnet
 #REPORTER_REPO=https://github.com/cybermaggedon/ixbrl-reporter
@@ -98,7 +98,7 @@ create-secret:
 delete-secret:
 	gcloud secrets delete --quiet accounts-svc-config
 
-container: wheel-deps wheels
+container: dep-wheels wheels
 	podman build -f Containerfile -t ${CONTAINER}:${VERSION} \
 	    --format docker
 
@@ -107,7 +107,7 @@ login:
 	    podman login -u oauth2accesstoken --password-stdin \
 	        europe-west2-docker.pkg.dev
 
-wheel-deps:
+dep-wheels:
 	rm -rf $@ && mkdir $@
 	pip3 wheel -w $@ --no-deps jsonnet
 	pip3 wheel -w $@ --no-deps gnucash-uk-vat
@@ -116,7 +116,7 @@ wheel-deps:
 
 wheels: setup.py scripts/am-svc $(wildcard */*.py)
 	rm -rf $@ && mkdir $@
-	pip3 wheel -w $@ --no-deps .
+	env PACKAGE_VERSION=${VERSION} pip3 wheel -w $@ --no-deps .
 
 push:
 	podman push --remove-signatures ${CONTAINER}:${VERSION}

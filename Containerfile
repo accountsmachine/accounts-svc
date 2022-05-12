@@ -5,7 +5,7 @@ RUN dnf update -y && dnf install -y python3-pip && \
     dnf install -y python3-pyOpenSSL python3-ldap python3-jwt && dnf clean all
 
 RUN mkdir /root/wheels/ && mkdir /usr/local/am
-ADD wheel-deps/* /root/wheels/
+ADD dep-wheels/* /root/wheels/
 
 RUN pip3 install /root/wheels/gnucash_uk_vat-* \
     /root/wheels/ixbrl_parse-* \
