@@ -86,14 +86,42 @@ create-service-account:
 	    --display-name 'Accounts service' \
 	    accounts-svc
 
-create-secret:
+# This creates a secret key for the service account, and writes it to a secret.
+# A bit messy.  It deletes existing service account keys, one of which is
+# system generated, which generates an error which is then ignored.  It works,
+# but messy.  FIXME.  We don't really need a secret key for the account, keys
+# are generated inside Cloud Run containers for this user.  However,
+# the application default key management takes 10 seconds to run.  Just putting
+# a secret key and loading that is instantaneous start.
+create-secret-key:
+	-gcloud ${GCLOUD_OPTS} secrets delete --quiet accounts-svc-key
+	keys=$$(gcloud ${GCLOUD_OPTS} iam service-accounts keys list \
+	    --format='value(name)' \
+	    --iam-account=${SERVICE_ACCOUNT_FULL}) && \
+	for v in $${keys}; do \
+	    gcloud ${GCLOUD_OPTS} iam service-accounts keys delete $${v} \
+	        --iam-account=${SERVICE_ACCOUNT_FULL} --quiet; \
+	done
+	gcloud ${GCLOUD_OPTS} iam service-accounts keys create \
+	    --iam-account=${SERVICE_ACCOUNT_FULL} \
+	    private.${KIND}.key.tmp
+	gcloud ${GCLOUD_OPTS} secrets create accounts-svc-key \
+	    --data-file=private.${KIND}.key.tmp
+	gcloud ${GCLOUD_OPTS} secrets get-iam-policy accounts-svc-key \
+	    > secret-policy.${KIND}.key.tmp
+	sed 's/@@SERVICEACCOUNT@@/${SERVICE_ACCOUNT_FULL}/' secret-policy.json >> secret-policy.${KIND}.key.tmp
+	gcloud ${GCLOUD_OPTS} secrets set-iam-policy accounts-svc-key secret-policy.${KIND}.key.tmp
+	-rm -f private.${KIND}.key.tmp
+
+# FIXME: Can't run two in parallel.
+create-secret-config:
 	-gcloud ${GCLOUD_OPTS} secrets delete --quiet accounts-svc-config
 	gcloud ${GCLOUD_OPTS} secrets create ${SECRET} \
 	    --data-file=config-${KIND}.json
 	gcloud ${GCLOUD_OPTS} secrets get-iam-policy ${SECRET} \
-	    > secret-policy.tmp
-	sed 's/@@SERVICEACCOUNT@@/${SERVICE_ACCOUNT_FULL}/' secret-policy.json >> secret-policy.tmp
-	gcloud ${GCLOUD_OPTS} secrets set-iam-policy ${SECRET} secret-policy.tmp
+	    > secret-policy.${KIND}.tmp
+	sed 's/@@SERVICEACCOUNT@@/${SERVICE_ACCOUNT_FULL}/' secret-policy.json >> secret-policy.${KIND}.tmp
+	gcloud ${GCLOUD_OPTS} secrets set-iam-policy ${SECRET} secret-policy.${KIND}.tmp
 
 delete-secret:
 	gcloud secrets delete --quiet accounts-svc-config
@@ -162,6 +190,7 @@ run-deploy:
 	    --min-instances=0 \
 	    --max-instances=1 \
 	    --set-secrets=/secrets/accounts-svc-config=accounts-svc-config:latest \
+	    --set-secrets=/secrets/accounts-svc-key=accounts-svc-key:latest \
 	    --region=${REGION}
 
 run-domain:
