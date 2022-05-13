@@ -66,6 +66,9 @@ class Commerce:
         self.seller_name = config["seller-name"] 
         self.seller_vat_number = config["seller-vat-number"]
 
+        self.nowpayments_key = config["nowpayments-api-key"]
+        self.nowpayments_url = config["nowpayments-url"]
+
         # 3 decimal places
         self.vat_rate = round(config["vat-rate"] / 100, 3)
 
@@ -413,4 +416,76 @@ class Commerce:
 
     async def get_payment_key(self, user):
         return self.stripe_public
+
+    async def crypto_get_status(self, request):
+
+        async with aiohttp.ClientSession() as session:
+
+            url = self.nowpayments_url + "v1/status"
+
+            async with session.get(url) as resp:
+
+                if resp.status != 200:
+                    raise RuntimeError("Couldn't get status")
+
+                ci = await resp.json()
+
+            return ci
+
+    async def crypto_get_currencies(self, request):
+
+        async with aiohttp.ClientSession() as session:
+
+            url = self.nowpayments_url + "v1/currencies"
+
+            headers = {
+                "x-api-key": self.nowpayments_key,
+            }
+
+            async with session.get(url, headers=headers) as resp:
+
+                if resp.status != 200:
+                    raise RuntimeError("Currency fetch failed")
+
+                ci = await resp.json()
+
+            return ci
+
+    async def crypto_get_estimate(self, request):
+
+        async with aiohttp.ClientSession() as session:
+
+            url = self.nowpayments_url + "v1/currencies"
+
+            headers = {
+                "x-api-key": self.nowpayments_key,
+            }
+
+            async with session.get(url, headers=headers) as resp:
+
+                if resp.status != 200:
+                    raise RuntimeError("Currency fetch failed")
+
+                ci = await resp.json()
+
+            return ci
+
+    async def crypto_create_payment(self, user, order, uid, email):
+
+        request["auth"].verify_scope("filing-config")
+
+        order = await request.json()
+
+        # Get user package
+        package = await user.currentpackage().get()
+        package = Package.from_dict(package)
+
+        self.verify_order(order, package)
+
+        
+
+    async def crypto_get_payment_status(self, request):
+        request["auth"].verify_scope("filing-config")
+        status = await request["commerce"].get_payment_status(request["state"])
+        return web.json_response(status)
 

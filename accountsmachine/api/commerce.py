@@ -117,3 +117,42 @@ class CommerceApi():
             "key": key
         })
 
+    async def crypto_get_status(self, request):
+        request["auth"].verify_scope("filing-config")
+        status = await request["commerce"].crypto_get_status(request["state"])
+        return web.json_response({
+            "status": status
+        })
+
+    async def crypto_get_currencies(self, request):
+        request["auth"].verify_scope("filing-config")
+        res = await request["commerce"].crypto_get_currencies(
+            request["state"]
+        )
+        return web.json_response(res)
+
+    async def crypto_get_estimate(self, request):
+        request["auth"].verify_scope("filing-config")
+        req = await request.json()
+        res = await request["commerce"].crypto_get_estimate(
+            res["currency"], res["amount"],
+        )
+        return web.json_response(res)
+
+    async def crypto_create_payment(self, request):
+
+        request["auth"].verify_scope("filing-config")
+
+        order = await request.json()
+
+        res = await request["commerce"].crypto_create_payment(
+            request["state"], order, request["auth"].user,
+            request["auth"].email
+        )
+        return web.json_response(res)
+
+    async def crypto_get_payment_status(self, request):
+        request["auth"].verify_scope("filing-config")
+        status = await request["commerce"].get_payment_status(request["state"])
+        return web.json_response(status)
+
