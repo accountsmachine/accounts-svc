@@ -95,7 +95,7 @@ create-service-account:
 # a secret key and loading that is instantaneous start.
 create-secret-key:
 	-gcloud ${GCLOUD_OPTS} secrets delete --quiet accounts-svc-key
-	keys=$$(gcloud ${GCLOUD_OPTS} iam service-accounts keys list \
+	-keys=$$(gcloud ${GCLOUD_OPTS} iam service-accounts keys list \
 	    --format='value(name)' \
 	    --iam-account=${SERVICE_ACCOUNT_FULL}) && \
 	for v in $${keys}; do \
