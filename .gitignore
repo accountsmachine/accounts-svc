@@ -4,3 +4,4 @@ wheels/
 wheel-deps/
 .xbrl-cache/
 ixbrl-reporter-jsonnet/
+*.tmp

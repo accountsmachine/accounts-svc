@@ -12,7 +12,7 @@
     "stripe-secret": "sk_test_51Khz14ImWys2SCctFJHlNKlUQEmspamspbKOU15uBwMYC6ja0vMvKUDyDkWPehenoDoEht7dNztLatVlQ5ud5Fxp009e5MfCDE",
 
     "nowpayments-api-key": "Z7AMD8Y-4XZM7ZV-QHHCZFK-51CDC82",
-    "nowpayments-url": "https://api-sandbox.nowpayments.io",
+    "nowpayments-url": "https://api-sandbox.nowpayments.io/",
 
     "seller-name": "accountsmachine.io",
     "seller-vat-number": "GB123456789",
