@@ -134,10 +134,14 @@ class CommerceApi():
     async def crypto_get_estimate(self, request):
         request["auth"].verify_scope("filing-config")
         req = await request.json()
-        res = await request["commerce"].crypto_get_estimate(
-            res["currency"], res["amount"],
-        )
-        return web.json_response(res)
+
+        try:
+            res = await request["commerce"].crypto_get_estimate(
+                request["state"], req["currency"], req["order"],
+            )
+            return web.json_response(res)
+        except Exception as e:
+            raise web.HTTPBadRequest(text=str(e))
 
     async def crypto_create_payment(self, request):
 

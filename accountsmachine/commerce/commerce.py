@@ -6,6 +6,7 @@ import glob
 import logging
 import uuid
 from datetime import datetime, timezone
+from urllib.parse import urlencode, quote_plus
 import math
 import copy
 from firebase_admin import firestore
@@ -417,7 +418,7 @@ class Commerce:
     async def get_payment_key(self, user):
         return self.stripe_public
 
-    async def crypto_get_status(self, request):
+    async def crypto_get_status(self, user):
 
         async with aiohttp.ClientSession() as session:
 
@@ -432,7 +433,7 @@ class Commerce:
 
             return ci
 
-    async def crypto_get_currencies(self, request):
+    async def crypto_get_currencies(self, user):
 
         async with aiohttp.ClientSession() as session:
 
@@ -451,11 +452,24 @@ class Commerce:
 
             return ci
 
-    async def crypto_get_estimate(self, request):
+    async def crypto_get_estimate(self, user, currency, order):
+
+        # Get user package
+        package = await user.currentpackage().get()
+        package = Package.from_dict(package)
+
+        self.verify_order(order, package)
+
+        # Convert pence to pounds
+        amount = order["total"] / 100
 
         async with aiohttp.ClientSession() as session:
 
-            url = self.nowpayments_url + "v1/currencies"
+            url = self.nowpayments_url + "v1/estimate?%s" % urlencode({
+                "amount": amount,
+                "currency_from": "gbp",
+                "currency_to": currency
+            })
 
             headers = {
                 "x-api-key": self.nowpayments_key,
@@ -463,12 +477,17 @@ class Commerce:
 
             async with session.get(url, headers=headers) as resp:
 
+                res = await resp.json()
+
+                if resp.status == 400:
+                    if "code" in res:
+                        if res["code"] == "INVALID_REQUEST_PARAMS":
+                            raise InvalidOrder(res["message"])
+
                 if resp.status != 200:
                     raise RuntimeError("Currency fetch failed")
 
-                ci = await resp.json()
-
-            return ci
+            return res
 
     async def crypto_create_payment(self, user, order, uid, email):
 
