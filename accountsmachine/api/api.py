@@ -46,6 +46,7 @@ class DataPass:
         request["config"] = request.app["config"]
         request["renderer"] = request.app["renderer"]
         request["commerce"] = request.app["commerce"]
+        request["store"] = request.app["store"]
         return await handler(request)
 
 class Api:
@@ -182,14 +183,28 @@ class Api:
                                      commerce_api.get_transactions)])
         self.app.add_routes([web.get("/commerce/transaction/{id}",
                                      commerce_api.get_transaction)])
-        self.app.add_routes([web.post("/commerce/create-order",
-                                      commerce_api.create_order)])
-        self.app.add_routes([web.post("/commerce/complete-order/{id}",
-                                      commerce_api.complete_order)])
-        self.app.add_routes([web.post("/commerce/create-payment/{id}",
-                                      commerce_api.create_payment)])
+
         self.app.add_routes([web.get("/commerce/payment-key",
                                       commerce_api.get_payment_key)])
+        self.app.add_routes([web.post("/commerce/create-order",
+                                      commerce_api.create_order)])
+        self.app.add_routes([web.post("/commerce/create-payment/{id}",
+                                      commerce_api.create_payment)])
+        self.app.add_routes([web.post("/commerce/complete-order/{id}",
+                                      commerce_api.complete_order)])
+
+        self.app.add_routes([web.get("/crypto/status",
+                                     commerce_api.crypto_get_status)])
+        self.app.add_routes([web.get("/crypto/currencies",
+                                     commerce_api.crypto_get_currencies)])
+        self.app.add_routes([web.post("/crypto/estimate",
+                                      commerce_api.crypto_get_estimate)])
+        self.app.add_routes([web.post("/crypto/payment",
+                                      commerce_api.crypto_create_payment)])
+        self.app.add_routes([web.get("/crypto/payment/{id}",
+                                     commerce_api.crypto_get_payment_status)])
+        self.app.add_routes([web.post("/crypto/callback/{user}/{id}",
+                                     commerce_api.crypto_callback)])
 
     def run(self):
 
