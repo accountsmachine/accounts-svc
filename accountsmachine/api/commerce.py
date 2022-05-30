@@ -147,16 +147,20 @@ class CommerceApi():
 
         request["auth"].verify_scope("filing-config")
 
-        order = await request.json()
+        req = await request.json()
 
         res = await request["commerce"].crypto_create_payment(
-            request["state"], order, request["auth"].user,
-            request["auth"].email
+            request["state"], req["currency"], req["order"],
+            request["auth"].user, request["auth"].email
         )
+
         return web.json_response(res)
 
     async def crypto_get_payment_status(self, request):
         request["auth"].verify_scope("filing-config")
-        status = await request["commerce"].get_payment_status(request["state"])
+
+        status = await request["commerce"].crypto_get_payment_status(
+            request["state"], request.match_info["id"]
+        )
         return web.json_response(status)
 

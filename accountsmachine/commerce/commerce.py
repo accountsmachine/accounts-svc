@@ -489,11 +489,34 @@ class Commerce:
 
             return res
 
-    async def crypto_create_payment(self, user, order, uid, email):
+    async def crypto_create_tx(self, user, order, uid, email, cur):
 
-        request["auth"].verify_scope("filing-config")
+        profile = await user.get()
 
-        order = await request.json()
+        transaction = {
+            "type": "order",
+            "crypto": True,
+            "currency": cur,
+            "name": profile["billing_name"],
+            "address": profile["billing_address"],
+            "city": profile["billing_city"],
+            "county": profile["billing_county"],
+            "country": profile["billing_country"],
+            "postcode": profile["billing_postcode"],
+            "email": profile["billing_email"],
+            "tel": profile["billing_tel"],
+            "seller_name": self.seller_name,
+            "seller_vat_number": self.seller_vat_number,
+            "time": datetime.now(timezone.utc),
+            "uid": uid, "complete": False,
+            "status": "pending",
+            "vat_number": profile["billing_vat"],
+            "order": order
+        }
+
+        return transaction
+
+    async def crypto_create_payment(self, user, currency, order, uid, email):
 
         # Get user package
         package = await user.currentpackage().get()
@@ -501,10 +524,70 @@ class Commerce:
 
         self.verify_order(order, package)
 
-        
+        # Convert pence to pounds
+        amount = order["total"] / 100
 
-    async def crypto_get_payment_status(self, request):
-        request["auth"].verify_scope("filing-config")
-        status = await request["commerce"].get_payment_status(request["state"])
-        return web.json_response(status)
+        newtx = await self.crypto_create_tx(user, order, uid, email, currency)
+        tid = str(uuid.uuid4())
 
+        await user.transaction(tid).put(newtx)
+
+        async with aiohttp.ClientSession() as session:
+
+            url = self.nowpayments_url + "v1/payment"
+
+            data = {
+                "price_amount": amount,
+                "price_currency": "gbp",
+                "pay_currency": currency,
+#                "ipn_callback_url": "N/A",
+                "order_id": tid,
+                "order_description": "accountsmachine.io filing credits",
+                # Used for sandbox only
+#                "case": "success",
+                "case": "failed",
+#                "case": "partially_paid",
+            }
+
+            headers = {
+                "x-api-key": self.nowpayments_key,
+            }
+
+            async with session.post(url, data=data, headers=headers) as resp:
+
+                res = await resp.json()
+
+                if resp.status == 400:
+                    if "code" in res:
+                        if res["code"] == "INVALID_REQUEST_PARAMS":
+                            raise InvalidOrder(res["message"])
+
+                if resp.status != 201:
+                    print(json.dumps(res, indent=4))
+                    raise RuntimeError("Order creation failed")
+
+            return res
+
+    async def crypto_get_payment_status(self, user, id):
+
+        async with aiohttp.ClientSession() as session:
+
+            url = self.nowpayments_url + "v1/payment/%s" % id
+
+            headers = {
+                "x-api-key": self.nowpayments_key,
+            }
+
+            async with session.get(url, headers=headers) as resp:
+
+                res = await resp.json()
+
+                if resp.status == 400:
+                    if "code" in res:
+                        if res["code"] == "INVALID_REQUEST_PARAMS":
+                            raise InvalidOrder(res["message"])
+
+                if resp.status != 200:
+                    raise RuntimeError("Payment fetch failed")
+
+            return res
