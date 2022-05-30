@@ -174,8 +174,6 @@ class CommerceApi():
 
     async def crypto_callback(self, request):
 
-        logger.info("IPN callback")
-
         uid = request.match_info["user"]
         id = request.match_info["id"]
         sig = request.headers["x-nowpayments-sig"]
@@ -190,9 +188,9 @@ class CommerceApi():
         should_be = h.hexdigest()
 
         if sig == should_be:
-            logger.info("MAC is correct")
+            logger.info("IPN: MAC is correct")
         else:
-            logger.info("MAC is not correct")
+            logger.info("IPN: MAC is not correct")
             logger.info("%s", req)
             logger.info("sig %s", sig)
             logger.info("should-be %s", should_be)
