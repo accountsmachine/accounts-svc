@@ -194,7 +194,7 @@ class CommerceApi():
             logger.info("%s", req)
             logger.info("sig %s", sig)
             logger.info("should-be %s", should_be)
-            raise web.HTTPUnauthorized()
+#            raise web.HTTPUnauthorized()
 
         await request["commerce"].crypto_callback(
             State(request["store"]).user(uid),
