@@ -149,12 +149,17 @@ class CommerceApi():
 
         req = await request.json()
 
-        res = await request["commerce"].crypto_create_payment(
-            request["state"], req["currency"], req["order"],
-            request["auth"].user, request["auth"].email
-        )
+        try:
 
-        return web.json_response(res)
+            res = await request["commerce"].crypto_create_payment(
+                request["state"], req["currency"], req["order"],
+                request["auth"].user, request["auth"].email
+            )
+
+            return web.json_response(res)
+
+        except Exception as e:
+            raise web.HTTPBadRequest(text=str(e))
 
     async def crypto_get_payment_status(self, request):
         request["auth"].verify_scope("filing-config")

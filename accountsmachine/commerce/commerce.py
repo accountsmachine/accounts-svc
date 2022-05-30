@@ -509,7 +509,7 @@ class Commerce:
             "seller_vat_number": self.seller_vat_number,
             "time": datetime.now(timezone.utc),
             "uid": uid, "complete": False,
-            "status": "pending",
+            "status": "created",
             "vat_number": profile["billing_vat"],
             "order": order
         }
@@ -530,6 +530,9 @@ class Commerce:
         newtx = await self.crypto_create_tx(user, order, uid, email, currency)
         tid = str(uuid.uuid4())
 
+        rec = Audit.transaction_record(newtx)
+        await Audit.write(user.store, rec, id=tid)
+
         await user.transaction(tid).put(newtx)
 
         async with aiohttp.ClientSession() as session:
@@ -545,7 +548,7 @@ class Commerce:
                 "order_description": "accountsmachine.io filing credits",
                 # Used for sandbox only
 #                "case": "success",
-                "case": "failed",
+#                "case": "failed",
 #                "case": "partially_paid",
             }
 
@@ -557,10 +560,16 @@ class Commerce:
 
                 res = await resp.json()
 
+                print(resp.status)
+
                 if resp.status == 400:
                     if "code" in res:
                         if res["code"] == "INVALID_REQUEST_PARAMS":
                             raise InvalidOrder(res["message"])
+                        if res["code"] == "AMOUNT_MINIMAL_ERROR":
+                            raise InvalidOrder(res["message"])
+                    if "message" in res:
+                        raise InvalidOrder(res["message"])
 
                 if resp.status != 201:
                     print(json.dumps(res, indent=4))
@@ -590,4 +599,43 @@ class Commerce:
                 if resp.status != 200:
                     raise RuntimeError("Payment fetch failed")
 
-            return res
+        tid = res["order_id"]
+        tx = await user.transaction(tid).get()
+
+        tx["paid_amount"] = res["pay_amount"]
+
+        # Complete the transaction if appropriate
+        if tx["status"] == "created":
+            tx["status"] = "pending"
+            tx["payment_id"] = str(res["payment_id"])
+            await user.transaction(tid).put(tx)
+
+            rec = Audit.transaction_record(tx)
+            await Audit.write(user.store, rec, id=tid)
+
+        if tx["status"] != "complete" and res["payment_status"] == "finished":
+
+            tx["status"] = "complete"
+            deltas = self.get_order_delta(tx["order"])
+            
+            cdoc = user.credits()
+            bal = await cdoc.get()
+
+            for kind in deltas:
+                if kind not in bal:
+                    bal[kind] = 0
+                bal[kind] += deltas[kind]
+
+            await cdoc.put(bal)
+            await user.transaction(tid).put(tx)
+
+            rec = Audit.transaction_record(tx)
+            await Audit.write(user.store, rec, id=tid)
+
+        if tx["status"] != "failed" and res["payment_status"] == "failed":
+
+            tx["status"] = "failed"
+            await user.transaction(tid).put(tx)
+
+        return res
+
