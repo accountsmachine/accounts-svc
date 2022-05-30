@@ -13,6 +13,8 @@
 
     "nowpayments-api-key": "Z7AMD8Y-4XZM7ZV-QHHCZFK-51CDC82",
     "nowpayments-url": "https://api-sandbox.nowpayments.io/",
+    "nowpayments-ipn-key": "SDnJYBSTh/Aw91ovAfJ2RkkKDREYRQOf",
+    "nowpayments-ipn-url": "https://app.dev.accountsmachine.io/api/crypto/callback",
 
     "seller-name": "accountsmachine.io",
     "seller-vat-number": "GB123456789",

@@ -92,6 +92,9 @@ class AuthApi:
         if request.url.path.startswith("/vat/receive-token"):
             return await handler(request)
 
+        if request.url.path.startswith("/crypto/callback"):
+            return await handler(request)
+
         request["auth"] = await self.verify_auth(request)
 
         return await handler(request)

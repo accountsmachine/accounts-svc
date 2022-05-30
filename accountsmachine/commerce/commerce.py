@@ -69,6 +69,7 @@ class Commerce:
 
         self.nowpayments_key = config["nowpayments-api-key"]
         self.nowpayments_url = config["nowpayments-url"]
+        self.nowpayments_ipn_url = config["nowpayments-ipn-url"]
 
         # 3 decimal places
         self.vat_rate = round(config["vat-rate"] / 100, 3)
@@ -539,11 +540,13 @@ class Commerce:
 
             url = self.nowpayments_url + "v1/payment"
 
+            ipn_url = self.nowpayments_ipn_url + "/" + uid + "/" + tid
+
             data = {
                 "price_amount": amount,
                 "price_currency": "gbp",
                 "pay_currency": currency,
-#                "ipn_callback_url": "N/A",
+                "ipn_callback_url": ipn_url,
                 "order_id": tid,
                 "order_description": "accountsmachine.io filing credits",
                 # Used for sandbox only
@@ -638,4 +641,44 @@ class Commerce:
             await user.transaction(tid).put(tx)
 
         return res
+
+    async def crypto_callback(self, user, paym):
+
+        tid = paym["order_id"]
+        tx = await user.transaction(tid).get()
+
+        tx["paid_amount"] = paym["pay_amount"]
+
+        # Complete the transaction if appropriate
+        if tx["status"] == "created":
+            tx["status"] = "pending"
+            tx["payment_id"] = str(paym["payment_id"])
+            await user.transaction(tid).put(tx)
+
+            rec = Audit.transaction_record(tx)
+            await Audit.write(user.store, rec, id=tid)
+
+        if tx["status"] != "complete" and paym["payment_status"] == "finished":
+
+            tx["status"] = "complete"
+            deltas = self.get_order_delta(tx["order"])
+            
+            cdoc = user.credits()
+            bal = await cdoc.get()
+
+            for kind in deltas:
+                if kind not in bal:
+                    bal[kind] = 0
+                bal[kind] += deltas[kind]
+
+            await cdoc.put(bal)
+            await user.transaction(tid).put(tx)
+
+            rec = Audit.transaction_record(tx)
+            await Audit.write(user.store, rec, id=tid)
+
+        if tx["status"] != "failed" and paym["payment_status"] == "failed":
+
+            tx["status"] = "failed"
+            await user.transaction(tid).put(tx)
 

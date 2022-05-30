@@ -1,5 +1,6 @@
 
 import json
+import hmac
 from aiohttp import web
 import aiohttp
 import glob
@@ -8,6 +9,8 @@ import uuid
 from datetime import timezone
 import math
 import copy
+from collections import OrderedDict
+from .. state import State
 
 from .. commerce.commerce import InvalidOrder
 from .. date import to_isoformat
@@ -18,7 +21,7 @@ logger.setLevel(logging.DEBUG)
 class CommerceApi():
 
     def __init__(self, config):
-        pass
+        self.nowpayments_ipn_key = config["nowpayments-ipn-key"].encode("utf-8")
 
     async def get_offer(self, request):
 
@@ -168,4 +171,37 @@ class CommerceApi():
             request["state"], request.match_info["id"]
         )
         return web.json_response(status)
+
+    async def crypto_callback(self, request):
+
+        logger.info("IPN callback")
+
+        uid = request.match_info["user"]
+        id = request.match_info["id"]
+        sig = request.headers["x-nowpayments-sig"]
+
+        req = await request.json()
+
+        params = OrderedDict(sorted(req.items()))
+        params = json.dumps(params).encode("utf-8")
+
+        h = hmac.new(key=self.nowpayments_ipn_key, digestmod="sha512")
+        h.update(params)
+        should_be = h.hexdigest()
+
+        if sig == should_be:
+            logger.info("MAC is correct")
+        else:
+            logger.info("MAC is not correct")
+            logger.info("%s", req)
+            logger.info("sig %s", sig)
+            logger.info("should-be %s", should_be)
+            raise web.HTTPUnauthorized()
+
+        await request["commerce"].crypto_callback(
+            State(request["store"]).user(uid),
+            req
+        )
+
+        return web.json_response()
 

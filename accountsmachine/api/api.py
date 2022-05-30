@@ -46,6 +46,7 @@ class DataPass:
         request["config"] = request.app["config"]
         request["renderer"] = request.app["renderer"]
         request["commerce"] = request.app["commerce"]
+        request["store"] = request.app["store"]
         return await handler(request)
 
 class Api:
@@ -202,6 +203,8 @@ class Api:
                                       commerce_api.crypto_create_payment)])
         self.app.add_routes([web.get("/crypto/payment/{id}",
                                      commerce_api.crypto_get_payment_status)])
+        self.app.add_routes([web.post("/crypto/callback/{user}/{id}",
+                                     commerce_api.crypto_callback)])
 
     def run(self):
 
