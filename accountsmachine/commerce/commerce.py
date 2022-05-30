@@ -602,44 +602,6 @@ class Commerce:
                 if resp.status != 200:
                     raise RuntimeError("Payment fetch failed")
 
-        tid = res["order_id"]
-        tx = await user.transaction(tid).get()
-
-        tx["paid_amount"] = res["pay_amount"]
-
-        # Complete the transaction if appropriate
-        if tx["status"] == "created":
-            tx["status"] = "pending"
-            tx["payment_id"] = str(res["payment_id"])
-            await user.transaction(tid).put(tx)
-
-            rec = Audit.transaction_record(tx)
-            await Audit.write(user.store, rec, id=tid)
-
-        if tx["status"] != "complete" and res["payment_status"] == "finished":
-
-            tx["status"] = "complete"
-            deltas = self.get_order_delta(tx["order"])
-            
-            cdoc = user.credits()
-            bal = await cdoc.get()
-
-            for kind in deltas:
-                if kind not in bal:
-                    bal[kind] = 0
-                bal[kind] += deltas[kind]
-
-            await cdoc.put(bal)
-            await user.transaction(tid).put(tx)
-
-            rec = Audit.transaction_record(tx)
-            await Audit.write(user.store, rec, id=tid)
-
-        if tx["status"] != "failed" and res["payment_status"] == "failed":
-
-            tx["status"] = "failed"
-            await user.transaction(tid).put(tx)
-
         return res
 
     async def crypto_callback(self, user, paym):
