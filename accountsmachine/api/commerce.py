@@ -181,7 +181,7 @@ class CommerceApi():
         req = await request.json()
 
         params = OrderedDict(sorted(req.items()))
-        params = json.dumps(params).encode("utf-8")
+        params = json.dumps(params, separators=(',', ':')).encode("utf-8")
 
         h = hmac.new(key=self.nowpayments_ipn_key, digestmod="sha512")
         h.update(params)
@@ -194,7 +194,7 @@ class CommerceApi():
             logger.info("%s", req)
             logger.info("sig %s", sig)
             logger.info("should-be %s", should_be)
-#            raise web.HTTPUnauthorized()
+            raise web.HTTPUnauthorized()
 
         await request["commerce"].crypto_callback(
             State(request["store"]).user(uid),
