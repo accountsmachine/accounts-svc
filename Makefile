@@ -56,6 +56,11 @@ push-prod: push
 create-secret-dev: KIND=dev
 create-secret-dev: create-secret
 
+everything:
+	make everything-dev
+	make everything-stage
+	make everything-prod
+
 everything-dev:
 	rm -rf wheels && make wheels
 	make container-dev
