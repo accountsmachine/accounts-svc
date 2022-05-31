@@ -190,9 +190,9 @@ class CommerceApi():
         should_be = h.hexdigest()
 
         if sig == should_be:
-            logger.info("IPN: MAC is correct")
+            logger.info("IPN: HMAC is correct")
         else:
-            logger.error("IPN: MAC is not correct")
+            logger.error("IPN: HMAC is not correct")
             logger.error("%s", req)
             logger.error("sig %s", sig)
             logger.error("should-be %s", should_be)
