@@ -196,6 +196,8 @@ class Api:
                                       commerce_api.create_payment)])
         self.app.add_routes([web.post("/commerce/complete-order/{id}",
                                       commerce_api.complete_order)])
+        self.app.add_routes([web.post("/commerce/callback",
+                                      commerce_api.callback)])
 
         self.app.add_routes([web.get("/crypto/status",
                                      commerce_api.crypto_get_status)])

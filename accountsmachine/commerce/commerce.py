@@ -62,13 +62,11 @@ class Commerce:
     def __init__(self, config):
 
         stripe.api_key = config["stripe-secret"]
-        self.stripe_public = config["stripe-public"] 
+        self.stripe_public = config["stripe-public"]
+        self.stripe_webhook_key = config["stripe-webhook-key"]
+
         self.seller_name = config["seller-name"] 
         self.seller_vat_number = config["seller-vat-number"]
-
-        self.nowpayments_key = config["nowpayments-api-key"]
-        self.nowpayments_url = config["nowpayments-url"]
-        self.nowpayments_ipn_url = config["nowpayments-ipn-url"]
 
         # 3 decimal places
         self.vat_rate = round(config["vat-rate"] / 100, 3)
@@ -336,6 +334,10 @@ class Commerce:
 
     async def complete_order(self, user, id):
 
+        # Made it a no-op to test webhook.
+        return
+
+
         # Card has been charged, this transaction really should not fail.
         # FIXME: Webhook would be a better way to achieve this.
 
@@ -390,4 +392,103 @@ class Commerce:
 
     async def get_payment_key(self, user):
         return self.stripe_public
+
+    async def callback(self, store, req, sig):
+
+        try:
+            event = stripe.Webhook.construct_event(
+                req, sig, self.stripe_webhook_key
+            )
+        except:
+            raise RuntimeError("Invalid payload")
+
+        logger.info("Stripe event: %s", event["type"])
+
+        intent = event["data"]["object"]
+        tid = intent["metadata"]["transaction"]
+        uid = intent["metadata"]["uid"]
+
+        user = store.user(uid)
+
+        # Fetch transaction outside of the transaction
+        ordtxdoc = user.transaction(tid)
+        ordtx = await ordtxdoc.get()
+
+        if event["type"] == "payment_intent.created":
+
+            ordtx["payment_status"] = "created"
+            ordtx["status"] = "created"
+            await ordtxdoc.put(ordtx)
+
+            rec = Audit.transaction_record(ordtx)
+            await Audit.write(user.store, rec, id=tid)
+
+            return
+            
+        if event["type"] == "payment_intent.canceled":
+
+            ordtx["payment_status"] = "cancelled"
+            ordtx["status"] = "cancelled"
+            await ordtxdoc.put(ordtx)
+
+            rec = Audit.transaction_record(ordtx)
+            await Audit.write(user.store, rec, id=tid)
+
+            return
+            
+        if event["type"] == "payment_intent.payment_failed":
+
+            ordtx["payment_status"] = "failed"
+            ordtx["status"] = "failed"
+            await ordtxdoc.put(ordtx)
+
+            rec = Audit.transaction_record(ordtx)
+            await Audit.write(user.store, rec, id=tid)
+
+            return
+            
+        if event["type"] == "payment_intent.processing":
+
+            ordtx["payment_status"] = "processing"
+            ordtx["status"] = "pending"
+            await ordtxdoc.put(ordtx)
+
+            rec = Audit.transaction_record(ordtx)
+            await Audit.write(user.store, rec, id=tid)
+
+            return
+
+        if event["type"] != "payment_intent.succeeded":
+            raise RuntimeError("Received unexpected Stripe event %s" %
+                               event["type"])
+
+        ordtx["status"] = "complete"
+        ordtx["payment_status"] = "complete"
+        ordtx["complete"] = True
+
+        # This works out the balance change from the order
+        deltas = self.get_order_delta(ordtx["order"])
+
+        # FIXME: Get 409 Too much contention when doing this transactionally
+        # FIXME: Get 409 error, this SHOULD be done in the transaction
+        cdoc = user.credits()
+#        cdoc.use_transaction(tx)
+        bal = await cdoc.get()
+
+        for kind in deltas:
+            if kind not in bal:
+                bal[kind] = 0
+            bal[kind] += deltas[kind]
+
+        @firestore.async_transactional
+        async def update_order(tx):
+
+            await user.transaction(tid).put(ordtx)
+            await user.credits().put(bal)
+
+        tx = user.create_transaction()
+        await update_order(tx)
+
+        rec = Audit.transaction_record(ordtx)
+        await Audit.write(user.store, rec, id=tid)
 

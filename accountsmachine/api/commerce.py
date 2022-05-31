@@ -120,6 +120,20 @@ class CommerceApi():
             "key": key
         })
 
+    async def callback(self, request):
+
+        logger.info("Webhook: called")
+
+        sig = request.headers["stripe-signature"]
+
+        req = await request.read()
+
+        await request["commerce"].callback(
+            State(request["store"]), req, sig
+        )
+
+        return web.json_response({"success": True})
+
     async def crypto_get_status(self, request):
         request["auth"].verify_scope("filing-config")
         status = await request["crypto"].get_status(request["state"])
