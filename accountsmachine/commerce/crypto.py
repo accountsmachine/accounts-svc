@@ -182,6 +182,7 @@ class Crypto:
         transaction = {
             "type": "order",
             "payment": "crypto",
+            "payment_processor": "nowpayments.io",
             "payment_currency": cur,
             "name": profile["billing_name"],
             "address": profile["billing_address"],
