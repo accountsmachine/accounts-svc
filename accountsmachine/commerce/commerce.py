@@ -83,6 +83,11 @@ class Commerce:
         for kind in opts:
             if kind in balance:
                 opts[kind]["permitted"] -= balance[kind]
+
+                # Take into account any pending adjustments for outstanding
+                # transactions
+                opts[kind]["permitted"] -= balance["pend-" + kind]
+
                 opts[kind]["permitted"] = max(opts[kind]["permitted"], 0)
 
         # If you already have the max, we can't sell you more.
@@ -137,7 +142,17 @@ class Commerce:
         return offer
 
     async def get_balance(self, user):
-        return await user.credits().get()
+        bal = await user.credits().get()
+
+        if "vat" not in bal: bal["vat"] = 0
+        if "corptax" not in bal: bal["corptax"] = 0
+        if "accounts" not in bal: bal["accounts"] = 0
+
+        if "pend-vat" not in bal: bal["pend-vat"] = 0
+        if "pend-corptax" not in bal: bal["pend-corptax"] = 0
+        if "pend-accounts" not in bal: bal["pend-accounts"] = 0
+
+        return bal
 
     async def create_tx(self, user, order, uid, email):
 
@@ -185,27 +200,31 @@ class Commerce:
         newtx = await self.create_tx(user, order, uid, email)
         tid = str(uuid.uuid4())
 
+        # FIXME: Get 409 Too much contention when doing this transactionally
+        # FIXME: Get 409 error, this SHOULD be done in the transaction
+        c = user.credits()
+#            c.use_transaction(tx)
+        bal = await c.get()
+
+        for kind in deltas:
+            if kind not in bal:
+                bal[kind] = 0
+            permitted = self.values[kind]["permitted"]
+            if bal[kind] + deltas[kind] > permitted:
+                return False, "That would exceed your maximum permitted"
+            # Update pending
+            if "pend-" + kind not in bal:
+                bal["pend-" + kind] = 0
+            bal["pend-" + kind] += deltas[kind]
+
         @firestore.async_transactional
         async def create_order(tx, deltas, newtx):
 
-            bal = {}
-
-            c = user.credits()
-            c.use_transaction(tx)
-            bal = await c.get()
-
-            for kind in deltas:
-
-                if kind not in bal:
-                    bal[kind] = 0
-
-                permitted = self.values[kind]["permitted"]
-                if bal[kind] + deltas[kind] > permitted:
-                    return False, "That would exceed your maximum permitted"
-
-            # Transaction gets written out, the new balance does not, as it
-            # is not paid for yet.
+            # Transaction gets written out
             await user.transaction(tid).put(newtx)
+
+            # Write balance to write pending stuff
+            await c.put(bal)
 
             return True, "OK"
 
@@ -352,6 +371,9 @@ class Commerce:
             if kind not in bal:
                 bal[kind] = 0
             bal[kind] += deltas[kind]
+            if "pend-" + kind not in bal:
+                bal["pend-" + kind] = 0
+            bal["pend-" + kind] += deltas[kind]
 
         @firestore.async_transactional
         async def update_order(tx):
