@@ -333,49 +333,7 @@ class Commerce:
         return intent["client_secret"]
 
     async def complete_order(self, user, id):
-
-        # Made it a no-op to test webhook.
         return
-
-
-        # Card has been charged, this transaction really should not fail.
-        # FIXME: Webhook would be a better way to achieve this.
-
-        intent = stripe.PaymentIntent.retrieve(id)
-        tid = intent["metadata"]["transaction"]
-
-        # Fetch transaction outside of the transaction
-        ordtxdoc = user.transaction(tid)
-        ordtx = await ordtxdoc.get()
-
-        ordtx["status"] = "complete"
-        ordtx["complete"] = True
-
-        # This works out the balance change from the order
-        deltas = self.get_order_delta(ordtx["order"])
-
-        # FIXME: Get 409 Too much contention when doing this transactionally
-        # FIXME: Get 409 error, this SHOULD be done in the transaction
-        cdoc = user.credits()
-#        cdoc.use_transaction(tx)
-        bal = await cdoc.get()
-
-        for kind in deltas:
-            if kind not in bal:
-                bal[kind] = 0
-            bal[kind] += deltas[kind]
-
-        @firestore.async_transactional
-        async def update_order(tx):
-
-            await user.transaction(tid).put(ordtx)
-            await user.credits().put(bal)
-
-        tx = user.create_transaction()
-        await update_order(tx)
-
-        rec = Audit.transaction_record(ordtx)
-        await Audit.write(user.store, rec, id=tid)
 
     async def get_transactions(self, user):
 

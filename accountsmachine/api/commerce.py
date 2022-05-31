@@ -75,6 +75,8 @@ class CommerceApi():
         request["auth"].verify_scope("filing-config")
         id = request.match_info['id']
 
+        # This is a no-op now that we're relying on Stripe webhooks
+        # to complete an order.
         await request["commerce"].complete_order(request["state"], id)
 
         return web.json_response()
