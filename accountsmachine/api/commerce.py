@@ -192,10 +192,10 @@ class CommerceApi():
         if sig == should_be:
             logger.info("IPN: MAC is correct")
         else:
-            logger.info("IPN: MAC is not correct")
-            logger.info("%s", req)
-            logger.info("sig %s", sig)
-            logger.info("should-be %s", should_be)
+            logger.error("IPN: MAC is not correct")
+            logger.error("%s", req)
+            logger.error("sig %s", sig)
+            logger.error("should-be %s", should_be)
             raise web.HTTPUnauthorized()
 
         await request["crypto"].callback(
