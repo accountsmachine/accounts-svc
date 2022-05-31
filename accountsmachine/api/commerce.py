@@ -162,6 +162,18 @@ class CommerceApi():
         except Exception as e:
             raise web.HTTPBadRequest(text=str(e))
 
+    async def crypto_get_minimum(self, request):
+        request["auth"].verify_scope("filing-config")
+        req = await request.json()
+
+        try:
+            res = await request["crypto"].get_minimum(
+                request["state"], req["currency"]
+            )
+            return web.json_response(res)
+        except Exception as e:
+            raise web.HTTPBadRequest(text=str(e))
+
     async def crypto_create_payment(self, request):
 
         request["auth"].verify_scope("filing-config")

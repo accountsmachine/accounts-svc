@@ -205,6 +205,8 @@ class Api:
                                      commerce_api.crypto_get_currencies)])
         self.app.add_routes([web.post("/crypto/estimate",
                                       commerce_api.crypto_get_estimate)])
+        self.app.add_routes([web.post("/crypto/minimum",
+                                      commerce_api.crypto_get_minimum)])
         self.app.add_routes([web.post("/crypto/payment",
                                       commerce_api.crypto_create_payment)])
         self.app.add_routes([web.get("/crypto/payment/{id}",

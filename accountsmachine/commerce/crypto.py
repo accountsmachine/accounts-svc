@@ -138,6 +138,32 @@ class Crypto:
 
             return ci
 
+    async def get_minimum(self, user, currency):
+
+        async with aiohttp.ClientSession() as session:
+
+            url = self.nowpayments_url + "v1/min-amount?%s" % urlencode({
+                "currency_from": currency,
+            })
+
+            headers = {
+                "x-api-key": self.nowpayments_key,
+            }
+
+            async with session.get(url, headers=headers) as resp:
+
+                res = await resp.json()
+
+                if resp.status == 400:
+                    if "code" in res:
+                        if res["code"] == "INVALID_REQUEST_PARAMS":
+                            raise InvalidOrder(res["message"])
+
+                if resp.status != 200:
+                    raise RuntimeError("Currency fetch failed")
+
+            return res["min_amount"]
+
     async def get_estimate(self, user, currency, order):
 
         # Get user package
