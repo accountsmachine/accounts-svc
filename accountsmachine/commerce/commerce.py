@@ -233,6 +233,7 @@ class Commerce:
 
         transaction = {
             "type": "order",
+            "payment": "credit-card",
             "name": profile["billing_name"],
             "address": profile["billing_address"],
             "city": profile["billing_city"],

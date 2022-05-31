@@ -181,8 +181,8 @@ class Crypto:
 
         transaction = {
             "type": "order",
-            "crypto": True,
-            "currency": cur,
+            "payment": "crypto",
+            "payment_currency": cur,
             "name": profile["billing_name"],
             "address": profile["billing_address"],
             "city": profile["billing_city"],
@@ -294,8 +294,8 @@ class Crypto:
         tid = paym["order_id"]
         tx = await user.transaction(tid).get()
 
-        tx["paid_amount"] = paym["pay_amount"]
-        tx["crypto_status"] = paym["payment_status"]
+        tx["payment_amount"] = paym["pay_amount"]
+        tx["payment_status"] = paym["payment_status"]
 
         # Complete the transaction if appropriate
         if tx["status"] == "created":
