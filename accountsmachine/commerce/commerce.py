@@ -1,19 +1,16 @@
 
 import asyncio
-import json
 import aiohttp
-import glob
 import logging
 import uuid
 from datetime import datetime, timezone
-from urllib.parse import urlencode, quote_plus
 import math
 import copy
 from firebase_admin import firestore
 
 from .. admin.referral import Package
 from .. audit.audit import Audit
-from . product import product, purchase_price
+from . order import product, purchase_price, verify_order, get_order_delta
 from . exceptions import InvalidOrder
 
 import stripe
@@ -142,89 +139,6 @@ class Commerce:
     async def get_balance(self, user):
         return await user.credits().get()
 
-    # Validate order for internal integrity
-    def verify_order(self, order, package):
-
-        pkg_discount = None
-        if package:
-            if package.expiry > datetime.now(timezone.utc):
-                if package.discount:
-                    pkg_discount = package.discount
-        
-        subtotal = 0
-
-        for item in order["items"]:
-
-            kind = item["kind"]
-            count = item["quantity"]
-            amount = item["amount"]
-            disc = item["discount"]
-
-            if kind not in self.values:
-                raise InvalidOrder("We don't sell you one of those.")
-
-            resource = self.values[kind]
-
-            price = math.floor(
-                purchase_price(
-                    resource["price"], count, resource["discount"]
-                )
-            )
-
-            discount = (resource["price"] * count) - price
-
-            adj = 0
-            if pkg_discount:
-                if getattr(pkg_discount, kind):
-                    adj = round(getattr(pkg_discount, kind) * price)
-                    price -= adj
-                    discount += adj
-
-            if amount != price:
-                raise InvalidOrder("Wrong price")
-
-            if disc != discount:
-                raise InvalidOrder("Wrong discount")
-
-            subtotal += amount
-
-        if subtotal != order["subtotal"]:
-            raise InvalidOrder("Computed subtotal is wrong")
-
-        # This avoids rounding errors.
-        if abs(order["vat_rate"] - self.vat_rate) > 0.00005:
-            raise InvalidOrder("Tax rate is wrong")
-
-        vat = round(subtotal * order["vat_rate"])
-
-        if vat != order["vat"]:
-            raise InvalidOrder("VAT calculation is wrong")
-
-        total = subtotal + vat
-
-        if total != order["total"]:
-            raise InvalidOrder("Total calculation is wrong")
-
-    # Returns potential new balance
-    def get_order_delta(self, order):
-
-        deltas = {}
-        
-        subtotal = 0
-
-        for item in order["items"]:
-
-            kind = item["kind"]
-            count = item["quantity"]
-            amount = item["amount"]
-
-            if kind not in deltas:
-                deltas[kind] = 0
-
-            deltas[kind] += count
-
-        return deltas
-
     async def create_tx(self, user, order, uid, email):
 
         profile = await user.get()
@@ -263,10 +177,10 @@ class Commerce:
 
         # First, check that the prices in the order are consistent with our
         # current offer, and that the calculations are internally consistent.
-        self.verify_order(order, package)
+        verify_order(order, package, self.vat_rate)
 
         # This fetches the balance change from the order
-        deltas = self.get_order_delta(order)
+        deltas = get_order_delta(order)
 
         newtx = await self.create_tx(user, order, uid, email)
         tid = str(uuid.uuid4())
@@ -426,7 +340,7 @@ class Commerce:
         ordtx["complete"] = True
 
         # This works out the balance change from the order
-        deltas = self.get_order_delta(ordtx["order"])
+        deltas = get_order_delta(ordtx["order"])
 
         # FIXME: Get 409 Too much contention when doing this transactionally
         # FIXME: Get 409 error, this SHOULD be done in the transaction

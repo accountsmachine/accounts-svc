@@ -141,7 +141,7 @@ class User(DocObject):
         await super().delete()
 
 class Credits(DocObject):
-    def __init__(self, user, store, doc, id):
+    def __init__(self, user, store, doc, id=None):
         super().__init__(store)
         self.user = user
         if id == None:
