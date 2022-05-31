@@ -13,6 +13,8 @@ from firebase_admin import firestore
 
 from .. admin.referral import Package
 from .. audit.audit import Audit
+from . product import product, purchase_price
+from . exceptions import InvalidOrder
 
 import stripe
 stripe.api_key = ""
@@ -21,9 +23,6 @@ logger = logging.getLogger("api.commerce")
 logger.setLevel(logging.DEBUG)
 
 logging.getLogger("stripe").setLevel(logging.INFO)
-
-class InvalidOrder(Exception):
-    pass
 
 # Accounts have a credit balance associated with them.  Credits are whole
 # numbers.
@@ -74,33 +73,7 @@ class Commerce:
         # 3 decimal places
         self.vat_rate = round(config["vat-rate"] / 100, 3)
 
-        self.values = {
-            "vat": {
-                "description": "VAT return",
-                "permitted": 10,
-                "price": 650,
-                "discount": 0.995,
-                "min_purchase": 1,
-            },
-            "corptax": {
-                "description": "Corp. tax filing",
-                "permitted": 4,
-                "price": 1450,
-                "discount": 0.995,
-                "min_purchase": 1,
-            },
-            "accounts": {
-                "description": "Accounts filing",
-                "permitted": 4,
-                "price": 950,
-                "discount": 0.995,
-                "min_purchase": 1,
-            }
-        }
-
-    @staticmethod
-    def purchase_price(base, units, discount=0.98):
-        return base * units * (discount ** (units - 1))
+        self.values = product
 
     async def get_offer(self, user):
 
@@ -139,7 +112,7 @@ class Commerce:
             )]:
 
                 price = math.floor(
-                    Commerce.purchase_price(
+                    purchase_price(
                         res["price"], v, res["discount"]
                     )
                 )
@@ -195,7 +168,7 @@ class Commerce:
             resource = self.values[kind]
 
             price = math.floor(
-                Commerce.purchase_price(
+                purchase_price(
                     resource["price"], count, resource["discount"]
                 )
             )
@@ -412,9 +385,7 @@ class Commerce:
             return tx
         except Exception as e:
             logger.debug("get_transaction: %s", e)
-            return RuntimeError(
-                body=str(e), content_type="text/plain"
-            )
+            return RuntimeError(str(e))
 
     async def get_payment_key(self, user):
         return self.stripe_public

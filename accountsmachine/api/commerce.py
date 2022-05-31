@@ -12,7 +12,7 @@ import copy
 from collections import OrderedDict
 from .. state import State
 
-from .. commerce.commerce import InvalidOrder
+from .. commerce.exceptions import InvalidOrder
 from .. date import to_isoformat
 
 logger = logging.getLogger("api.commerce")
@@ -122,14 +122,14 @@ class CommerceApi():
 
     async def crypto_get_status(self, request):
         request["auth"].verify_scope("filing-config")
-        status = await request["commerce"].crypto_get_status(request["state"])
+        status = await request["crypto"].get_status(request["state"])
         return web.json_response({
             "status": status
         })
 
     async def crypto_get_currencies(self, request):
         request["auth"].verify_scope("filing-config")
-        res = await request["commerce"].crypto_get_currencies(
+        res = await request["crypto"].get_currencies(
             request["state"]
         )
         return web.json_response(res)
@@ -139,7 +139,7 @@ class CommerceApi():
         req = await request.json()
 
         try:
-            res = await request["commerce"].crypto_get_estimate(
+            res = await request["crypto"].get_estimate(
                 request["state"], req["currency"], req["order"],
             )
             return web.json_response(res)
@@ -154,7 +154,7 @@ class CommerceApi():
 
         try:
 
-            res = await request["commerce"].crypto_create_payment(
+            res = await request["crypto"].create_payment(
                 request["state"], req["currency"], req["order"],
                 request["auth"].user, request["auth"].email
             )
@@ -167,12 +167,14 @@ class CommerceApi():
     async def crypto_get_payment_status(self, request):
         request["auth"].verify_scope("filing-config")
 
-        status = await request["commerce"].crypto_get_payment_status(
+        status = await request["crypto"].get_payment_status(
             request["state"], request.match_info["id"]
         )
         return web.json_response(status)
 
     async def crypto_callback(self, request):
+
+        logger.info("IPN: called")
 
         uid = request.match_info["user"]
         id = request.match_info["id"]
@@ -196,7 +198,7 @@ class CommerceApi():
             logger.info("should-be %s", should_be)
             raise web.HTTPUnauthorized()
 
-        await request["commerce"].crypto_callback(
+        await request["crypto"].callback(
             State(request["store"]).user(uid),
             req
         )

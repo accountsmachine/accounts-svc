@@ -25,6 +25,7 @@ from . corptax import CorptaxApi
 from . accounts import AccountsApi
 from . commerce import CommerceApi
 from .. commerce.commerce import Commerce
+from .. commerce.crypto import Crypto
 
 logger = logging.getLogger("api")
 logger.setLevel(logging.DEBUG)
@@ -46,6 +47,7 @@ class DataPass:
         request["config"] = request.app["config"]
         request["renderer"] = request.app["renderer"]
         request["commerce"] = request.app["commerce"]
+        request["crypto"] = request.app["crypto"]
         request["store"] = request.app["store"]
         return await handler(request)
 
@@ -58,6 +60,7 @@ class Api:
         self.firebase = Firebase(self.config)
 
         self.commerce = Commerce(self.config)
+        self.crypto = Crypto(self.config)
 
         self.store = Store(self.config)
         self.auth = AuthApi(self.config, self.store, self.firebase)
@@ -80,6 +83,7 @@ class Api:
         self.app["config"] = self.config
         self.app["renderer"] = self.renderer
         self.app["commerce"] = self.commerce
+        self.app["crypto"] = self.crypto
 
         self.app.add_routes([web.post("/render-html/{id}",
                                       self.renderer.to_html)])
