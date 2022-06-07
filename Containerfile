@@ -1,5 +1,5 @@
 
-FROM fedora:35
+FROM fedora:36
 
 RUN dnf update -y && dnf install -y python3-pip && \
     dnf install -y python3-pyOpenSSL python3-ldap python3-jwt && dnf clean all
