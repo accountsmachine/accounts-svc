@@ -53,12 +53,13 @@ if resp.status_code != 201:
 user = resp.json()
 
 def split(x):
+    return x
     return " ".join([x[i:i+3] for i in range(0, len(x), 3)])
 
 print("User:      ", split(user["userId"]))
 print("Password:  ", split(user["password"]))
 print("VRN:       ", split(user["vrn"]))
 
-print()
+#print()
 
-print("Note: space separation for readable, do not include spaces in value.")
+#print("Note: space separation for readable, do not include spaces in value.")
