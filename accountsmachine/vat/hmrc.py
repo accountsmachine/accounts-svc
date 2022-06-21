@@ -208,14 +208,66 @@ class Hmrc:
 
         return h
 
+    async def get_vat_payments_workaround(self, cli, start, end):
+
+        try:
+            return await cli.get_vat_payments(self.vrn, start, end)
+        except:
+            # Works around a broken sandbox
+            return []
+
+    async def get_vat_liabilities_workaround(self, cli, start, end):
+
+        try:
+            return await cli.get_vat_liabilities(self.vrn, start, end)
+        except:
+
+            # Works around a broken sandbox
+            return []
+
+    async def get_obligations_workaround(self, cli, start, end):
+
+        # Try the normal service
+        try:
+            obls = await cli.get_obligations(self.vrn, start, end)
+
+            obls = [
+                v for v in obls
+                if (
+                        (v.start > start and v.start < end) or
+                        (v.end > start and v.end < end)
+                )
+            ]
+
+
+            return obls
+        except:
+
+            # Failed, fall through to the sandbox work-around
+            pass
+
+        # But the sandbox is broken?  So get open obligations are report
+        # those.
+        obls = await cli.get_open_obligations(self.vrn)
+        
+        obls = [
+            v for v in obls
+            if (
+                    (v.start > start and v.start < end) or
+                    (v.end > start and v.end < end)
+            )
+        ]
+
+        return obls
+
     async def get_status(self, start, end):
 
         cli = await self.get_vat_client()
 
         return await asyncio.gather(
-            cli.get_vat_liabilities(self.vrn, start, end),
-            cli.get_vat_payments(self.vrn, start, end),
-            cli.get_obligations(self.vrn, start, end),
+            self.get_vat_liabilities_workaround(cli, start, end),
+            self.get_vat_payments_workaround(cli, start, end),
+            self.get_obligations_workaround(cli, start, end),
         )
 
     async def get_liabilities(self, start, end):
@@ -234,7 +286,8 @@ class Hmrc:
 
         cli = await self.get_vat_client()
 
-        return await cli.get_open_obligations(self.vrn)
+        obls = await cli.get_open_obligations(self.vrn)
+        return obls
 
     async def get_payments(self, start, end):
 
