@@ -4,16 +4,13 @@
 
     "restrict-user-domains": ["accountsmachine.io"],
 
-    "project": "accounts-machine-dev",
-    "bucket": "accounts-machine-dev",
+    "project": "accounts-machine-prod",
+    "bucket": "accounts-machine-prod",
     "service-account-key": "/keys/accounts-svc-key",
 
-    "PRODstripe-public": "pk_live_51Khz14ImWys2SCcth5VNfVxszQ9hsB6w0rLYThzovLrxuzKj3IR0ANKc28m7T1GSO4oqJ8gnanOYGei2FmeWc6Zh00odLdAKgX",
-    "PRODstripe-secret": "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",
-    "PRODstripe-webhook-key": "whsec_6AEqVke1bx0GMJCrRezlXfB3pQNriHL3",
-    "stripe-public": "pk_test_51Khz14ImWys2SCctYBeX8uqlDHma6bHjO6mig7oHpaVTENa71keRcTiE1vDEpQewPc7UJWMX31CTJU6B2ycamnZa00PuWMDZPX",
-    "stripe-secret": "sk_test_51Khz14ImWys2SCctFJHlNKlUQEmspamspbKOU15uBwMYC6ja0vMvKUDyDkWPehenoDoEht7dNztLatVlQ5ud5Fxp009e5MfCDE",
-    "stripe-webhook-key": "whsec_3XB3ljIj3VwF60gFCCFzm0lZjWmecwM9",
+    "stripe-public": "pk_live_51Khz14ImWys2SCcth5VNfVxszQ9hsB6w0rLYThzovLrxuzKj3IR0ANKc28m7T1GSO4oqJ8gnanOYGei2FmeWc6Zh00odLdAKgX",
+    "stripe-secret": "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",
+    "stripe-webhook-key": "whsec_6AEqVke1bx0GMJCrRezlXfB3pQNriHL3",
 
     "nowpayments-api-key": "3WK4MF2-KN4MHW3-QW6S5Z2-E4HYR3Y",
     "nowpayments-url": "https://api.nowpayments.io/",
@@ -27,16 +24,16 @@
     "jsonnet-base": "ixbrl-reporter-jsonnet/",
     "config-base": "base/",
 
-    "vat-auth-url": "https://test-www.tax.service.gov.uk",
-    "vat-api-url": "https://test-api.service.hmrc.gov.uk",
-    "vat-client-id": "cyA5UbJFwCwSozwN7F7OTJEoSpf5",
-    "vat-client-secret": "6a52bea9-a328-49fc-a3ef-69c3095d6b6b",
+    "vat-auth-url": "https://www.tax.service.gov.uk",
+    "vat-api-url": "https://api.service.hmrc.gov.uk",
+    "vat-client-id": "rcbfNsx2nMN5VMdZdJiRa3W1g6n3",
+    "vat-client-secret": "1a03a574-cced-4da3-a1b0-35014f8c06a8",
     "redirect-uri": "https://app.stage.accountsmachine.io/api/vat/receive-token",
 
-    "companies-service-api-key": "testtesttest",
-    "companies-service-url": "https://companies-test.dev.accountsmachine.io/",
+    "companies-service-api-key": "638bedcb-eb9d-4c97-b16d-fd28fc5a5739",
+    "companies-service-url": "https://api.company-information.service.gov.uk/",
 
-    "audience": "accounts-machine-dev",
+    "audience": "accounts-machine-prod",
     "algorithms": ["RS256"],
 
     "application-id": "378b4f4c-ee3f-4645-b513-e2d7775e1a05"
