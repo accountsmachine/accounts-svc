@@ -188,8 +188,8 @@ class VatApi():
         xff = [v for v in filter(lambda x : x != "", xff)]
 
         return {
-            "application.client-id": "ASD",
-            "application.client-secret": "ASD",
+            "application.client-id": self.client_id,
+            "application.client-secret": self.client_secret,
             "client.version": request.headers["X-Client-Version"],
             "transport.forwarded": xff,
 #            "identity.vrn": "DUNNO",
