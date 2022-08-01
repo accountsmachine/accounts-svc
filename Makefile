@@ -2,12 +2,19 @@
 VERSION=$(shell git describe | sed 's/^v//')
 
 JSONNET_REPO=git@github.com:cybermaggedon/ixbrl-reporter-jsonnet
+JSONNET_VERSION=v1.0.1
+
 #REPORTER_REPO=https://github.com/cybermaggedon/ixbrl-reporter
 
 all: ixbrl-reporter-jsonnet wheels
 
 ixbrl-reporter-jsonnet:
-	(mkdir $@; cd $@; git clone ${JSONNET_REPO} .)
+	( \
+	  mkdir $@ && \
+	  cd $@ && \
+	  git clone ${JSONNET_REPO} . && \
+	  git checkout ${JSONNET_VERSION} \
+	)
 
 ART_REPO=europe-west2-docker.pkg.dev
 

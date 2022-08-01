@@ -4,6 +4,9 @@ FROM fedora:36
 RUN dnf update -y && dnf install -y python3-pip && \
     dnf install -y python3-pyOpenSSL python3-ldap python3-jwt && dnf clean all
 
+# Adds about 1GB.
+#RUN dnf install -y gnucash
+
 RUN mkdir /root/wheels/ && mkdir /usr/local/am
 ADD dep-wheels/* /root/wheels/
 
