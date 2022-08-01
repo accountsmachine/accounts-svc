@@ -38,7 +38,7 @@ local accts = {
             ]
 	}
     },
-    accounts:: l.element(structure, self)
+    accounts:: l.from_element_def(structure, self)
 	.with_metadata(self.metadata),
     resource(x):: {
     	"default-logo": import "detail/logo.jsonnet",

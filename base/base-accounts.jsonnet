@@ -73,7 +73,7 @@ local accts = {
 	        config.report.director_authorising_ord,
 	}
     },
-    accounts:: l.element(structure, self).with_metadata(self.metadata),
+    accounts:: l.from_element_def(structure, self).with_metadata(self.metadata),
     resource(x):: {
     	"logo": config.report.logo,
 	"signature": config.report.signature
