@@ -41,22 +41,22 @@ class Books:
             "total-vatex-sales": [
                 {
                     "account": "Assets:Capital Equipment:EU Reverse VAT Purchase",
-                    "reversed": False
+                    "reversed": True
+                },
+                {
+                    "account": "Expenses:VAT Purchases:EU Reverse VAT",
+                    "reversed": True
                 },
                 { "account": "Income", "reversed": False }
             ],
             "total-vatex-purchases": [
                 {
                     "account": "Assets:Capital Equipment",
-                    "reversed": False
+                    "reversed": True
                 },
                 {
                     "account": "Expenses:VAT Purchases",
                     "reversed": False
-                },
-                {
-                    "account": "Expenses:VAT Purchases:EU Reverse VAT",
-                    "reversed": True
                 }
             ],
             "total-vatex-goods-supplied": [
@@ -64,7 +64,7 @@ class Books:
             ],
             "total-vatex-acquisitions": [
                 {
-                    "account": "Expenses:VAT Purchases:EU Reverse VAT",
+                    "account": "Expenses:VAT Purchases:EU Reverse VAT:Goods",
                     "reversed": False
                 }
             ],
