@@ -29,23 +29,44 @@ class Books:
 
     def default_mapping(self):
         return {
-            "vat-output-sales": [ "VAT:Output:Sales" ],
-            "vat-output-acquisitions": [ "VAT:Output:EU" ],
-            "vat-input": [ "VAT:Input" ],
+            "vat-output-sales": [
+                { "account": "VAT:Output:Sales", "reversed": False }
+            ],
+            "vat-output-acquisitions": [
+                { "account": "VAT:Output:EU", "reversed": False }
+            ],
+            "vat-input": [
+                { "account": "VAT:Input", "reversed": False }
+            ],
             "total-vatex-sales": [
-                "Assets:Capital Equipment:EU Reverse VAT Purchase",
-                "Income"
+                {
+                    "account": "Assets:Capital Equipment:EU Reverse VAT Purchase",
+                    "reversed": False
+                },
+                { "account": "Income", "reversed": False }
             ],
             "total-vatex-purchases": [
-                "Assets:Capital Equipment",
-                "Expenses:VAT Purchases",
-                "Expenses:VAT Purchases:EU Reverse VAT"
+                {
+                    "account": "Assets:Capital Equipment",
+                    "reversed": False
+                },
+                {
+                    "account": "Expenses:VAT Purchases",
+                    "reversed": False
+                },
+                {
+                    "account": "Expenses:VAT Purchases:EU Reverse VAT",
+                    "reversed": True
+                }
             ],
             "total-vatex-goods-supplied": [
-                "Income:Sales:EU:Goods"
+                { "account": "Income:Sales:EU:Goods", "reversed": False }
             ],
             "total-vatex-acquisitions": [
-                "Expenses:VAT Purchases:EU Reverse VAT"
+                {
+                    "account": "Expenses:VAT Purchases:EU Reverse VAT",
+                    "reversed": False
+                }
             ],
         }
 
