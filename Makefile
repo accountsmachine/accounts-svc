@@ -2,7 +2,7 @@
 VERSION=$(shell git describe | sed 's/^v//')
 
 JSONNET_REPO=git@github.com:cybermaggedon/ixbrl-reporter-jsonnet
-JSONNET_VERSION=v1.0.1
+JSONNET_VERSION=v1.0.3
 
 #REPORTER_REPO=https://github.com/cybermaggedon/ixbrl-reporter
 
