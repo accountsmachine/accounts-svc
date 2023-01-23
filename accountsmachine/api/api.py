@@ -198,6 +198,8 @@ class Api:
                                       commerce_api.complete_order)])
         self.app.add_routes([web.post("/commerce/callback",
                                       commerce_api.callback)])
+        self.app.add_routes([web.post("/commerce/complete-free-order",
+                                      commerce_api.complete_free_order)])
 
         self.app.add_routes([web.get("/crypto/status",
                                      commerce_api.crypto_get_status)])

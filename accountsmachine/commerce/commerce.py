@@ -365,3 +365,70 @@ class Commerce:
         rec = Audit.transaction_record(ordtx)
         await Audit.write(user.store, rec, id=tid)
 
+    async def complete_free_order(self, user, order, uid, email):
+
+        # Need to verify everything from the client side.  Can't trust
+        # any of it.
+
+        # Get user package
+        package = await user.currentpackage().get()
+        package = Package.from_dict(package)
+
+        # First, check that the prices in the order are consistent with our
+        # current offer, and that the calculations are internally consistent.
+        verify_order(order, package, self.vat_rate)
+
+        # This fetches the balance change from the order
+        deltas = get_order_delta(order)
+
+        newtx = await self.create_tx(user, order, uid, email)
+        tid = str(uuid.uuid4())
+
+        newtx["status"] = "complete"
+        newtx["payment_status"] = "complete"
+        newtx["complete"] = True
+        newtx["payment"] = "free"
+        newtx["payment_processor"] = "Free transaction"
+
+        @firestore.async_transactional
+        async def create_order(tx, deltas, newtx):
+
+            bal = {}
+
+            c = user.credits()
+            # FIXME: Get 409 Too much contention when doing this transactionally
+            # FIXME: Get 409 error, this SHOULD be done in the transaction
+#            c.use_transaction(tx)
+            bal = await c.get()
+
+            for kind in deltas:
+
+                if kind not in bal:
+                    bal[kind] = 0
+
+                permitted = self.values[kind]["permitted"]
+                if bal[kind] + deltas[kind] > permitted:
+                    return False, "That would exceed your maximum permitted"
+
+                bal[kind] += deltas[kind]
+
+
+            # Transaction gets written out, and then new balance
+            # is not paid for yet.
+            await user.transaction(tid).put(newtx)
+            await user.credits().put(bal)
+
+            return True, "OK"
+
+
+        tx = user.create_transaction()
+        ok, msg = await create_order(tx, deltas, newtx)
+
+        rec = Audit.transaction_record(newtx)
+        await Audit.write(user.store, rec, id=tid)
+
+        if not ok:
+            raise RuntimeError(msg)
+
+        return tid
+

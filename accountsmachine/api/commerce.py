@@ -58,6 +58,23 @@ class CommerceApi():
 
         return web.json_response(tid)
 
+    async def complete_free_order(self, request):
+
+        request["auth"].verify_scope("filing-config")
+        user = request["auth"].user
+        email = request["auth"].email
+
+        order = await request.json()
+
+        try:
+            tid = await request["commerce"].complete_free_order(
+                request["state"], order, user, email
+            )
+        except InvalidOrder as e:
+            raise web.HTTPBadRequest(text=str(e))
+
+        return web.json_response(tid)
+
     async def create_payment(self, request):
 
         request["auth"].verify_scope("filing-config")

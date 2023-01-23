@@ -5,8 +5,10 @@ import math
 product = {
     "vat": {
         "description": "VAT return",
-        "permitted": 10,
-        "price": 650,
+#        "permitted": 10,
+#        "price": 650,
+        "permitted": 4,
+        "price": 0,
         "discount": 0.995,
         "min_purchase": 1,
     },
