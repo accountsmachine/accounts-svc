@@ -1,0 +1,3 @@
+
+class InvalidOrder(Exception):
+    pass

@@ -1,0 +1,148 @@
+
+----------------------------------------------------------------------------
+
+key=Z7AMD8Y-4XZM7ZV-QHHCZFK-51CDC82
+
+# Get API status
+curl --location --request GET 'https://api-sandbox.nowpayments.io/v1/status'
+
+# Get currencies
+curl --location --request GET \
+    'https://api-sandbox.nowpayments.io/v1/currencies' \
+    --header "x-api-key: ${key}"
+
+#{
+#  "currencies": [
+#    "btg", "xmr", "btc", "zec", "etc", "xvg", "ada", "ltc", "bch", "qtum",
+#    "dash", "xlm", "xrp", "omg", "dgb", "cvc", "dcr", "doge", "trx", "kmd",
+#    "rep", "bat", "eos", "mana", "ark", "waves", "nano", "tusd", "vet", "zen",
+#    "grs", "fun", "neo", "gas", "usdc", "hot", "icx", "iotx", "knc", "link",
+#    "rvn", "enj", "bnbmainnet", "vib", "bcd", "usdt", "atom", "usdterc20",
+#    "cro", "dai", "hbar", "ht", "wabi", "matic", "busd", "algo", "usdttrc20",
+#    "gt", "stpt", "ftt", "gusd", "coti", "theta", "yfi", "sxp", "uni",
+#    "tfuel", "fil", "aave", "now", "okb", "egld", "axs", "strax", "srk",
+#    "ftm", "firo", "lgcy", "dao", "front", "chz", "cake", "om", "hoge", "klv",
+#    "shib", "kishu", "super", "keanu", "chr", "feg", "bnbbsc", "busdbsc",
+#    "nwc", "avax", "grt", "eth", "brise", "usdtbsc", "near", "c98", "raca",
+#    "mx", "usdp", "leash", "tko", "floki", "cns", "gspi", "babydoge", "spi",
+#    "zinu", "avaerc20", "blocks", "xdc", "arpa", "bel", "trvl", "rxcg",
+#    "avabsc", "poodl", "fluf", "xyo", "nftb", "marsh", "avn", "ilv",
+#    "kibabsc", "kiba", "avaxc", "ntvrk", "sfund", "galaerc20", "poolz"
+#  ]
+#}
+
+# Get estimated price
+curl --location --request GET \
+    'https://api-sandbox.nowpayments.io/v1/estimate?amount=6.50&currency_from=gbp&currency_to=eth' \
+    --header "x-api-key: ${key}"
+
+#{
+#  "currency_from": "gbp",
+#  "amount_from": 6.5,
+#  "currency_to": "eth",
+#  "estimated_amount": "0.00384226"
+#}
+
+# Get min payment amount
+curl --location --request GET \
+    'https://api-sandbox.nowpayments.io/v1/min-amount?currency_from=gbp&currency_to=eth' \
+    --header "x-api-key: ${key}"
+
+#{
+#  "currency_from": "gbp",
+#  "currency_to": "eth",
+#  "min_amount": 45
+#}
+
+curl --location --request POST \
+    'https://api-sandbox.nowpayments.io/v1/payment' \
+    --header "x-api-key: ${key}" \
+    --header 'Content-Type: application/json' \
+    --data-raw '{
+      "price_amount": 14,
+      "price_currency": "gbp",
+      "pay_currency": "eth",
+      "order_id": "TESTTEST-1234154",
+      "order_description": "Some stuff I have sold"
+}'
+
+#      "pay_amount": 0.8102725,
+#      "ipn_callback_url": "https://nowpayments.io",
+
+#{
+#  "payment_id": "5976145362",
+#  "payment_status": "waiting",
+#  "pay_address": "0x8Df24753f1C38CFA4bB786BF168e6170b3687fBB",
+#  "price_amount": 44,
+#  "price_currency": "gbp",
+#  "pay_amount": "0.02582925",
+#  "amount_received": 0.0201942,
+#  "pay_currency": "eth",
+#  "order_id": "TESTTEST-123414",
+#  "order_description": "Some stuff I have sold",
+#  "ipn_callback_url": null,
+#  "created_at": "2022-05-13T10:43:37.573Z",
+#  "updated_at": "2022-05-13T10:43:37.573Z",
+#  "purchase_id": "6100599818",
+#  "smart_contract": null,
+#  "network": "eth",
+#  "network_precision": 18,
+#  "time_limit": null
+#}
+
+# Get payment status
+
+curl --location --request GET \
+    'https://api-sandbox.nowpayments.io/v1/payment/5976145362' \
+    --header "x-api-key: ${key}"
+
+#{
+#  "payment_id": 5976145362,
+#  "invoice_id": null,
+#  "payment_status": "confirming",
+#  "pay_address": "0x8Df24753f1C38CFA4bB786BF168e6170b3687fBB",
+#  "price_amount": 44,
+#  "price_currency": "gbp",
+#  "pay_amount": 0.02582925,
+#  "actually_paid": 0,
+#  "pay_currency": "eth",
+#  "order_id": "TESTTEST-123414",
+#  "order_description": "Some stuff I have sold",
+#  "purchase_id": 6100599818,
+#  "outcome_amount": 0.0201942,
+#  "outcome_currency": "eth",
+#  "payout_hash": null,
+#  "payin_hash": null,
+#  "created_at": "2022-05-13T10:43:37.573Z",
+#  "updated_at": "2022-05-13T10:44:11.702Z"
+#}
+
+# Create invoice
+curl --location --request POST 'https://api-sandbox.nowpayments.io/v1/invoice' \
+   --header "x-api-key: ${key}" \
+   --header 'Content-Type: application/json' \
+   --data-raw '{
+      "price_amount": 50,
+      "price_currency": "gbp",
+      "order_id": "TEST-21314",
+      "order_description": "Some stuff I sold",
+      "ipn_callback_url": "https://example.org",
+      "success_url": "https://example.org",
+      "cancel_url": "https://example.org"
+    }
+'
+
+#{
+#  "id": "6003065984",
+#  "order_id": "TEST-21314",
+#  "order_description": "Some stuff I sold",
+#  "price_amount": "50",
+#  "price_currency": "gbp",
+#  "pay_currency": null,
+#  "ipn_callback_url": "https://example.org",
+#  "invoice_url": "https://sandbox.nowpayments.io/payment/?iid=6003065984",
+#  "success_url": "https://example.org",
+#  "cancel_url": "https://example.org",
+#  "created_at": "2022-05-13T11:41:22.781Z",
+#  "updated_at": "2022-05-13T11:41:22.781Z"
+#}

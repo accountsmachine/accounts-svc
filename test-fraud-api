@@ -1,0 +1,36 @@
+#!/usr/bin/env python3
+
+import requests
+
+token="7fd4ed9b4872b94e1b2946440f34ba2b"
+s_ip="8.9.10.11"
+c_ip = "84.21.32.51"
+
+headers = {
+    "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
+    "Gov-Client-Browser-Do-Not-Track": "false",
+    "Gov-Client-Browser-JS-User-Agent": "Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:98.0) Gecko/20100101 Firefox/98.0",
+    "Gov-Client-Device-ID": "9ec51a04-fbc7-4e49-a25d-c8d73bd5377b",
+    "Gov-Client-Multi-Factor": "type=AUTH_CODE&timestamp=2021-11-21T13%3A23Z&unique-reference=fc4b5fd6816f75a7c81fc8eaa9499d6a299bd803397166e8c4cf9280b801d62c,type=TOTP&timestamp=2021-11-21T13%3A20Z&unique-reference=0283da60063abfb3a87f1aed845d17fe2d9ba8c780b478dc4ae048f5ee97a6d5",
+    "Gov-Client-Public-IP": c_ip,
+    "Gov-Client-Public-IP-Timestamp": "2022-03-30T16:09:22.444Z",
+    "Gov-Client-Public-Port": "39414",
+    "Gov-Client-Screens": "width=2560&height=1440&scaling-factor=1&colour-depth=24",
+    "Gov-Client-Timezone": "UTC-01:00",
+    "Gov-Client-User-IDs": "accountsmachine.io=2fe0a7f3-bae7-4eaf-89ba-fb2293a06143&email=mark%40accountsmachine.io",
+    "Gov-Client-Window-Size": "width=1354&height=1300",
+    "Gov-Vendor-Forwarded": "by=" + s_ip + "&for=" + c_ip,
+    "Gov-Vendor-License-IDs": "asdasd=sdashdjkasdhkjasdasdsad&aksdjasjdasdasd=asdkajsdajd",
+    "Gov-Vendor-Product-Name": "accountsmachine.io",
+    "Gov-Vendor-Public-IP": s_ip,
+    "Gov-Vendor-Version": "accountsmachine.io=0.0.1&accounts-web=1.0.0",
+    "Authorization": "Bearer " + token,
+    "Accept": "application/vnd.hmrc.1.0+json",
+}
+
+url = "https://test-api.service.hmrc.gov.uk/test/fraud-prevention-headers/validate"
+
+resp = requests.get(url, headers=headers)
+print(resp.status_code)
+
+print(resp.text)
