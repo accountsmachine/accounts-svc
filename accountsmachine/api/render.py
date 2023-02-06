@@ -40,7 +40,7 @@ class RendererApi:
 
         if filename == "svr-config.jsonnet":
             logger.debug("Handled internally")
-            return filename, self.config
+            return filename, self.config.encode("utf-8")
 
         try:
             if dir:
@@ -49,13 +49,14 @@ class RendererApi:
                 path = os.path.join(self.jsonnet_base, filename)
 
             logger.debug("Try: %s", path)
-            with open(path) as f:
+            with open(path, "rb") as f:
                 logger.debug("Loaded: %s", path)
                 return str(path), f.read()
 
         except:
             path = os.path.join(self.jsonnet_base, filename)
-            with open(path) as f:
+            logger.debug("Try: %s", path)
+            with open(path, "rb") as f:
                 logger.debug("Loaded: %s", path)
                 return str(path), f.read()
 
