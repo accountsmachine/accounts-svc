@@ -1,0 +1,99 @@
+
+name: Deploy to prod
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - prod
+
+permissions:
+  contents: read
+  id-token: 'write'
+
+jobs:
+
+  deploy:
+
+    name: Deploy to prod
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Get version
+        id: version
+        run: echo VERSION=sha-$(git rev-parse --short HEAD) >> $GITHUB_OUTPUT
+
+      - name: Extract metadata for container
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: accounts-svc
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+
+      - name: Get dependencies
+        run: make ixbrl-reporter-jsonnet wheels dep-wheels
+
+      - name: Build container
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: false
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          file: Containerfile
+
+      - id: auth
+        name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v0
+        with:
+          token_format: access_token
+          workload_identity_provider: projects/296721471413/locations/global/workloadIdentityPools/deploy/providers/deploy
+          service_account: deploy@accounts-machine-prod.iam.gserviceaccount.com
+          access_token_lifetime: 600s
+          create_credentials_file: true
+
+      - name: Login to Artifact Registry
+        uses: docker/login-action@v1
+        with:
+          registry: europe-west1-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+
+      - name: Install Pulumi
+        run: cd pulumi && npm install
+
+      - name: Applying infrastructure 🚀🙏
+        uses: pulumi/actions@v3
+        with:
+          command: up
+          stack-name: prod
+          work-dir: pulumi
+          cloud-url: gs://accounts-machine-prod-deploy/accounts-svc/prod
+        env:
+          PULUMI_CONFIG_PASSPHRASE: ""
+          IMAGE_VERSION: ${{ steps.version.outputs.VERSION }}
+          GCP_PROJECT: accounts-machine-prod
+          GCP_REGION: europe-west1
+          CLOUD_RUN_REGION: europe-west1
+          ARTIFACT_REPO: europe-west1-docker.pkg.dev/accounts-machine-prod/accounts-machine
+          ARTIFACT_NAME: accounts-machine
+          ARTIFACT_REPO_REGION: europe-west1
+          HOSTNAME: api.prod.accountsmachine.io
+          DOMAIN: prod.accountsmachine.io.
+          DNS_DOMAIN_DESCRIPTION: prod
+          MIN_SCALE: "0"
+          MAX_SCALE: "1"
+          ENVIRONMENT: "prod"
+          CONFIGURATION: ${{ secrets.CONFIG_PROD }}
+          BUCKET: accounts-machine-prod
+
+

@@ -1,0 +1,3 @@
+name: accounts-svc
+description: Accounts svc
+runtime: nodejs
