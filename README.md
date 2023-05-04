@@ -125,8 +125,8 @@ You need to create a complex configuration file, say `config-local.json`:
 
 The Companies House and VAT URL information can be configured to talk
 to test services created by us:
-- (VAT test service)[https://github.com/accountsmachine/vat-test-service]
-- (Companies House test)[https://github.com/accountsmachine/companies-test-service]
+- [VAT test service](https://github.com/accountsmachine/vat-test-service)
+- [Companies House test](https://github.com/accountsmachine/companies-test-service)
 
 Run the service:
 ```
@@ -136,6 +136,4 @@ scripts/am-svc config-local.json
 
 You also need to start the front-end locally. See
 [`accounts-web`](https://github.com/accountsmachine/accounts-web)
-
-
 
