@@ -136,6 +136,11 @@ The service communicates with Google Cloud so you need to be logged in
 using `gcloud`, and the application will just use your application default
 credentials.
 
+The directory `ixbrl-report-jsonnet` is used.
+Unpack
+[this repo](https://github.com/cybermaggedon/ixbrl-reporter-jsonnet)
+in that directory.
+
 Run the service:
 ```
 export PYTHONPATH=.
