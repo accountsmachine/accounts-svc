@@ -128,6 +128,13 @@ to test services created by us:
 - [VAT test service](https://github.com/accountsmachine/vat-test-service)
 - [Companies House test](https://github.com/accountsmachine/companies-test-service)
 
+The seller information is only used on receipts.  The stripe keys you can
+set up if you want, but are only used for paying transactions.
+
+The service communicates with Google Cloud so you need to be logged in
+using `gcloud`, and the application will just use your application default
+credentials.
+
 Run the service:
 ```
 export PYTHONPATH=.
