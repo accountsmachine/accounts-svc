@@ -145,3 +145,22 @@ scripts/am-svc config-local.json
 You also need to start the front-end locally. See
 [`accounts-web`](https://github.com/accountsmachine/accounts-web)
 
+## LICENCE
+
+    Accounts Machine software, account-web, accounts-svc
+    Copyright (C) 2021-2023, Accounts Machine Limited, cybermaggedon.
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+See [LICENSE].
