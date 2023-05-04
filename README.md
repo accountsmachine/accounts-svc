@@ -106,14 +106,14 @@ You need to create a complex configuration file, say `config-local.json`:
     "jsonnet-base": "ixbrl-reporter-jsonnet/",
     "config-base": "base/",
 
-    "vat-auth-url": "https://test.example.com",
-    "vat-api-url": "https://test.example.com",
+    "vat-auth-url": "https://VAT-TEST.example.com",
+    "vat-api-url": "https://VAT-TEST.example.com",
     "vat-client-id": "id1",
     "vat-client-secret": "secretasdasdlkaskdjaskdj",
     "redirect-uri": "http://localhost:8080/api/vat/receive-token",
 
     "companies-service-api-key": "testtesttest",
-    "companies-service-url": "https://companies-test.example.com/",
+    "companies-service-url": "https://COMPANIES-TEST-URL.example.com/",
 
     "audience": "MY-GCP-PROJECT",
     "algorithms": ["RS256"],
@@ -124,7 +124,8 @@ You need to create a complex configuration file, say `config-local.json`:
 ```
 
 The Companies House and VAT URL information can be configured to talk
-to test services created by us:
+to test services designed for use with this application.  You can
+run these locally if you want:
 - [VAT test service](https://github.com/accountsmachine/vat-test-service)
 - [Companies House test](https://github.com/accountsmachine/companies-test-service)
 
