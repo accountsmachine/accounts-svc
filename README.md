@@ -20,15 +20,19 @@ This repository is the back-end for accountsmachine.io.  The front-end,
 is a separate repository.
 
 
+
 ```
                      ,-----------------.
                      |                 |        ,--------------.
   browser ------------> proxy ----------------> | accounts-svc |
-                     |    |            |        `--------------'
-                     |    '-- web app  |
-                     |                 |
-                     |   accounts-web  |
-                     `-----------------'
+     |               |    |            |        `--------------'
+     |               |    '-- web app  |           |          |
+     |               |                 |           |          |
+     |               |   accounts-web  |           |          |
+     |               `-----------------'           v          v
+     |                                         ,--------.  ,------.
+     '---------------------------------------->| Stripe |  | HMRC |
+                                               `--------'  `------'
 ```
 
 The back-end is deployed to production in a container.
