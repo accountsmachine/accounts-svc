@@ -19,8 +19,6 @@ This repository is the back-end for accountsmachine.io.  The front-end,
 [`accounts-web`](https://github.com/accountsmachine/accounts-web)
 is a separate repository.
 
-
-
 ```
                      ,-----------------.
                      |                 |        ,--------------.
