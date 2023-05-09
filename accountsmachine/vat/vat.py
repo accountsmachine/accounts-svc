@@ -64,8 +64,6 @@ class Vat:
 
                 for line in mappings:
 
-                    print(line)
-
                     calcs[line] = {}
 
                     for acct in mappings[line]:
