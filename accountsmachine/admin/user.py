@@ -243,7 +243,8 @@ class UserAdmin:
             # Annoying - not async?
             # FIXME: Not async
             auth = firebase_admin.auth.verify_id_token(token)
-        except:
+        except Exception as e:
+            logger.info("Exception: %s" % str(e))
             logger.info("Token not valid")
             raise AuthHeaderFailure()
 
