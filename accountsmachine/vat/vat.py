@@ -49,30 +49,56 @@ class Vat:
 
             calcs = {}
 
+            # There's too much negation going on here.  Need to negate
+            # boxes 1, 2, 3, 7 and 9 to match what happens in
+            # vat-computations.jsonnet
+            vat_negate = set([
+                "vat-output-sales",
+                "vat-output-acquisitions",
+                "vat-output-acquisitions",
+                "total-vatex-purchases",
+                "total-vatex-acquisitions"
+            ])
+
             with await books.open_accounts(tmp_file) as accts:
 
                 for line in mappings:
+
+                    print(line)
 
                     calcs[line] = {}
 
                     for acct in mappings[line]:
 
-                        calcs[line][acct["account"]] = []
-                        acct_record = calcs[line][acct["account"]]
-
                         tot = 0
                         ah = accts.get_account(None, acct["account"])
 
+                        if accts.is_debit(ah):
+                            factor = -1
+                        else:
+                            factor = 1
+
+                        if line in vat_negate:
+                            factor = -factor
+
                         spl = accts.get_splits(ah, start, end)
+
+                        txs = []
+
                         for s in spl:
 
                             tot += s["amount"]
 
-                            acct_record.append({
-                                "amount": s["amount"],
+                            txs.append({
+                                "amount": s["amount"] * factor,
                                 "description": s["description"],
                                 "date": s["date"].isoformat(),
                             })
+
+                        calcs[line][acct["account"]] = {
+                            "transactions": txs,
+                            "reversed": acct["reversed"],
+                        }
 
             return calcs
 
