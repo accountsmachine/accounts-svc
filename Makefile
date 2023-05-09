@@ -80,8 +80,11 @@ push:
 	podman push --remove-signatures ${CONTAINER}:${VERSION}
 
 start:
-	podman run -d --name ${NAME} \
-	    -p 8081:8080 \
+	podman run -i -t --name ${NAME} \
+	    -i -t \
+	    -p 8081:8081 \
+	    -v $$(pwd)/keys:/keys \
+	    -v $$(pwd)/configs:/configs \
 	    ${CONTAINER}:${VERSION}
 
 stop:

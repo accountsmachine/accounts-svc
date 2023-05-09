@@ -57,6 +57,16 @@ class VatApi():
 
         self.vat = Vat(config, store)
 
+    async def calculate(self, request):
+
+        request["auth"].verify_scope("vat")
+        user = request["auth"].user
+        id = request.match_info['id']
+
+        vat = await self.vat.calculate(request["state"], self.renderer, id)
+
+        return web.json_response(vat)
+        
     async def compute(self, request):
 
         request["auth"].verify_scope("vat")

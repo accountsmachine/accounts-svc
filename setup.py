@@ -26,6 +26,11 @@ setuptools.setup(
     install_requires=[
         'py-dmidecode',
         'gnucash-uk-vat',
+
+        # Workaround - cachecontrol is not compatible with firebase_admin
+        # https://github.com/ionrock/cachecontrol/issues/292
+        'urllib3<2.0.0',
+
         'aiohttp',
         'firebase_admin',
         'jsonnet',

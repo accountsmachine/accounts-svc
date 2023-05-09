@@ -3,6 +3,7 @@ from aiohttp import web
 import json
 import logging
 import copy
+from datetime import datetime
 
 from .. admin.user import UserAdmin, EmailNotVerified, AuthHeaderFailure, BadDomain
 from .. date import to_isoformat
@@ -170,8 +171,14 @@ class AuthApi:
     async def put_profile(self, request):
 
         request["auth"].verify_scope("user")
+
         user = request["auth"].user
+
+        prof = await self.user_admin.get_profile(request["state"])
+
         info = await request.json()
+
+        info["creation"] = datetime.fromisoformat(prof["creation"])
 
         await self.user_admin.put_profile(request["state"], info)
 
