@@ -138,6 +138,7 @@ class Api:
                                      self.vat.get_payments)])
 
         self.app.add_routes([web.post("/vat/compute/{id}", self.vat.compute)])
+        self.app.add_routes([web.post("/vat/calculate/{id}", self.vat.calculate)])
         self.app.add_routes([web.post("/vat/submit/{id}", self.vat.submit)])
 
         self.app.add_routes([web.post("/accounts/submit/{id}",
