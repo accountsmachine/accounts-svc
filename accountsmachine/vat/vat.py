@@ -2,12 +2,15 @@
 import time
 import logging
 import secrets
+import uuid
+from datetime import date, datetime, timezone
 
 logger = logging.getLogger("vat.vat")
 logger.setLevel(logging.DEBUG)
 
 from .. ixbrl_process import IxbrlProcess
 from .. state import State
+from .. state.books import Books
 
 from . submit import VatSubmission
 from . hmrc import Hmrc
@@ -20,6 +23,88 @@ class Vat:
         self.client_secret = config["vat-client-secret"]
         self.redirect_uri = config["redirect-uri"]
         self.store = store
+
+    async def calculate(self, user, renderer, id):
+
+        try:
+
+            cfg = await user.filing(id).get()
+
+            try:
+                cid = cfg["company"]
+            except Exception as e:
+                raise RuntimeError("No company number in configuration")
+
+            cmp = await user.company(cid).get()
+
+            books = Books(user, cid)
+
+            info = await books.get_info()
+            mappings = await books.get_mapping()
+
+            tmp_file = "tmp." + str(uuid.uuid4()) + ".dat"
+
+            start = date.fromisoformat(cfg["start"])
+            end = date.fromisoformat(cfg["end"])
+
+            calcs = {}
+
+            # There's too much negation going on here.  Need to negate
+            # boxes 1, 2, 3, 7 and 9 to match what happens in
+            # vat-computations.jsonnet
+            vat_negate = set([
+                "vat-output-sales",
+                "vat-output-acquisitions",
+                "vat-output-acquisitions",
+                "total-vatex-purchases",
+                "total-vatex-acquisitions"
+            ])
+
+            with await books.open_accounts(tmp_file) as accts:
+
+                for line in mappings:
+
+                    print(line)
+
+                    calcs[line] = {}
+
+                    for acct in mappings[line]:
+
+                        tot = 0
+                        ah = accts.get_account(None, acct["account"])
+
+                        if accts.is_debit(ah):
+                            factor = -1
+                        else:
+                            factor = 1
+
+                        if line in vat_negate:
+                            factor = -factor
+
+                        spl = accts.get_splits(ah, start, end)
+
+                        txs = []
+
+                        for s in spl:
+
+                            tot += s["amount"]
+
+                            txs.append({
+                                "amount": s["amount"] * factor,
+                                "description": s["description"],
+                                "date": s["date"].isoformat(),
+                            })
+
+                        calcs[line][acct["account"]] = {
+                            "transactions": txs,
+                            "reversed": acct["reversed"],
+                        }
+
+            return calcs
+
+        except Exception as e:
+            logger.error(e)
+            raise e
 
     async def compute(self, user, renderer, id):
 
