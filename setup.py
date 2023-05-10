@@ -39,7 +39,6 @@ setuptools.setup(
         'piecash',
         'ixbrl-parse',
         'rdflib',
-        'pandas',
     ],
     scripts=[
         "scripts/am-svc"
