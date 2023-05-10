@@ -325,6 +325,15 @@ const service = new gcp.cloudrun.Service(
 				"containerPort": 8080,
                             }
 			],
+			envs: [
+			    // Stops the container from loading
+			    // default credentials.  We load credentials
+			    // through a secret.
+			    {
+				name: "NO_GCE_CHECK",
+				value: "True",
+			    }
+			],
 			resources: {
                             limits: {
 				cpu: "1000m",
