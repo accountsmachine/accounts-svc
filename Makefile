@@ -56,7 +56,7 @@ everything-prod:
 	make push-prod
 	make run-upgrade KIND=prod
 
-container: dep-wheels wheels
+container:
 	podman build -f Containerfile -t ${CONTAINER}:${VERSION} \
 	    --format docker
 
@@ -65,16 +65,17 @@ login:
 	    podman login -u oauth2accesstoken --password-stdin \
 	        europe-west2-docker.pkg.dev
 
-dep-wheels:
-	rm -rf $@ && mkdir $@
-	pip3 wheel -w $@ --no-deps jsonnet
-	pip3 wheel -w $@ --no-deps gnucash-uk-vat
-	pip3 wheel -w $@ --no-deps ixbrl-reporter
-	pip3 wheel -w $@ --no-deps ixbrl-parse
+# dep-wheels:
+# 	rm -rf $@ && mkdir $@
+# 	pip3 wheel -w $@ --no-deps jsonnet
+# 	pip3 wheel -w $@ --no-deps gnucash-uk-vat
+# 	pip3 wheel -w $@ --no-deps ixbrl-reporter
+# 	pip3 wheel -w $@ --no-deps ixbrl-parse
+# 	pip3 wheel -w $@ --no-deps python-ldap
 
-wheels: setup.py scripts/am-svc $(wildcard */*.py)
-	rm -rf $@ && mkdir $@
-	env PACKAGE_VERSION=${VERSION} pip3 wheel -w $@ --no-deps .
+# wheels: setup.py scripts/am-svc $(wildcard */*.py)
+# 	rm -rf $@ && mkdir $@
+# 	env PACKAGE_VERSION=${VERSION} pip3 wheel -w $@ --no-deps .
 
 push:
 	podman push --remove-signatures ${CONTAINER}:${VERSION}
@@ -92,3 +93,4 @@ stop:
 
 clean:
 	rm -rf wheels/
+
