@@ -39,6 +39,7 @@ setuptools.setup(
         'piecash',
         'ixbrl-parse',
         'rdflib',
+        'pyOpenSSL'
     ],
     scripts=[
         "scripts/am-svc"
