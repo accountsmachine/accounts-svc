@@ -40,7 +40,7 @@ jobs:
             type=sha
 
       - name: Get dependencies
-        run: make ixbrl-reporter-jsonnet wheels dep-wheels
+        run: make ixbrl-reporter-jsonnet
 
       - name: Build container
         uses: docker/build-push-action@v3
