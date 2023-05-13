@@ -4,7 +4,8 @@ import os
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-version = os.getenv("PACKAGE_VERSION")
+#version = os.getenv("PACKAGE_VERSION")
+version = "2.1.0"
 
 setuptools.setup(
     name="accounts-svc",
