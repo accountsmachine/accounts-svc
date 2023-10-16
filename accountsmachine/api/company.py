@@ -17,12 +17,42 @@ class CompanyApi:
         pass
 
     async def get_all(self, request):
-        h = standard.get_all(self, "company", Company)
-        return await h(self, request)
+#         h = standard.get_all(self, "company", Company)
+#         return await h(self, request)
+
+        request["auth"].verify_scope("company")
+
+        try:
+            i = await Company.get_all(request["state"])
+
+            # Backward compatibility, if no type field, add type = uk-company
+            for k, v in i.items():
+                if "type" not in v: v["type"] = "uk-company"
+
+            return web.json_response(i)
+        except Exception as e:
+            return web.HTTPInternalServerError(
+                body=str(e), content_type="text/plain"
+            )
 
     async def get(self, request):
-        h = standard.get(self, "company", Company)
-        return await h(self, request)
+#         h = standard.get(self, "company", Company)
+#         return await h(self, request)
+
+        request["auth"].verify_scope("company")
+        user = request["auth"].user
+        id = request.match_info['id']
+        o = Company(request["state"], id)
+
+        # Backward compatibility, if no type field, add type = uk-company
+        try:
+            info = await o.get()
+            if "type" not in info: info["type"] = "uk-company"
+        except KeyError:
+            return web.HTTPNotFound()
+
+        return web.json_response(info)
+
 
     async def put(self, request):
         h = standard.put(self, "company", Company)
