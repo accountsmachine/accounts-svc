@@ -18,6 +18,9 @@ except:
 
 logger.info("accounts-svc version is: %s", version)
 
+class AuthNotConfigured(Exception):
+    pass
+
 # Like VAT, but talks to configuration endpoints
 class VatEndpoint(hmrc.Vat):
     def __init__(self, config, auth):
@@ -183,8 +186,9 @@ class Hmrc:
         except Exception as e:
             logger.error(e)
             logger.error("No VAT auth stored")
-            raise RuntimeError("No VAT auth stored.  "
-                  "You should authenticate with the VAT service"
+            raise AuthNotConfigured(
+                "No VAT auth stored.  "
+                "You should authenticate with the VAT service"
             )
 
         auth = AuthEndpoint(vauth)

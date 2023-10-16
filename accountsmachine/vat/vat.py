@@ -13,7 +13,13 @@ from .. state import State
 from .. state.books import Books
 
 from . submit import VatSubmission
-from . hmrc import Hmrc
+from . hmrc import Hmrc, AuthNotConfigured
+
+class AccountsError(Exception):
+    def __init__(self, account):
+        self.account = account
+        self.message = f"Account {account} cannot be accessed"
+        super().__init__(self.message)
 
 class Vat:
 
@@ -69,7 +75,10 @@ class Vat:
                     for acct in mappings[line]:
 
                         tot = 0
-                        ah = accts.get_account(None, acct["account"])
+                        try:
+                            ah = accts.get_account(None, acct["account"])
+                        except Exception as e:
+                            raise AccountsError(acct["account"])
 
                         if accts.is_debit(ah):
                             factor = -1
@@ -79,7 +88,10 @@ class Vat:
                         if line in vat_negate:
                             factor = -factor
 
-                        spl = accts.get_splits(ah, start, end)
+                        try:
+                            spl = accts.get_splits(ah, start, end)
+                        except Exception as e:
+                            raise AccountsError(acct["account"])
 
                         txs = []
 
@@ -124,6 +136,7 @@ class Vat:
         return Hmrc(config, auth, vrn)
 
     async def get_status(self, config, user, cid, start, end):
+
         cli = await self.get_hmrc_client(config, user, cid)
         l, p, o = await cli.get_status(start, end)
 
