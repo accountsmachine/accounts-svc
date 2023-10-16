@@ -17,7 +17,7 @@ import time
 from .. state import State
 from .. ixbrl_process import IxbrlProcess
 from . render import RendererApi
-from .. vat.vat import Vat, AuthNotConfigured
+from .. vat.vat import Vat, AuthNotConfigured, AccountsError
 
 import gnucash_uk_vat.hmrc as hmrc
 import gnucash_uk_vat.model as model
@@ -63,9 +63,25 @@ class VatApi():
         user = request["auth"].user
         id = request.match_info['id']
 
-        vat = await self.vat.calculate(request["state"], self.renderer, id)
+        try:
+            vat = await self.vat.calculate(request["state"], self.renderer, id)
+        except AccountsError as e:
+            return web.json_response(
+                {
+                    "error": {
+                        "type": "account-error",
+                        "account": e.account,
+                        "message": e.message,
+                    }
+                }
+            )
 
-        return web.json_response(vat)
+        return web.json_response(
+            {
+                "calculation": vat
+            }
+        )
+                    
         
     async def compute(self, request):
 
