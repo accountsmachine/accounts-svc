@@ -17,7 +17,7 @@ import time
 from .. state import State
 from .. ixbrl_process import IxbrlProcess
 from . render import RendererApi
-from .. vat.vat import Vat
+from .. vat.vat import Vat, AuthNotConfigured
 
 import gnucash_uk_vat.hmrc as hmrc
 import gnucash_uk_vat.model as model
@@ -176,7 +176,8 @@ class VatApi():
         if "X-Device-TZ" not in request.headers:
             raise RuntimeError("No timezone")
 
-        host, port = request.transport.get_extra_info("peername")
+        peerinfo = request.transport.get_extra_info("peername")
+        host, port = peerinfo[0], peerinfo[1]
 
         screen = json.loads(request.headers["X-Screen"])
 
@@ -240,6 +241,9 @@ class VatApi():
             status = await self.vat.get_status(config, state, id, start, end)
 
             return web.json_response(status)
+
+        except AuthNotConfigured as e:
+            return web.json_response({})
 
         except Exception as e:
 

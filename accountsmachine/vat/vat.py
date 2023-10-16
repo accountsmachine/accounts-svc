@@ -13,7 +13,7 @@ from .. state import State
 from .. state.books import Books
 
 from . submit import VatSubmission
-from . hmrc import Hmrc
+from . hmrc import Hmrc, AuthNotConfigured
 
 class Vat:
 
@@ -124,6 +124,7 @@ class Vat:
         return Hmrc(config, auth, vrn)
 
     async def get_status(self, config, user, cid, start, end):
+
         cli = await self.get_hmrc_client(config, user, cid)
         l, p, o = await cli.get_status(start, end)
 
