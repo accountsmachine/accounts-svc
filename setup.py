@@ -35,12 +35,10 @@ setuptools.setup(
         'aiohttp',
         'firebase_admin',
         'jsonnet',
-        'secrets',
         'stripe',
         'piecash',
         'ixbrl-parse',
         'rdflib',
-        'pyOpenSSL'
     ],
     scripts=[
         "scripts/am-svc"
