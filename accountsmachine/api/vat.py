@@ -4,7 +4,6 @@ from aiohttp import web
 from aiohttp import ClientSession
 from urllib.parse import urlencode, quote_plus
 import uuid
-import secrets
 import datetime
 import json
 import os
