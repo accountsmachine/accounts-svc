@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 #version = os.getenv("PACKAGE_VERSION")
-version = "2.1.0"
+version = "2.2.1"
 
 setuptools.setup(
     name="accounts-svc",
@@ -26,7 +26,7 @@ setuptools.setup(
     download_url = "https://github.com/accountsmachine/accounts-svc.git/archive/refs/tags/v" + version + ".tar.gz",
     install_requires=[
         'py-dmidecode',
-        'gnucash-uk-vat',
+        'gnucash-uk-vat==1.7.2',
 
         # Workaround - cachecontrol is not compatible with firebase_admin
         # https://github.com/ionrock/cachecontrol/issues/292
