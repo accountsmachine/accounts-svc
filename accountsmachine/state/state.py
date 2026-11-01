@@ -127,10 +127,10 @@ class User(DocObject):
                     logger.info("Deleting package %s", id)
                     await self.package(id).delete()
                 except Exception as e:
-                    print(e)
+                    logger.error("Error deleting package: %s", e)
 
         except Exception as e:
-            print(e)
+            logger.error("Error listing packages: %s", e)
 
         try:
             logger.info("Deleting credits")

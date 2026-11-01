@@ -59,9 +59,7 @@ class Crypto:
 
         async with aiohttp.ClientSession() as session:
 
-            url = self.nowpayments_url + "v1/min-amount?%s" % urlencode({
-                "currency_from": currency,
-            })
+            url = f"{self.nowpayments_url}v1/min-amount?{urlencode({'currency_from': currency})}"
 
             headers = {
                 "x-api-key": self.nowpayments_key,
@@ -94,7 +92,7 @@ class Crypto:
 
         async with aiohttp.ClientSession() as session:
 
-            url = self.nowpayments_url + "v1/estimate?%s" % urlencode({
+            url = self.nowpayments_url + "v1/estimate?" + urlencode({
                 "amount": amount,
                 "currency_from": "gbp",
                 "currency_to": currency
@@ -192,7 +190,7 @@ class Crypto:
 
                 res = await resp.json()
 
-                print(resp.status)
+                logger.debug("Payment response status: %s", resp.status)
 
                 if resp.status == 400:
                     if "code" in res:
@@ -204,7 +202,7 @@ class Crypto:
                         raise InvalidOrder(res["message"])
 
                 if resp.status != 201:
-                    print(json.dumps(res, indent=4))
+                    logger.error("Order creation failed: %s", json.dumps(res, indent=4))
                     raise RuntimeError("Order creation failed")
 
             return res
@@ -213,7 +211,7 @@ class Crypto:
 
         async with aiohttp.ClientSession() as session:
 
-            url = self.nowpayments_url + "v1/payment/%s" % id
+            url = f"{self.nowpayments_url}v1/payment/{id}"
 
             headers = {
                 "x-api-key": self.nowpayments_key,

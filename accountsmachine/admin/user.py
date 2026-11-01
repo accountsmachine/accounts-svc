@@ -91,10 +91,10 @@ class UserAdmin:
 
         uid = str(uuid.uuid4())
 
-        if ref != None:
+        if ref is not None:
             pkg = self.referrals.get_package(ref)
-            if pkg == None:
-                raise RuntimeError("Referral code '%s' is not valid" % ref)
+            if pkg is None:
+                raise RuntimeError(f"Referral code '{ref}' is not valid")
         else:
             pkg = self.referrals.default_package()
 
@@ -244,7 +244,7 @@ class UserAdmin:
             # FIXME: Not async
             auth = firebase_admin.auth.verify_id_token(token)
         except Exception as e:
-            logger.info("Exception: %s" % str(e))
+            logger.info("Exception: %s", e)
             logger.info("Token not valid")
             raise AuthHeaderFailure()
 

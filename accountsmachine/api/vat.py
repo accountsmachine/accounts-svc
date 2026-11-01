@@ -151,16 +151,16 @@ class VatApi():
                 content_type="text/plain"
             )
 
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now(datetime.timezone.utc)
         expires = now + datetime.timedelta(seconds=int(token["expires_in"]))
-        expires = expires.replace(microsecond=0)
+        expires = expires.replace(microsecond=0, tzinfo=None)
         expires = expires.isoformat()
 
         token["expires"] = expires
 
         await self.vat.store_auth(uid, company, token)
 
-        url = "/status/%s/vat" % company
+        url = f"/status/{company}/vat"
 
         return web.HTTPFound(url)
 
@@ -211,7 +211,7 @@ class VatApi():
 
         xff = xff.split(",")
         xff = [ v.strip() for v in xff ]
-        xff = [v for v in filter(lambda x : x != "", xff)]
+        xff = [v for v in xff if v]
 
         return {
             "application.client-id": self.client_id,

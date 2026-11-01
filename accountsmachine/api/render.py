@@ -64,12 +64,14 @@ class RendererApi:
 
         self.config = config
 
-        open("svr-config.jsonnet", "w").write(config)
+        with open("svr-config.jsonnet", "w") as f:
+            f.write(config)
 
         if ".." in kind:
             raise RuntimeError("Bad kind")
             
-        svr = open("%s/base-%s.jsonnet" % (self.base, kind)).read()
+        with open(f"{self.base}/base-{kind}.jsonnet") as f:
+            svr = f.read()
         res = j.evaluate_snippet("config", svr, import_callback=self.load)
         return json.loads(res)
 
@@ -189,7 +191,7 @@ class RendererApi:
                 pass
             else:
                 raise RuntimeError(
-                    "Can't render account books kind '%s'" % bkind
+                    f"Can't render account books kind '{bkind}'"
                 )
 
             logger.info("Accounting books kind is %s", info["kind"])

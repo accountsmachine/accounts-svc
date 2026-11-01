@@ -126,7 +126,7 @@ class VatEndpoint(hmrc.Vat):
         ])
 
         product = "accountsmachine.io"
-        now = datetime.datetime.utcnow().isoformat()[:-3] + "Z"
+        now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
         # So in a cloud run environment, the client IP isn't client_ip
         # it's the an address in X-Forwared-For
@@ -152,7 +152,7 @@ class VatEndpoint(hmrc.Vat):
             'Gov-Vendor-Product-Name': quote_plus(product),
 #            'Gov-Vendor-Public-IP': my_ip,
             'Gov-Vendor-Version': versions,
-            'Authorization': 'Bearer %s' % self.auth.get("access_token"),
+            'Authorization': f'Bearer {self.auth.get("access_token")}',
         }
 
         # print("")
