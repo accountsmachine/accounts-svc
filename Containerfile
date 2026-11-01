@@ -1,5 +1,5 @@
 
-FROM alpine:3.19 AS build
+FROM alpine:3.21 AS build
 
 ENV PACKAGE_VERSION=0.0.0
 
@@ -10,7 +10,7 @@ RUN apk add --update --no-cache --no-progress python3 py3-pip py3-wheel \
 
 RUN mkdir /root/wheels
 
-RUN pip3 wheel -w /root/wheels --no-deps netifaces
+RUN pip3 wheel -w /root/wheels --no-deps netifaces2
 
 RUN pip3 wheel -w /root/wheels --no-deps jsonnet
 RUN pip3 wheel -w /root/wheels --no-deps gnucash-uk-vat
@@ -24,20 +24,20 @@ COPY accountsmachine/ /root/accountsmachine/accountsmachine/
 
 RUN (cd /root/accountsmachine && pip3 wheel -w /root/wheels --no-deps .)
 
-FROM alpine:3.19
+FROM alpine:3.21
 
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
 
 COPY --from=build /root/wheels /root/wheels
 
 RUN apk add --update --no-cache --no-progress python3 py3-pip \
-      py3-aiohttp py3-rdflib py3-openssl
+      py3-aiohttp py3-rdflib
 
 RUN pip3 install /root/wheels/gnucash_uk_vat-* \
     /root/wheels/ixbrl_parse-* \
     /root/wheels/ixbrl_reporter-* \
     /root/wheels/jsonnet-* \
-    /root/wheels/netifaces-* \
+    /root/wheels/netifaces2-* \
     /root/wheels/accounts_svc-* && \
     pip3 cache purge && \
     rm -rf /root/wheels
