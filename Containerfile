@@ -17,7 +17,7 @@ RUN pip3 wheel -w /root/wheels --no-deps gnucash-uk-vat
 RUN pip3 wheel -w /root/wheels --no-deps ixbrl-reporter
 RUN pip3 wheel -w /root/wheels --no-deps ixbrl-parse
 
-COPY setup.py /root/accountsmachine/
+COPY pyproject.toml /root/accountsmachine/
 COPY README.md /root/accountsmachine/
 COPY scripts/ /root/accountsmachine/scripts/
 COPY accountsmachine/ /root/accountsmachine/accountsmachine/

@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "accounts-svc"
+version = "2.2.1"
+description = "accountsmachine.io back-end service"
+readme = "README.md"
+license = "GPL-3.0-or-later"
+requires-python = ">=3.11"
+authors = [
+    { name = "Cybermaggedon", email = "mark@accountsmachine.io" },
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "aiohttp",
+    "firebase_admin",
+    "gnucash-uk-vat==1.7.2",
+    "ixbrl-parse",
+    "jsonnet",
+    "netifaces",
+    "piecash",
+    "py-dmidecode",
+    "rdflib",
+    "stripe",
+]
+
+[project.urls]
+Repository = "https://github.com/accountsmachine/accounts-svc"
+
+[project.scripts]
+am-svc = "accountsmachine.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["accountsmachine*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
