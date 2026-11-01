@@ -1,7 +1,7 @@
 
 FROM alpine:3.19 AS build
 
-env PACKAGE_VERSION=0.0.0
+ENV PACKAGE_VERSION=0.0.0
 
 RUN apk add --update --no-cache --no-progress make g++ gcc linux-headers
 RUN apk add --update --no-cache --no-progress git
