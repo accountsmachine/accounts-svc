@@ -19,10 +19,9 @@ classifiers = [
 dependencies = [
     "aiohttp",
     "firebase_admin",
-    "gnucash-uk-vat>=1.9.3",
+    "gnucash-uk-vat>=1.10.0",
     "ixbrl-parse",
     "jsonnet",
-    "netifaces2",
     "piecash",
     "py-dmidecode",
     "rdflib",

@@ -10,8 +10,6 @@ RUN apk add --update --no-cache --no-progress python3 py3-pip py3-wheel \
 
 RUN mkdir /root/wheels
 
-RUN pip3 wheel -w /root/wheels --no-deps netifaces2
-
 RUN pip3 wheel -w /root/wheels --no-deps jsonnet
 RUN pip3 wheel -w /root/wheels --no-deps gnucash-uk-vat
 RUN pip3 wheel -w /root/wheels --no-deps ixbrl-reporter
@@ -37,7 +35,6 @@ RUN pip3 install /root/wheels/gnucash_uk_vat-* \
     /root/wheels/ixbrl_parse-* \
     /root/wheels/ixbrl_reporter-* \
     /root/wheels/jsonnet-* \
-    /root/wheels/netifaces2-* \
     /root/wheels/accounts_svc-* && \
     pip3 cache purge && \
     rm -rf /root/wheels
