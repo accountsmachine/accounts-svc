@@ -129,7 +129,7 @@ class Books:
                 with open(file, "wb") as f:
                     f.write(books)
                 cls = get_class(kind)
-                self.accounts = cls(file)
+                self.accounts = cls(file, "GBP")
             def __enter__(self):
                 return self.accounts
             def __exit__(self, type, value, traceback):

@@ -129,7 +129,7 @@ class RendererApi:
             kind = acfg.get("accounts.kind")
             file = acfg.get("accounts.file")
             cls = get_class(kind)
-            accounts = cls(file)
+            accounts = cls(file, "GBP")
 
             ds = DataSource(acfg, accounts)
             elt = ds.get_element("report")
