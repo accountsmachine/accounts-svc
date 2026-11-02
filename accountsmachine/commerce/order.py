@@ -2,6 +2,8 @@
 from datetime import datetime, timezone
 import math
 
+from .exceptions import InvalidOrder
+
 product = {
     "vat": {
         "description": "VAT return",
