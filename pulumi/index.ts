@@ -226,7 +226,7 @@ const secret = new gcp.secretmanager.Secret(
     {
 	secretId: "accounts-svc-key",
 	replication: {
-	    automatic: true
+	    auto: {}
 	},
     },
     {
@@ -250,7 +250,7 @@ const config = new gcp.secretmanager.Secret(
     {
 	secretId: "accounts-svc-config",
 	replication: {
-	    automatic: true
+	    auto: {}
 	},
     },
     {

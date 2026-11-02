@@ -54,7 +54,8 @@ class DataPass:
 class Api:
     def __init__(self, config_file):
 
-        self.config = json.loads(open(config_file).read())
+        with open(config_file) as f:
+            self.config = json.loads(f.read())
         self.port = self.config["port"]
 
         self.firebase = Firebase(self.config)

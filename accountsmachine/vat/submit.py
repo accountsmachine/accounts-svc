@@ -82,7 +82,7 @@ class VatSubmission:
 
                 if obl is None:
                     raise RuntimeError(
-                        "VAT due date %s not found in obligations" % cfg["due"]
+                        f"VAT due date {cfg['due']} not found in obligations"
                     )
 
                 # Process VAT data to HTML report and VAT record

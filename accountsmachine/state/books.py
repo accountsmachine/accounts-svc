@@ -103,14 +103,15 @@ class Books:
         if kind == "csv":
             return
 
-        raise RuntimeError("Format '%s' not recognised" % kind)
+        raise RuntimeError(f"Format '{kind}' not recognised")
 
     async def create_temp_file(self, tmp_file):
 
         class FileContext:
             def __init__(self, books, file):
                 self.file = file
-                open(file, "wb").write(books)
+                with open(file, "wb") as f:
+                    f.write(books)
             def __enter__(self):
                 return self.file
             def __exit__(self, type, value, traceback):
@@ -125,9 +126,10 @@ class Books:
         class AccountsCtxt:
             def __init__(self, books, file, kind):
                 self.file = file
-                open(file, "wb").write(books)
+                with open(file, "wb") as f:
+                    f.write(books)
                 cls = get_class(kind)
-                self.accounts = cls(file)
+                self.accounts = cls(file, "GBP")
             def __enter__(self):
                 return self.accounts
             def __exit__(self, type, value, traceback):
@@ -145,7 +147,7 @@ class Books:
         if kind == "csv":
             return AccountsCtxt(books, tmp_file, "csv")
 
-        raise RuntimeError("Cannot process accounting books kind '%s'" % kind)
+        raise RuntimeError(f"Cannot process accounting books kind '{kind}'")
 
     def summarise(self, accts):
 

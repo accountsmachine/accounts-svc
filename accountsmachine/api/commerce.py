@@ -9,7 +9,6 @@ import uuid
 from datetime import timezone
 import math
 import copy
-from collections import OrderedDict
 from .. state import State
 
 from .. commerce.exceptions import InvalidOrder
@@ -227,7 +226,7 @@ class CommerceApi():
 
         req = await request.json()
 
-        params = OrderedDict(sorted(req.items()))
+        params = dict(sorted(req.items()))
         params = json.dumps(params, separators=(',', ':')).encode("utf-8")
 
         h = hmac.new(key=self.nowpayments_ipn_key, digestmod="sha512")
